@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { PhoneCall, AlertTriangle, Search, MapPin, BedDouble, Activity, ShieldAlert, Clock } from 'lucide-react';
 import { INITIAL_HOSPITALS } from '../../data/mockData';
 import { FreshnessBadge } from '../common/Badge';
+import { TextReveal, SectionReveal } from '../common/TextReveal';
 
 export const EmergencySection: React.FC = () => {
   const [selectedCondition, setSelectedCondition] = useState<string>('Cardiac');
@@ -26,18 +27,22 @@ export const EmergencySection: React.FC = () => {
         
         {/* Left Column: Context & Critical Rules */}
         <div className="lg:col-span-5 space-y-6">
-          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[#FEF3E8] border border-[#FCDDC1] text-[#A05520] text-xs font-bold">
-            <AlertTriangle className="w-4 h-4 text-[#E07B39]" strokeWidth={2} />
-            <span>Emergency Facility Discovery</span>
-          </div>
+          <SectionReveal>
+            <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[#FEF3E8] border border-[#FCDDC1] text-[#A05520] text-xs font-bold">
+              <AlertTriangle className="w-4 h-4 text-[#E07B39]" strokeWidth={2} />
+              <span>Emergency Facility Discovery</span>
+            </div>
+          </SectionReveal>
 
           <h2 className="font-serif text-3xl sm:text-4xl text-[#1C2B3A] leading-tight">
-            Find the right hospital with verified emergency capacity
+            <TextReveal text="Find the right hospital with verified emergency capacity" stagger={0.02} yOffset={24} />
           </h2>
 
-          <p className="text-[#6B7A8D] text-sm leading-relaxed">
-            During critical medical emergencies, searching generic maps can lead to facilities without specialized care, ICU beds, or functioning catheterization labs.
-          </p>
+          <SectionReveal delay={0.2}>
+            <p className="text-[#6B7A8D] text-sm leading-relaxed">
+              During critical medical emergencies, searching generic maps can lead to facilities without specialized care, ICU beds, or functioning catheterization labs.
+            </p>
+          </SectionReveal>
 
           <div className="bg-[#FEF3E8]/60 border border-[#FCDDC1] rounded-2xl p-4 space-y-3">
             <div className="flex items-center gap-2 text-xs font-bold text-[#A05520]">
@@ -69,7 +74,8 @@ export const EmergencySection: React.FC = () => {
         </div>
 
         {/* Right Column: Hospital Capacity Discovery Interface */}
-        <div className="lg:col-span-7 bg-white rounded-3xl border border-[#DDD9D1] p-6 shadow-soft space-y-5">
+        <SectionReveal className="lg:col-span-7" delay={0.15} yOffset={50}>
+        <div className="bg-white rounded-3xl border border-[#DDD9D1] p-6 shadow-soft space-y-5">
           
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div>
@@ -172,6 +178,7 @@ export const EmergencySection: React.FC = () => {
           </div>
 
         </div>
+        </SectionReveal>
 
       </div>
     </section>

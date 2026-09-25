@@ -52,3 +52,20 @@
 ::-webkit-scrollbar-thumb:hover {
   background: #C4BFB5;
 }
+
+/* Lenis smooth scrolling integration (inspired by MINEGUARD) */
+html.lenis, html.lenis body {
+  height: auto;
+}
+.lenis.lenis-smooth {
+  scroll-behavior: auto !important;
+}
+.lenis.lenis-smooth [data-lenis-prevent] {
+  overscroll-behavior: contain;
+}
+.lenis.lenis-stopped {
+  overflow: hidden;
+}
+.lenis.lenis-scrolling iframe {
+  pointer-events: none;
+}

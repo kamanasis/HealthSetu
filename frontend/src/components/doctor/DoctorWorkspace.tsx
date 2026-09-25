@@ -22,7 +22,7 @@ import {
   INITIAL_TIMELINE, 
   SAFETY_DATABASE 
 } from '../../data/mockData';
-import { Medication, SafetyAlert, TimelineEvent } from '../../types';
+import type { Medication, SafetyAlert } from '../../types';
 import { TrustBadge } from '../common/Badge';
 
 interface DoctorWorkspaceProps {

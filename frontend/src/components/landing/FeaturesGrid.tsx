@@ -10,6 +10,7 @@ import {
   Building2, 
   Activity 
 } from 'lucide-react';
+import { TextReveal, SectionReveal } from '../common/TextReveal';
 
 export const FeaturesGrid: React.FC = () => {
   const features = [
@@ -83,41 +84,46 @@ export const FeaturesGrid: React.FC = () => {
       <div className="max-w-6xl mx-auto px-6 space-y-12">
         
         <div className="text-center max-w-2xl mx-auto space-y-3">
-          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-[#FAF8F3] border border-[#DDD9D1] text-[#6B7A8D]">
-            Comprehensive Capabilities
-          </span>
+          <SectionReveal>
+            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-[#FAF8F3] border border-[#DDD9D1] text-[#6B7A8D]">
+              Comprehensive Capabilities
+            </span>
+          </SectionReveal>
           <h2 className="font-serif text-3xl sm:text-4xl text-[#1C2B3A]">
-            Designed for safety, trust, and continuity
+            <TextReveal text="Designed for safety, trust, and continuity" stagger={0.02} yOffset={24} />
           </h2>
-          <p className="text-[#6B7A8D] text-base leading-relaxed">
-            Every feature works within HealthSetu's overarching trust architecture: data provenance is maintained, clinicians remain the deciders, and patients remain in control.
-          </p>
+          <SectionReveal delay={0.2}>
+            <p className="text-[#6B7A8D] text-base leading-relaxed">
+              Every feature works within HealthSetu's overarching trust architecture: data provenance is maintained, clinicians remain the deciders, and patients remain in control.
+            </p>
+          </SectionReveal>
         </div>
 
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
           {features.map((feature, idx) => (
-            <div
-              key={idx}
-              className="bg-white rounded-2xl border border-[#DDD9D1] p-6 hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 flex flex-col justify-between group"
-            >
-              <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <div className="w-10 h-10 rounded-xl bg-[#FAF8F3] border border-[#DDD9D1] flex items-center justify-center group-hover:scale-110 transition-transform duration-200">
-                    {feature.icon}
+            <SectionReveal key={idx} delay={(idx % 3) * 0.1} yOffset={40}>
+              <div
+                className="bg-white rounded-2xl border border-[#DDD9D1] p-6 hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 flex flex-col justify-between group h-full"
+              >
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <div className="w-10 h-10 rounded-xl bg-[#FAF8F3] border border-[#DDD9D1] flex items-center justify-center group-hover:scale-110 transition-transform duration-200">
+                      {feature.icon}
+                    </div>
+                    <span className={`text-[10px] font-bold px-2.5 py-0.5 rounded-full ${feature.tagColor}`}>
+                      {feature.tag}
+                    </span>
                   </div>
-                  <span className={`text-[10px] font-bold px-2.5 py-0.5 rounded-full ${feature.tagColor}`}>
-                    {feature.tag}
-                  </span>
-                </div>
 
-                <div>
-                  <h3 className="font-serif text-xl font-bold text-[#1C2B3A]">{feature.title}</h3>
-                  <p className="text-xs text-[#6B7A8D] mt-1.5 leading-relaxed">
-                    {feature.description}
-                  </p>
+                  <div>
+                    <h3 className="font-serif text-xl font-bold text-[#1C2B3A]">{feature.title}</h3>
+                    <p className="text-xs text-[#6B7A8D] mt-1.5 leading-relaxed">
+                      {feature.description}
+                    </p>
+                  </div>
                 </div>
               </div>
-            </div>
+            </SectionReveal>
           ))}
         </div>
 

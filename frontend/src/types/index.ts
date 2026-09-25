@@ -1,7 +1,11 @@
 export type Role = 'landing' | 'patient' | 'doctor' | 'hospital';
+export const Role = {} as unknown as Role;
 
 export type TrustState = 'verified' | 'extracted' | 'ai-analyzed' | 'raw';
+export const TrustState = {} as unknown as TrustState;
+
 export type FreshnessState = 'current' | 'stale' | 'unknown';
+export const FreshnessState = {} as unknown as FreshnessState;
 
 export interface Medication {
   id: string;
@@ -21,6 +25,7 @@ export interface Medication {
   mealTiming: 'before_food' | 'after_food' | 'with_food' | 'empty_stomach';
   category: string;
 }
+export const Medication = {} as unknown as Medication;
 
 export interface Allergy {
   id: string;
@@ -31,6 +36,7 @@ export interface Allergy {
   recordedBy: string;
   trustState: TrustState;
 }
+export const Allergy = {} as unknown as Allergy;
 
 export interface TimelineEvent {
   id: string;
@@ -47,6 +53,7 @@ export interface TimelineEvent {
     items?: string[];
   };
 }
+export const TimelineEvent = {} as unknown as TimelineEvent;
 
 export interface AccessRequest {
   id: string;
@@ -60,6 +67,7 @@ export interface AccessRequest {
   requestedAt: string;
   expiresAt: string;
 }
+export const AccessRequest = {} as unknown as AccessRequest;
 
 export interface HospitalFacility {
   id: string;
@@ -79,6 +87,7 @@ export interface HospitalFacility {
   phone: string;
   isNetworkShared: boolean;
 }
+export const HospitalFacility = {} as unknown as HospitalFacility;
 
 export interface SafetyAlert {
   id: string;
@@ -89,3 +98,4 @@ export interface SafetyAlert {
   drugsInvolved: string[];
   source: 'Authoritative Safety Rules (RxNorm/OpenFDA)' | 'Deterministic Rule' | 'AI-Observed Pattern';
 }
+export const SafetyAlert = {} as unknown as SafetyAlert;

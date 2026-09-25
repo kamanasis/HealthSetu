@@ -1,6 +1,6 @@
 import React from 'react';
 import { Activity, ShieldCheck, Heart } from 'lucide-react';
-import { Role } from '../../types';
+import type { Role } from '../../types';
 
 interface FooterProps {
   onSelectRole: (role: Role) => void;

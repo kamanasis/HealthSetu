@@ -1,6 +1,6 @@
 import React from 'react';
-import { Activity, User, Stethoscope, Building2, ShieldCheck, PhoneCall, ChevronRight } from 'lucide-react';
-import { Role } from '../../types';
+import { Activity, User, Stethoscope, Building2, PhoneCall } from 'lucide-react';
+import type { Role } from '../../types';
 
 interface NavbarProps {
   currentRole: Role;
@@ -13,6 +13,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   setCurrentRole,
   onEmergencyClick,
 }) => {
+
   return (
     <header className="fixed top-0 left-0 right-0 h-16 bg-[#FAF8F3]/90 backdrop-blur-md border-b border-[#DDD9D1] z-50 transition-all duration-200">
       <div className="max-w-6xl mx-auto h-full px-6 flex items-center justify-between">
@@ -86,8 +87,11 @@ export const Navbar: React.FC<NavbarProps> = ({
           </button>
         </nav>
 
-        {/* Action Buttons */}
+        {/* Action Buttons & Backend Status */}
         <div className="flex items-center gap-3">
+          
+
+
           <button
             onClick={onEmergencyClick}
             className="flex items-center gap-2 bg-[#E07B39] text-white font-semibold text-xs px-4 py-2.5 rounded-xl hover:bg-[#C96A28] transition-colors duration-200 shadow-sm"

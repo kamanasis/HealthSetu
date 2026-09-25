@@ -1,6 +1,7 @@
 import React from 'react';
 import { ArrowRight, CheckCircle2, ShieldCheck, Sparkles, UploadCloud, Stethoscope, HeartPulse, Clock } from 'lucide-react';
 import { TrustBadge } from '../common/Badge';
+import { TextReveal, SectionReveal } from '../common/TextReveal';
 
 export const HowItWorks: React.FC = () => {
   const steps = [
@@ -35,7 +36,7 @@ export const HowItWorks: React.FC = () => {
     {
       step: '05',
       title: 'Immediate Care Plan & Continuity Update',
-      description: 'Finalized treatments automatically update the patient’s record and generate a localized, audio-enabled daily medication schedule.',
+      description: 'Finalized treatments automatically update the patient\u2019s record and generate a localized, audio-enabled daily medication schedule.',
       actor: 'Care Continuity',
       badgeColor: 'bg-[#F5F0FC] text-[#5B3D8A]',
     },
@@ -48,45 +49,51 @@ export const HowItWorks: React.FC = () => {
         {/* Left Column: 5-step journey */}
         <div className="lg:col-span-7 space-y-8">
           <div>
-            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-[#FAF8F3] border border-[#DDD9D1] text-[#6B7A8D]">
-              Healthcare Continuity Loop
-            </span>
+            <SectionReveal>
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-[#FAF8F3] border border-[#DDD9D1] text-[#6B7A8D]">
+                Healthcare Continuity Loop
+              </span>
+            </SectionReveal>
             <h2 className="font-serif text-3xl sm:text-4xl text-[#1C2B3A] mt-3">
-              How HealthSetu connects care across visits
+              <TextReveal text="How HealthSetu connects care across visits" stagger={0.02} yOffset={24} />
             </h2>
-            <p className="text-[#6B7A8D] text-base mt-2">
-              From fragmented paper prescriptions to verified longitudinal history, every step keeps the patient in control and the clinician fully informed.
-            </p>
+            <SectionReveal delay={0.2}>
+              <p className="text-[#6B7A8D] text-base mt-2">
+                From fragmented paper prescriptions to verified longitudinal history, every step keeps the patient in control and the clinician fully informed.
+              </p>
+            </SectionReveal>
           </div>
 
           <div className="space-y-6">
             {steps.map((item, idx) => (
-              <div key={idx} className="flex gap-4 group">
-                <div className="flex flex-col items-center">
-                  <div className="w-8 h-8 rounded-full bg-[#FAF8F3] border border-[#DDD9D1] text-xs font-bold flex items-center justify-center text-[#1C2B3A] group-hover:border-[#4A90C4] group-hover:text-[#4A90C4] transition-colors">
-                    {item.step}
+              <SectionReveal key={idx} delay={idx * 0.1} yOffset={30}>
+                <div className="flex gap-4 group">
+                  <div className="flex flex-col items-center">
+                    <div className="w-8 h-8 rounded-full bg-[#FAF8F3] border border-[#DDD9D1] text-xs font-bold flex items-center justify-center text-[#1C2B3A] group-hover:border-[#4A90C4] group-hover:text-[#4A90C4] transition-colors">
+                      {item.step}
+                    </div>
+                    {idx < steps.length - 1 && (
+                      <div className="w-px h-full bg-[#DDD9D1] my-1" />
+                    )}
                   </div>
-                  {idx < steps.length - 1 && (
-                    <div className="w-px h-full bg-[#DDD9D1] my-1" />
-                  )}
-                </div>
 
-                <div className="space-y-1 pb-4">
-                  <div className="flex items-center gap-2">
-                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${item.badgeColor}`}>
-                      {item.actor}
-                    </span>
+                  <div className="space-y-1 pb-4">
+                    <div className="flex items-center gap-2">
+                      <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${item.badgeColor}`}>
+                        {item.actor}
+                      </span>
+                    </div>
+                    <h4 className="text-sm font-bold text-[#1C2B3A]">{item.title}</h4>
+                    <p className="text-xs text-[#6B7A8D] leading-relaxed max-w-lg">{item.description}</p>
                   </div>
-                  <h4 className="text-sm font-bold text-[#1C2B3A]">{item.title}</h4>
-                  <p className="text-xs text-[#6B7A8D] leading-relaxed max-w-lg">{item.description}</p>
                 </div>
-              </div>
+              </SectionReveal>
             ))}
           </div>
         </div>
 
         {/* Right Column: Longitudinal Timeline Card */}
-        <div className="lg:col-span-5 lg:sticky lg:top-24">
+        <SectionReveal className="lg:col-span-5 lg:sticky lg:top-24" delay={0.2} yOffset={50}>
           <div className="bg-white rounded-3xl border border-[#DDD9D1] p-6 shadow-soft space-y-6">
             
             <div className="flex items-center justify-between border-b border-[#DDD9D1] pb-4">
@@ -162,7 +169,7 @@ export const HowItWorks: React.FC = () => {
             </div>
 
           </div>
-        </div>
+        </SectionReveal>
 
       </div>
     </section>

@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { ArrowRight, ShieldCheck, CheckCircle2, User, Stethoscope, AlertTriangle, Sparkles, Clock, Lock } from 'lucide-react';
 import { TrustBadge, FreshnessBadge } from '../common/Badge';
-import { Role } from '../../types';
+import { TextReveal, SectionReveal } from '../common/TextReveal';
+import type { Role } from '../../types';
 
 interface HeroProps {
   onSelectRole: (role: Role) => void;
@@ -16,58 +17,69 @@ export const Hero: React.FC<HeroProps> = ({ onSelectRole }) => {
         
         {/* Left Column: Copy & Value Proposition */}
         <div className="lg:col-span-7 space-y-6">
-          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[#EBF4FB] border border-[#D5E8F8] text-[#2B5F8A] text-xs font-bold">
-            <ShieldCheck className="w-4 h-4 text-[#4A90C4]" strokeWidth={2} />
-            <span>Consent-Controlled Healthcare Continuity</span>
-          </div>
+          <SectionReveal delay={0}>
+            <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[#EBF4FB] border border-[#D5E8F8] text-[#2B5F8A] text-xs font-bold">
+              <ShieldCheck className="w-4 h-4 text-[#4A90C4]" strokeWidth={2} />
+              <span>Consent-Controlled Healthcare Continuity</span>
+            </div>
+          </SectionReveal>
 
           <h1 className="font-serif text-5xl sm:text-6xl lg:text-[62px] text-[#1C2B3A] leading-[1.12] tracking-tight">
-            Your health, <br />
-            <span className="italic font-normal text-[#4A90C4]">always connected.</span>
+            <TextReveal text="Your health," stagger={0.03} yOffset={32} />
+            <br />
+            <span className="italic font-normal text-[#4A90C4]">
+              <TextReveal text="always connected." stagger={0.03} yOffset={32} />
+            </span>
           </h1>
 
-          <p className="text-lg text-[#6B7A8D] max-w-xl font-normal leading-relaxed">
-            Bridging patients, doctors, and hospitals into one secure, continuous care platform.
-            Patients own their longitudinal records, doctors gain clinical clarity, and hospitals coordinate real-time emergency capacity.
-          </p>
+          <SectionReveal delay={0.3} yOffset={30}>
+            <p className="text-lg text-[#6B7A8D] max-w-xl font-normal leading-relaxed">
+              Bridging patients, doctors, and hospitals into one secure, continuous care platform.
+              Patients own their longitudinal records, doctors gain clinical clarity, and hospitals coordinate real-time emergency capacity.
+            </p>
+          </SectionReveal>
 
-          <div className="pt-2 flex flex-wrap items-center gap-4">
-            <button
-              onClick={() => onSelectRole('patient')}
-              className="bg-[#4A90C4] text-white font-semibold text-sm px-6 py-3.5 rounded-xl hover:bg-[#3A7DB0] transition-colors duration-200 shadow-sm flex items-center gap-2 group"
-            >
-              <span>Enter Patient Portal</span>
-              <ArrowRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
-            </button>
+          <SectionReveal delay={0.45} yOffset={24}>
+            <div className="pt-2 flex flex-wrap items-center gap-4">
+              <button
+                onClick={() => onSelectRole('patient')}
+                className="bg-[#4A90C4] text-white font-semibold text-sm px-6 py-3.5 rounded-xl hover:bg-[#3A7DB0] transition-colors duration-200 shadow-sm flex items-center gap-2 group"
+              >
+                <span>Enter Patient Portal</span>
+                <ArrowRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
+              </button>
 
-            <button
-              onClick={() => onSelectRole('doctor')}
-              className="border border-[#DDD9D1] bg-white text-[#1C2B3A] font-semibold text-sm px-6 py-3.5 rounded-xl hover:border-[#4A90C4] hover:bg-[#FAF8F3] transition-colors duration-200 flex items-center gap-2"
-            >
-              <Stethoscope className="w-4 h-4 text-[#3D8B6E]" />
-              <span>Doctor Clinical Workspace</span>
-            </button>
-          </div>
+              <button
+                onClick={() => onSelectRole('doctor')}
+                className="border border-[#DDD9D1] bg-white text-[#1C2B3A] font-semibold text-sm px-6 py-3.5 rounded-xl hover:border-[#4A90C4] hover:bg-[#FAF8F3] transition-colors duration-200 flex items-center gap-2"
+              >
+                <Stethoscope className="w-4 h-4 text-[#3D8B6E]" />
+                <span>Doctor Clinical Workspace</span>
+              </button>
+            </div>
+          </SectionReveal>
 
           {/* Micro-guarantees */}
-          <div className="pt-4 flex flex-wrap items-center gap-6 text-xs text-[#6B7A8D]">
-            <div className="flex items-center gap-1.5">
-              <CheckCircle2 className="w-4 h-4 text-[#3D8B6E]" />
-              <span>Patient-controlled consent</span>
+          <SectionReveal delay={0.55} yOffset={20}>
+            <div className="pt-4 flex flex-wrap items-center gap-6 text-xs text-[#6B7A8D]">
+              <div className="flex items-center gap-1.5">
+                <CheckCircle2 className="w-4 h-4 text-[#3D8B6E]" />
+                <span>Patient-controlled consent</span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <CheckCircle2 className="w-4 h-4 text-[#3D8B6E]" />
+                <span>Deterministic medication safety</span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <CheckCircle2 className="w-4 h-4 text-[#3D8B6E]" />
+                <span>Verified hospital bed capacity</span>
+              </div>
             </div>
-            <div className="flex items-center gap-1.5">
-              <CheckCircle2 className="w-4 h-4 text-[#3D8B6E]" />
-              <span>Deterministic medication safety</span>
-            </div>
-            <div className="flex items-center gap-1.5">
-              <CheckCircle2 className="w-4 h-4 text-[#3D8B6E]" />
-              <span>Verified hospital bed capacity</span>
-            </div>
-          </div>
+          </SectionReveal>
         </div>
 
         {/* Right Column: Live Interactive Architecture Widget */}
-        <div className="lg:col-span-5">
+        <SectionReveal className="lg:col-span-5" delay={0.3} yOffset={50}>
           <div className="bg-white rounded-3xl border border-[#DDD9D1] p-6 shadow-soft space-y-5 transition-all duration-300 hover:shadow-md">
             
             {/* Widget Header: Patient Identifier */}
@@ -169,7 +181,7 @@ export const Hero: React.FC<HeroProps> = ({ onSelectRole }) => {
             </div>
 
           </div>
-        </div>
+        </SectionReveal>
 
       </div>
     </section>

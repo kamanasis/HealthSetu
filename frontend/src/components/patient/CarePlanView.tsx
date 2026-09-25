@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Volume2, VolumeX, CheckCircle, Clock, Utensils, AlertCircle, Sparkles, Globe } from 'lucide-react';
-import { Medication } from '../../types';
+import type { Medication } from '../../types';
 
 interface CarePlanViewProps {
   medications: Medication[];

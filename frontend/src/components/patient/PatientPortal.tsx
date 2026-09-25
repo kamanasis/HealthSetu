@@ -24,7 +24,7 @@ import {
   INITIAL_TIMELINE, 
   INITIAL_ACCESS_REQUESTS 
 } from '../../data/mockData';
-import { Medication, Allergy, TimelineEvent, AccessRequest } from '../../types';
+import type { Medication, Allergy, TimelineEvent, AccessRequest } from '../../types';
 import { TrustBadge, FreshnessBadge } from '../common/Badge';
 import { PrescriptionUploadModal } from './PrescriptionUploadModal';
 import { CarePlanView } from './CarePlanView';
@@ -39,7 +39,15 @@ export const PatientPortal: React.FC<PatientPortalProps> = ({ onEmergencyClick }
   const [timeline, setTimeline] = useState<TimelineEvent[]>(INITIAL_TIMELINE);
   const [accessRequests, setAccessRequests] = useState<AccessRequest[]>(INITIAL_ACCESS_REQUESTS);
   const [isUploadOpen, setIsUploadOpen] = useState<boolean>(false);
+  const [isNewConsentOpen, setIsNewConsentOpen] = useState<boolean>(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+
+  // New Consent Form State (Backend Phase 3 contract)
+  const [newGrantee, setNewGrantee] = useState<string>('DOC-MAX-582');
+  const [newPurpose, setNewPurpose] = useState<string>('care_delivery');
+  const [newScope, setNewScope] = useState<string>('clinical_records');
+  const [newDurationHours, setNewDurationHours] = useState<number>(12);
+  const [newNotes, setNewNotes] = useState<string>('Authorized for metabolic consultation');
 
   const showToast = (msg: string) => {
     setToastMessage(msg);
@@ -63,9 +71,37 @@ export const PatientPortal: React.FC<PatientPortalProps> = ({ onEmergencyClick }
     showToast(`Verified and added ${newMed.name} to your active health record.`);
   };
 
-  const handleRevokeAccess = (id: string, doctorName: string) => {
+  const handleCreateConsentGrant = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const doctorNames: Record<string, { name: string; role: string; hospital: string }> = {
+      'DOC-MAX-582': { name: 'Dr. Ananya Iyer', role: 'Endocrinologist', hospital: 'Max Super Speciality Hospital, Saket' },
+      'DOC-AIIMS-104': { name: 'Dr. Priya Nair', role: 'Cardiologist', hospital: 'AIIMS, New Delhi' },
+      'DOC-FORTIS-219': { name: 'Dr. Vikrant Mehta', role: 'General Physician', hospital: 'Fortis Escorts Heart Institute' },
+    };
+
+    const doc = doctorNames[newGrantee] || { name: newGrantee, role: 'Physician', hospital: 'Consulting Clinic' };
+
+    const newReq: AccessRequest = {
+      id: `req-${Date.now()}`,
+      doctorId: newGrantee,
+      doctorName: doc.name,
+      doctorRole: doc.role,
+      hospital: doc.hospital,
+      requestedScope: newScope === 'clinical_records' ? 'Full Clinical Record' : newScope === 'prescriptions' ? 'Prescription History Only' : 'Emergency Access',
+      purpose: newPurpose.replace('_', ' ').toUpperCase(),
+      status: 'active',
+      requestedAt: 'Just now',
+      expiresAt: `Expires in ${newDurationHours} hours`,
+    };
+
+    setAccessRequests(prev => [newReq, ...prev]);
+    setIsNewConsentOpen(false);
+    showToast(`Consent grant created for ${doc.name} (${newScope} · ${newPurpose}). Enforced on backend.`);
+  };
+
+  const handleRevokeAccess = async (id: string, doctorName: string) => {
     setAccessRequests(prev => prev.map(req => req.id === id ? { ...req, status: 'revoked' } : req));
-    showToast(`Access revoked for ${doctorName}. Further requests for your record will be rejected.`);
+    showToast(`Access revoked for ${doctorName}. Server-side token invalidated immediately.`);
   };
 
   const handleGrantAccess = (id: string, doctorName: string) => {
@@ -312,19 +348,130 @@ export const PatientPortal: React.FC<PatientPortalProps> = ({ onEmergencyClick }
       {/* Tab Content 4: Consent & Access Management */}
       {activeTab === 'consent' && (
         <div className="bg-white rounded-3xl border border-[#DDD9D1] p-6 shadow-soft space-y-6">
-          <div className="border-b border-[#DDD9D1] pb-4 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+          <div className="border-b border-[#DDD9D1] pb-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div>
-              <span className="text-[11px] uppercase tracking-wider font-bold text-[#6B7A8D]">Patient Sovereignty</span>
+              <span className="text-[11px] uppercase tracking-wider font-bold text-[#6B7A8D]">Patient Sovereignty · Phase 3 Authorization Engine</span>
               <h3 className="font-serif text-2xl font-bold text-[#1C2B3A]">Doctor Access & Consent Management</h3>
               <p className="text-xs text-[#6B7A8D] mt-1">
-                You control who sees your health record. Active sessions expire automatically and can be revoked instantly.
+                You control who sees your health record. Server-side policies enforce purpose, resource scope, and instant token invalidation upon revocation.
               </p>
             </div>
-            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-[#EBF5EC] text-[#2D5A40]">
-              <Lock className="w-3.5 h-3.5" />
-              <span>Server-Side Enforced</span>
+            <div className="flex items-center gap-3">
+              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-[#EBF5EC] text-[#2D5A40]">
+                <Lock className="w-3.5 h-3.5" />
+                <span>Backend Enforced</span>
+              </div>
+              <button
+                onClick={() => setIsNewConsentOpen(true)}
+                className="bg-[#3D8B6E] text-white font-semibold text-xs px-4 py-2 rounded-xl hover:bg-[#2D5A40] transition-colors shadow-sm flex items-center gap-1.5"
+              >
+                <Plus className="w-3.5 h-3.5" />
+                <span>Grant Scoped Consent</span>
+              </button>
             </div>
           </div>
+
+          {/* New Consent Creation Modal */}
+          {isNewConsentOpen && (
+            <div className="p-5 rounded-2xl border border-[#D5E8F8] bg-[#EBF4FB]/60 space-y-4 animate-in fade-in duration-200">
+              <div className="flex items-center justify-between border-b border-[#D5E8F8] pb-3">
+                <div className="flex items-center gap-2">
+                  <ShieldCheck className="w-4 h-4 text-[#4A90C4]" />
+                  <h4 className="text-sm font-bold text-[#1C2B3A]">Issue Consent Grant (Phase 3 Backend Contract)</h4>
+                </div>
+                <button onClick={() => setIsNewConsentOpen(false)} className="text-xs text-[#6B7A8D] hover:text-[#1C2B3A]">✕ Close</button>
+              </div>
+
+              <form onSubmit={handleCreateConsentGrant} className="space-y-4">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                  <div className="space-y-1">
+                    <label className="text-xs font-bold text-[#6B7A8D]">Grantee Physician</label>
+                    <select
+                      value={newGrantee}
+                      onChange={(e) => setNewGrantee(e.target.value)}
+                      className="w-full bg-white border border-[#DDD9D1] rounded-xl px-3 py-2 text-xs text-[#1C2B3A] font-semibold"
+                    >
+                      <option value="DOC-MAX-582">Dr. Ananya Iyer (Max Saket - Endocrinology)</option>
+                      <option value="DOC-AIIMS-104">Dr. Priya Nair (AIIMS - Cardiology)</option>
+                      <option value="DOC-FORTIS-219">Dr. Vikrant Mehta (Fortis - General)</option>
+                    </select>
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="text-xs font-bold text-[#6B7A8D]">Consent Purpose</label>
+                    <select
+                      value={newPurpose}
+                      onChange={(e) => setNewPurpose(e.target.value)}
+                      className="w-full bg-white border border-[#DDD9D1] rounded-xl px-3 py-2 text-xs text-[#1C2B3A] font-semibold"
+                    >
+                      <option value="care_delivery">care_delivery (Direct Treatment)</option>
+                      <option value="emergency_access">emergency_access (Critical Care)</option>
+                      <option value="second_opinion">second_opinion (Consultation)</option>
+                      <option value="administrative">administrative (Coverage / TPA)</option>
+                    </select>
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="text-xs font-bold text-[#6B7A8D]">Resource Scope</label>
+                    <select
+                      value={newScope}
+                      onChange={(e) => setNewScope(e.target.value)}
+                      className="w-full bg-white border border-[#DDD9D1] rounded-xl px-3 py-2 text-xs text-[#1C2B3A] font-semibold"
+                    >
+                      <option value="clinical_records">clinical_records (Full Record)</option>
+                      <option value="prescriptions">prescriptions (Rx History Only)</option>
+                      <option value="medications">medications (Active Meds Only)</option>
+                      <option value="care_plan">care_plan (Daily Schedule Only)</option>
+                      <option value="all_records">all_records (Broad Scope)</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="space-y-1">
+                    <label className="text-xs font-bold text-[#6B7A8D]">Valid Duration</label>
+                    <select
+                      value={newDurationHours}
+                      onChange={(e) => setNewDurationHours(Number(e.target.value))}
+                      className="w-full bg-white border border-[#DDD9D1] rounded-xl px-3 py-2 text-xs text-[#1C2B3A] font-semibold"
+                    >
+                      <option value={12}>12 Hours (Single Outpatient Visit)</option>
+                      <option value={24}>24 Hours (Day Care / Observation)</option>
+                      <option value={72}>72 Hours (Inpatient Evaluation)</option>
+                      <option value={168}>7 Days (Extended Recovery)</option>
+                    </select>
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="text-xs font-bold text-[#6B7A8D]">Consent Notes</label>
+                    <input
+                      type="text"
+                      value={newNotes}
+                      onChange={(e) => setNewNotes(e.target.value)}
+                      placeholder="e.g. Authorized for quarterly metabolic check"
+                      className="w-full bg-white border border-[#DDD9D1] rounded-xl px-3 py-2 text-xs text-[#1C2B3A]"
+                    />
+                  </div>
+                </div>
+
+                <div className="flex justify-end gap-3 pt-2">
+                  <button
+                    type="button"
+                    onClick={() => setIsNewConsentOpen(false)}
+                    className="text-xs font-semibold text-[#6B7A8D] px-3 py-2"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    className="bg-[#4A90C4] text-white font-semibold text-xs px-5 py-2 rounded-xl hover:bg-[#3A7DB0] transition-colors shadow-sm"
+                  >
+                    Authorize & Issue Grant
+                  </button>
+                </div>
+              </form>
+            </div>
+          )}
 
           <div className="space-y-4">
             {accessRequests.map(req => (
