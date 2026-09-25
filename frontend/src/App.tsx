@@ -99,7 +99,7 @@ export function App() {
       <main className="flex-1">
         {currentRole === 'landing' && (
           <>
-            <Hero onSelectRole={setCurrentRole} />
+            <Hero onSelectRole={setCurrentRole} onEmergencyClick={scrollToEmergency} />
             <TrustStrip />
             <RoleSection onSelectRole={setCurrentRole} />
             <HowItWorks />
