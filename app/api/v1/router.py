@@ -6,6 +6,7 @@ from app.api.v1.endpoints import (
     auth,
     clinical_history,
     consents,
+    documents,
     encounters,
     health,
     patients,
@@ -29,4 +30,8 @@ v1_router.include_router(clinical_history.router)
 v1_router.include_router(allergies.router)
 v1_router.include_router(vitals.router)
 v1_router.include_router(encounters.router)
+
+# Register Phase 5 medical document endpoints
+v1_router.include_router(documents.router)
+
 

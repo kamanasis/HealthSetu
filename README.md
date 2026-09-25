@@ -1,4 +1,4 @@
-# HealthSetu — Backend (Phases 1 – 4)
+# HealthSetu — Backend (Phases 1 – 5)
 
 HealthSetu is a unified healthcare interoperability, clinical coordination, and patient safety backend platform.
 
@@ -6,6 +6,7 @@ HealthSetu is a unified healthcare interoperability, clinical coordination, and 
 - **Phase 2**: Identity & Authentication layer (Argon2id, JWT, refresh rotation).
 - **Phase 3**: Authorization, Access Control & Consent engine (RBAC, ownership, consent validation).
 - **Phase 4**: Patient Clinical Record foundation (demographics, history, allergies, vitals, encounters, clinical summary).
+- **Phase 5**: Medical Document Processing pipeline (secure object storage, OCR extraction, background processing, idempotency, PHI protection).
 
 ---
 
@@ -437,7 +438,44 @@ Phase 4 implements the core clinical record entities and operations with strict 
 
 ---
 
-## 14. Phase Status Summary
+## 14. Phase 5 — Medical Document Processing
+
+Phase 5 establishes the secure medical document intake, object storage, and background OCR/text-extraction pipeline:
+
+### Critical Domain Boundary
+> **"Document extraction is not clinical verification."**  
+> **"Extracted content does not automatically update the patient's clinical record."**  
+> Extraction results represent machine-read document transcriptions for clinical review only. They never automatically create or mutate allergies, vitals, condition histories, or medications.
+
+### Document Lifecycle & Processing States
+- **Document Lifecycle**: `UPLOADING` → `UPLOADED` → `QUEUED` → `PROCESSING` → `EXTRACTED` (or `FAILED`) → `ARCHIVED`.
+- **Processing Job Status**: `PENDING`, `QUEUED`, `PROCESSING`, `COMPLETED`, `FAILED`.
+- **Separation of Concerns**: Document record existence is decoupled from job processing status; a failed processing job preserves the source document binary in storage.
+- **Idempotency**: Reprocessing an already extracted document safely returns the existing extraction without redundant execution.
+- **Controlled Retries**: Transient failures can be retried up to `MAX_PROCESSING_RETRIES` (default: 3).
+
+### Secure Storage & OCR Architecture
+- **Object Storage Abstraction**: `DocumentStorage` decouples business logic from storage backends (`LocalDocumentStorage`, S3, cloud blob stores).
+- **Private Storage**: Documents are stored under randomized, safe internal keys (`documents/{patient_id}/{doc_id}/{token}.ext`). No public bucket access is permitted.
+- **Controlled Download Access**: Short-lived, signed authorization tokens are issued strictly after evaluating patient relationship and consent.
+- **OCR & Extraction Abstraction**: `OCRProvider` and `DocumentProcessorRegistry` route document types to appropriate processors (`GenericDocumentProcessor`), recording extraction provenance (processor name, version, timestamp, page counts, confidence).
+- **Malware Scanning Hook**: Uploaded bytes pass through `DocumentSecurityScanner` (supporting EICAR signatures and enterprise antivirus hooks) prior to persistence.
+- **PHI Scrubbing**: Audit event metadata records only opaque identifiers and timestamps; document content, OCR transcriptions, and clinical texts are strictly excluded.
+
+### Document API Endpoints
+| Method | Path | Description | Access |
+|---|---|---|---|
+| `POST` | `/api/v1/patients/{id}/documents` | Multipart document upload + enqueue background OCR | Patient (self) / Doctor (treating) |
+| `GET` | `/api/v1/patients/{id}/documents` | List patient document metadata | Patient (self) / Doctor (treating) |
+| `GET` | `/api/v1/patients/{id}/documents/{doc_id}` | Retrieve document metadata & processing status | Patient (self) / Doctor (treating) |
+| `GET` | `/api/v1/patients/{id}/documents/{doc_id}/download` | Generate short-lived signed download authorization URL | Patient (self) / Doctor (treating) |
+| `POST` | `/api/v1/patients/{id}/documents/{doc_id}/retry` | Retry failed processing within retry limits | Authorized uploader / provider |
+| `GET` | `/api/v1/patients/{id}/documents/{doc_id}/extraction` | View structured OCR extraction result | Patient (self) / Doctor (treating) |
+| `POST` | `/api/v1/patients/{id}/documents/{doc_id}/archive` | Soft-delete / archive document | Patient (self) / Doctor (treating) |
+
+---
+
+## 15. Phase Status Summary
 
 | Phase | Component | Status |
 |---|---|---|
@@ -478,6 +516,17 @@ Phase 4 implements the core clinical record entities and operations with strict 
 | **Phase 4** | Clinical encounters (`/patients/{id}/encounters`) | ✅ IMPLEMENTED |
 | **Phase 4** | Clinical summary assembly (`/patients/{id}/clinical-summary`) | ✅ IMPLEMENTED |
 | **Phase 4** | PHI redaction & anti-enumeration 404 security | ✅ IMPLEMENTED |
+| **Phase 5** | Secure document upload & validation | ✅ IMPLEMENTED |
+| **Phase 5** | Object storage abstraction (`DocumentStorage`) | ✅ IMPLEMENTED |
+| **Phase 5** | OCR & text extraction provider (`OCRProvider`) | ✅ IMPLEMENTED |
+| **Phase 5** | Document processing worker & idempotency | ✅ IMPLEMENTED |
+| **Phase 5** | Structured extraction & provenance tracking | ✅ IMPLEMENTED |
+| **Phase 5** | Malware scanning hook (`DocumentSecurityScanner`) | ✅ IMPLEMENTED |
+| **Phase 5** | Short-lived signed download authorization | ✅ IMPLEMENTED |
+| **Phase 5** | Controlled retry & failure handling | ✅ IMPLEMENTED |
+| **Phase 5** | Document endpoints (`/patients/{id}/documents`) | ✅ IMPLEMENTED |
+| **Phase 5** | Clinical domain boundary enforcement | ✅ IMPLEMENTED |
 | **Database Team** | PostgreSQL schema & migrations | 🔲 PENDING CONTRACT |
 | **Future Phases** | Prescriptions, Triage, ABHA / FHIR Interop | ⏳ UPCOMING |
+
 

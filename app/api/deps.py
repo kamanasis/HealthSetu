@@ -7,11 +7,19 @@ from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from app.core.exceptions import ForbiddenException, UnauthorizedException
 from app.core.policies import Permission
 from app.core.security import decode_access_token
+from app.core.config import get_settings
+from app.integrations.ocr.base import OCRProvider
+from app.integrations.ocr.local_ocr import LocalOCRProvider
+from app.integrations.scanning.base import DocumentSecurityScanner
+from app.integrations.scanning.mock_scanner import MockSecurityScanner
+from app.integrations.storage.base import DocumentStorage
+from app.integrations.storage.local_storage import LocalDocumentStorage
 from app.repositories.allergy_repository import AllergyRepository
 from app.repositories.audit_repository import AuditRepository
 from app.repositories.auth_session_repository import AuthSessionRepository
 from app.repositories.clinical_history_repository import ClinicalHistoryRepository
 from app.repositories.consent_repository import ConsentRepository
+from app.repositories.document_repository import DocumentRepository
 from app.repositories.encounter_repository import EncounterRepository
 from app.repositories.patient_repository import PatientRepository
 from app.repositories.permission_repository import PermissionRepository
@@ -26,7 +34,11 @@ from app.services.auth_service import AuthService
 from app.services.authorization_service import AuthorizationService
 from app.services.clinical_record_service import ClinicalRecordService
 from app.services.consent_service import ConsentService
+from app.services.document_processing_service import DocumentProcessingService
+from app.services.document_service import DocumentService
 from app.services.patient_service import PatientService
+from app.services.processors.generic_processor import GenericDocumentProcessor
+from app.services.processors.registry import DocumentProcessorRegistry
 
 # ---------------------------------------------------------------------------
 # HTTP Bearer scheme
@@ -49,6 +61,13 @@ _global_history_repo = ClinicalHistoryRepository()
 _global_allergy_repo = AllergyRepository()
 _global_vitals_repo = VitalsRepository()
 _global_encounter_repo = EncounterRepository()
+_global_document_repo = DocumentRepository()
+_global_document_storage = LocalDocumentStorage()
+_global_security_scanner = MockSecurityScanner()
+_global_ocr_provider = LocalOCRProvider()
+_global_processor = GenericDocumentProcessor(_global_ocr_provider)
+_global_processor_registry = DocumentProcessorRegistry(_global_processor)
+
 
 
 # ---------------------------------------------------------------------------
@@ -111,6 +130,30 @@ def get_vitals_repository() -> VitalsRepository:
 def get_encounter_repository() -> EncounterRepository:
     """Dependency provider for EncounterRepository."""
     return _global_encounter_repo
+
+
+# ---------------------------------------------------------------------------
+# Phase 5: Repository & Integration providers
+# ---------------------------------------------------------------------------
+
+def get_document_repository() -> DocumentRepository:
+    """Dependency provider for DocumentRepository."""
+    return _global_document_repo
+
+
+def get_document_storage() -> DocumentStorage:
+    """Dependency provider for DocumentStorage."""
+    return _global_document_storage
+
+
+def get_security_scanner() -> DocumentSecurityScanner:
+    """Dependency provider for DocumentSecurityScanner."""
+    return _global_security_scanner
+
+
+def get_processor_registry() -> DocumentProcessorRegistry:
+    """Dependency provider for DocumentProcessorRegistry."""
+    return _global_processor_registry
 
 
 # ---------------------------------------------------------------------------
@@ -179,6 +222,42 @@ def get_clinical_record_service(
         allergy_repo=allergy_repo,
         vitals_repo=vitals_repo,
         encounter_repo=encounter_repo,
+    )
+
+
+# ---------------------------------------------------------------------------
+# Phase 5: Service providers
+# ---------------------------------------------------------------------------
+
+def get_document_service(
+    doc_repo: Annotated[DocumentRepository, Depends(get_document_repository)],
+    storage: Annotated[DocumentStorage, Depends(get_document_storage)],
+    scanner: Annotated[DocumentSecurityScanner, Depends(get_security_scanner)],
+) -> DocumentService:
+    """Dependency provider for DocumentService."""
+    settings = get_settings()
+    return DocumentService(
+        repository=doc_repo,
+        storage=storage,
+        scanner=scanner,
+        max_size_bytes=settings.max_document_size_bytes,
+    )
+
+
+def get_document_processing_service(
+    doc_repo: Annotated[DocumentRepository, Depends(get_document_repository)],
+    storage: Annotated[DocumentStorage, Depends(get_document_storage)],
+    registry: Annotated[DocumentProcessorRegistry, Depends(get_processor_registry)],
+    audit_service: Annotated[AuditService, Depends(get_audit_service)],
+) -> DocumentProcessingService:
+    """Dependency provider for DocumentProcessingService."""
+    settings = get_settings()
+    return DocumentProcessingService(
+        repository=doc_repo,
+        storage=storage,
+        registry=registry,
+        audit_service=audit_service,
+        max_retries=settings.MAX_PROCESSING_RETRIES,
     )
 
 

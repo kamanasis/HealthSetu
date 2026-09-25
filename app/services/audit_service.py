@@ -328,3 +328,174 @@ class AuditService(BaseService[AuditRepository]):
             resource_type="clinical_summary",
             resource_id=patient_id,
         )
+
+    # -----------------------------------------------------------------------
+    # Phase 5: Medical document audit helpers
+    # -----------------------------------------------------------------------
+
+    async def record_document_uploaded(
+        self,
+        actor_id: str,
+        patient_id: str,
+        document_id: str,
+        document_type: str,
+        filename: str,
+        size_bytes: int,
+    ) -> None:
+        """Audit: medical document uploaded."""
+        await self.record(
+            event_type=AuditEventType.DOCUMENT_UPLOADED,
+            outcome="ALLOW",
+            actor_id=actor_id,
+            action="document:upload",
+            resource_type="document",
+            resource_id=document_id,
+            metadata={
+                "patient_id": patient_id,
+                "document_type": document_type,
+                "filename": filename,
+                "size_bytes": size_bytes,
+            },
+        )
+
+    async def record_document_viewed(
+        self, actor_id: str, patient_id: str, document_id: str
+    ) -> None:
+        """Audit: document metadata viewed."""
+        await self.record(
+            event_type=AuditEventType.DOCUMENT_VIEWED,
+            outcome="ALLOW",
+            actor_id=actor_id,
+            action="document:read",
+            resource_type="document",
+            resource_id=document_id,
+            metadata={"patient_id": patient_id},
+        )
+
+    async def record_document_download_requested(
+        self, actor_id: str, patient_id: str, document_id: str
+    ) -> None:
+        """Audit: document download requested."""
+        await self.record(
+            event_type=AuditEventType.DOCUMENT_DOWNLOAD_REQUESTED,
+            outcome="ALLOW",
+            actor_id=actor_id,
+            action="document:download",
+            resource_type="document",
+            resource_id=document_id,
+            metadata={"patient_id": patient_id},
+        )
+
+    async def record_document_archived(
+        self, actor_id: str, patient_id: str, document_id: str
+    ) -> None:
+        """Audit: document archived."""
+        await self.record(
+            event_type=AuditEventType.DOCUMENT_ARCHIVED,
+            outcome="ALLOW",
+            actor_id=actor_id,
+            action="document:archive",
+            resource_type="document",
+            resource_id=document_id,
+            metadata={"patient_id": patient_id},
+        )
+
+    async def record_document_processing_started(
+        self, actor_id: str, document_id: str, job_id: str, processor: str
+    ) -> None:
+        """Audit: document processing started."""
+        await self.record(
+            event_type=AuditEventType.DOCUMENT_PROCESSING_STARTED,
+            outcome="ALLOW",
+            actor_id=actor_id,
+            action="document:process",
+            resource_type="document",
+            resource_id=document_id,
+            metadata={"job_id": job_id, "processor": processor},
+        )
+
+    async def record_document_processing_completed(
+        self,
+        actor_id: str,
+        document_id: str,
+        job_id: str,
+        processor: str,
+        extraction_id: str,
+    ) -> None:
+        """Audit: document processing successfully completed."""
+        await self.record(
+            event_type=AuditEventType.DOCUMENT_PROCESSING_COMPLETED,
+            outcome="ALLOW",
+            actor_id=actor_id,
+            action="document:process",
+            resource_type="document",
+            resource_id=document_id,
+            metadata={
+                "job_id": job_id,
+                "processor": processor,
+                "extraction_id": extraction_id,
+            },
+        )
+
+    async def record_document_processing_failed(
+        self,
+        actor_id: str,
+        document_id: str,
+        job_id: str,
+        error_code: str,
+        retry_count: int,
+    ) -> None:
+        """Audit: document processing failed."""
+        await self.record(
+            event_type=AuditEventType.DOCUMENT_PROCESSING_FAILED,
+            outcome="DENY",
+            actor_id=actor_id,
+            action="document:process",
+            resource_type="document",
+            resource_id=document_id,
+            reason_code=error_code,
+            metadata={"job_id": job_id, "retry_count": retry_count},
+        )
+
+    async def record_document_processing_retried(
+        self, actor_id: str, document_id: str, job_id: str, attempt: int
+    ) -> None:
+        """Audit: document processing retry initiated."""
+        await self.record(
+            event_type=AuditEventType.DOCUMENT_PROCESSING_RETRIED,
+            outcome="ALLOW",
+            actor_id=actor_id,
+            action="document:retry",
+            resource_type="document",
+            resource_id=document_id,
+            metadata={"job_id": job_id, "attempt": attempt},
+        )
+
+    async def record_document_extraction_created(
+        self, actor_id: str, document_id: str, extraction_id: str, processor: str
+    ) -> None:
+        """Audit: document extraction result recorded."""
+        await self.record(
+            event_type=AuditEventType.DOCUMENT_EXTRACTION_CREATED,
+            outcome="ALLOW",
+            actor_id=actor_id,
+            action="document:extraction_create",
+            resource_type="document_extraction",
+            resource_id=extraction_id,
+            metadata={"document_id": document_id, "processor": processor},
+        )
+
+    async def record_document_extraction_viewed(
+        self, actor_id: str, patient_id: str, document_id: str, extraction_id: str
+    ) -> None:
+        """Audit: extraction result viewed."""
+        await self.record(
+            event_type=AuditEventType.DOCUMENT_EXTRACTION_VIEWED,
+            outcome="ALLOW",
+            actor_id=actor_id,
+            action="document_extraction:read",
+            resource_type="document_extraction",
+            resource_id=extraction_id,
+            metadata={"patient_id": patient_id, "document_id": document_id},
+        )
+

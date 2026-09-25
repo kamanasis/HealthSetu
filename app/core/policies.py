@@ -63,6 +63,13 @@ class Permission(str, Enum):
     # ---- Clinical summary (Phase 4) ----
     CLINICAL_SUMMARY_READ = "clinical_summary:read"
 
+    # ---- Medical Documents (Phase 5) ----
+    DOCUMENT_READ = "document:read"
+    DOCUMENT_UPLOAD = "document:upload"
+    DOCUMENT_PROCESS = "document:process"
+    DOCUMENT_ARCHIVE = "document:archive"
+    DOCUMENT_EXTRACTION_READ = "document_extraction:read"
+
     # ---- Prescriptions ----
     PRESCRIPTION_READ = "prescription:read"
     PRESCRIPTION_CREATE = "prescription:create"
@@ -111,6 +118,11 @@ ROLE_PERMISSIONS: dict[str, FrozenSet[Permission]] = {
         Permission.VITAL_CREATE,              # patient-reported vitals
         Permission.ENCOUNTER_READ,
         Permission.CLINICAL_SUMMARY_READ,
+        Permission.DOCUMENT_READ,             # own documents
+        Permission.DOCUMENT_UPLOAD,           # can upload own documents
+        Permission.DOCUMENT_PROCESS,          # can retry own processing
+        Permission.DOCUMENT_ARCHIVE,          # can archive own documents
+        Permission.DOCUMENT_EXTRACTION_READ,  # can read extractions from own documents
         Permission.PRESCRIPTION_READ,
         Permission.MEDICATION_READ,
         Permission.CARE_PLAN_READ,
@@ -134,6 +146,11 @@ ROLE_PERMISSIONS: dict[str, FrozenSet[Permission]] = {
         Permission.ENCOUNTER_READ,
         Permission.ENCOUNTER_CREATE,
         Permission.CLINICAL_SUMMARY_READ,
+        Permission.DOCUMENT_READ,             # gated by relationship + consent
+        Permission.DOCUMENT_UPLOAD,           # clinician document upload
+        Permission.DOCUMENT_PROCESS,          # retry / trigger processing
+        Permission.DOCUMENT_ARCHIVE,
+        Permission.DOCUMENT_EXTRACTION_READ,  # view extraction results
         Permission.PRESCRIPTION_READ,
         Permission.PRESCRIPTION_CREATE,
         Permission.MEDICATION_READ,
@@ -181,6 +198,13 @@ ACTION_PERMISSION_MAP: dict[tuple[str, str], Permission] = {
     ("encounter", "create"):              Permission.ENCOUNTER_CREATE,
     # Clinical summary (Phase 4)
     ("clinical_summary", "read"):         Permission.CLINICAL_SUMMARY_READ,
+    # Medical Documents (Phase 5)
+    ("document", "read"):                 Permission.DOCUMENT_READ,
+    ("document", "upload"):               Permission.DOCUMENT_UPLOAD,
+    ("document", "download"):             Permission.DOCUMENT_READ,
+    ("document", "retry"):                Permission.DOCUMENT_PROCESS,
+    ("document", "archive"):              Permission.DOCUMENT_ARCHIVE,
+    ("document_extraction", "read"):      Permission.DOCUMENT_EXTRACTION_READ,
     # Prescriptions / medications / care plans
     ("prescription", "read"):             Permission.PRESCRIPTION_READ,
     ("prescription", "create"):           Permission.PRESCRIPTION_CREATE,

@@ -1,4 +1,6 @@
-"""Optical Character Recognition (OCR) integration placeholder.
+"""OCR integration package."""
 
-Scheduled for implementation in later phases.
-"""
+from app.integrations.ocr.base import OCRExtractionData, OCRProvider
+from app.integrations.ocr.local_ocr import LocalOCRProvider
+
+__all__ = ["OCRExtractionData", "OCRProvider", "LocalOCRProvider"]

@@ -93,6 +93,49 @@ class Settings(BaseSettings):
         description="Flag enabling local/development authentication rate limiting hook",
     )
 
+    # Document Processing Configuration (Phase 5)
+    MAX_DOCUMENT_SIZE_MB: int = Field(
+        default=20,
+        description="Maximum allowed document upload size in megabytes",
+    )
+    MAX_DOCUMENT_PAGES: int = Field(
+        default=50,
+        description="Maximum allowed document page count for processing",
+    )
+    DOCUMENT_STORAGE_PROVIDER: str = Field(
+        default="local",
+        description="Object storage provider (local, s3, etc.)",
+    )
+    DOCUMENT_STORAGE_PATH: str = Field(
+        default="data/documents",
+        description="Filesystem root path for local document storage provider",
+    )
+    OCR_PROVIDER: str = Field(
+        default="local",
+        description="OCR provider implementation (local, cloud, mock)",
+    )
+    DOCUMENT_PROCESSING_ENABLED: bool = Field(
+        default=True,
+        description="Flag enabling background document processing pipeline",
+    )
+    MAX_PROCESSING_RETRIES: int = Field(
+        default=3,
+        description="Maximum automatic retry attempts for transient processing failures",
+    )
+    MALWARE_SCAN_ENABLED: bool = Field(
+        default=False,
+        description="Flag enabling malware security scanning hook",
+    )
+    OCR_TIMEOUT_SECONDS: int = Field(
+        default=120,
+        description="Maximum execution timeout for OCR extraction operations",
+    )
+
+    @property
+    def max_document_size_bytes(self) -> int:
+        """Maximum allowed document upload size in bytes."""
+        return self.MAX_DOCUMENT_SIZE_MB * 1024 * 1024
+
     @property
     def is_production(self) -> bool:
         """Check if environment is production."""

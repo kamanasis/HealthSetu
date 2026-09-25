@@ -22,6 +22,8 @@ from app.api.deps import (
     _global_session_repo,
     _global_user_repo,
     _global_vitals_repo,
+    _global_document_repo,
+    _global_document_storage,
 )
 from app.core.config import get_settings
 from app.core.security import create_access_token, hash_password
@@ -52,6 +54,9 @@ def clean_state():
     _global_allergy_repo._records.clear()
     _global_vitals_repo._records.clear()
     _global_encounter_repo._records.clear()
+    # Phase 5
+    _global_document_repo.clear()
+    _global_document_storage.clear()
     yield
     get_settings.cache_clear()
     _global_user_repo._local_users.clear()
@@ -65,6 +70,8 @@ def clean_state():
     _global_allergy_repo._records.clear()
     _global_vitals_repo._records.clear()
     _global_encounter_repo._records.clear()
+    _global_document_repo.clear()
+    _global_document_storage.clear()
 
 
 
