@@ -526,7 +526,65 @@ Phase 5 establishes the secure medical document intake, object storage, and back
 | **Phase 5** | Controlled retry & failure handling | ✅ IMPLEMENTED |
 | **Phase 5** | Document endpoints (`/patients/{id}/documents`) | ✅ IMPLEMENTED |
 | **Phase 5** | Clinical domain boundary enforcement | ✅ IMPLEMENTED |
+| **Phase 6** | Prescription domain service & items (`/patients/{id}/prescriptions`) | ✅ IMPLEMENTED |
+| **Phase 6** | Phase 5 extraction ingestion & mapper | ✅ IMPLEMENTED |
+| **Phase 6** | Raw medication value preservation | ✅ IMPLEMENTED |
+| **Phase 6** | Terminology provider abstraction (`MedicationTerminologyProvider`) | ✅ IMPLEMENTED |
+| **Phase 6** | Local mock terminology provider & RxNorm adapter | ✅ IMPLEMENTED |
+| **Phase 6** | Strength, dosage-form, and route data normalization | ✅ IMPLEMENTED |
+| **Phase 6** | Disambiguation & ambiguity handling (no guessing) | ✅ IMPLEMENTED |
+| **Phase 6** | Patient longitudinal medication records (`/patients/{id}/medications`) | ✅ IMPLEMENTED |
+| **Phase 6** | Prescription vs active medication separation | ✅ IMPLEMENTED |
+| **Phase 6** | Provenance chain tracking across documents & prescriptions | ✅ IMPLEMENTED |
+| **Phase 6** | Human review & correction workflow with audit history | ✅ IMPLEMENTED |
+| **Phase 6** | Data-level duplicate detection without clinical claims | ✅ IMPLEMENTED |
 | **Database Team** | PostgreSQL schema & migrations | 🔲 PENDING CONTRACT |
-| **Future Phases** | Prescriptions, Triage, ABHA / FHIR Interop | ⏳ UPCOMING |
+| **Phase 7** | Clinical Medication Safety (Interactions, Allergies, Contraindications) | ⏳ UPCOMING |
+
+---
+
+## Phase 6 — Prescription & Medication System Architecture
+
+### Pipeline
+```
+Medical Document (Phase 5)
+      ↓
+Document Extraction (Phase 5)
+      ↓
+Prescription Extraction Mapper
+      ↓
+Prescription Entity + Prescription Items
+      ↓
+Raw Medication Information Preservation
+      ↓
+Medication Terminology Normalization (RxNorm / Local Mock)
+      ↓
+Patient Medication Record (Longitudinal History & Provenance)
+```
+
+### Critical Clinical Safety Boundary
+> [!IMPORTANT]
+> **Medication normalization does NOT constitute medication safety validation.**
+> Normalization maps raw medication names to canonical concepts (e.g. RxCUI). It does **not** evaluate:
+> - Drug-drug interactions
+> - Drug-allergy conflicts
+> - Contraindications
+> - Clinical dosing appropriateness or safety
+> - Duplicate therapy clinical decisions
+> Those safety evaluations belong to **Phase 7 — Medication Safety**.
+
+### Phase 6 API Endpoints
+
+| Method | Path | Auth / Scope | Description |
+|---|---|---|---|
+| `POST` | `/api/v1/patients/{id}/prescriptions` | `PRESCRIPTION_CREATE` | Create prescription with items (optionally sourced from Phase 5 extraction) |
+| `GET` | `/api/v1/patients/{id}/prescriptions` | `PRESCRIPTION_READ` | List patient prescriptions with pagination |
+| `GET` | `/api/v1/patients/{id}/prescriptions/{rx_id}` | `PRESCRIPTION_READ` | Retrieve prescription metadata, items, and normalized concepts |
+| `POST` | `/api/v1/patients/{id}/prescriptions/{rx_id}/normalize` | `PRESCRIPTION_NORMALIZE` | Trigger terminology normalization across prescription items |
+| `GET` | `/api/v1/patients/{id}/prescriptions/{rx_id}/items/{item_id}` | `PRESCRIPTION_READ` | Retrieve details for a single prescription item |
+| `GET` | `/api/v1/patients/{id}/medications` | `MEDICATION_READ` | List patient medications with pagination, status, and source filters |
+| `GET` | `/api/v1/patients/{id}/medications/{med_id}` | `MEDICATION_READ` | Retrieve patient medication record with full provenance chain |
+| `PATCH` | `/api/v1/patients/{id}/medications/{med_id}/status` | `MEDICATION_UPDATE` | Update status (PRESCRIBED → ACTIVE / INACTIVE / HISTORICAL) |
+| `PATCH` | `/api/v1/patients/{id}/medications/{med_id}/correct` | `MEDICATION_UPDATE` | Correct raw extracted data, preserving original values and re-normalizing |
 
 

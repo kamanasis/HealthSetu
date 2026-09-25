@@ -39,6 +39,15 @@ from app.services.document_service import DocumentService
 from app.services.patient_service import PatientService
 from app.services.processors.generic_processor import GenericDocumentProcessor
 from app.services.processors.registry import DocumentProcessorRegistry
+from app.repositories.prescription_repository import PrescriptionRepository
+from app.repositories.medication_repository import MedicationRepository
+from app.repositories.patient_medication_repository import PatientMedicationRepository
+from app.integrations.medication.base import MedicationTerminologyProvider
+from app.integrations.medication.providers.local import LocalMedicationProvider
+from app.integrations.medication.providers.rxnorm import RxNormProvider
+from app.services.medication_normalization_service import MedicationNormalizationService
+from app.services.prescription_service import PrescriptionService
+from app.services.medication_service import MedicationService
 
 # ---------------------------------------------------------------------------
 # HTTP Bearer scheme
@@ -67,6 +76,19 @@ _global_security_scanner = MockSecurityScanner()
 _global_ocr_provider = LocalOCRProvider()
 _global_processor = GenericDocumentProcessor(_global_ocr_provider)
 _global_processor_registry = DocumentProcessorRegistry(_global_processor)
+
+# ---------------------------------------------------------------------------
+# Phase 6: Global default repositories & providers
+# ---------------------------------------------------------------------------
+_global_prescription_repo = PrescriptionRepository()
+_global_medication_repo = MedicationRepository()
+_global_patient_medication_repo = PatientMedicationRepository()
+_global_medication_terminology_provider = LocalMedicationProvider()
+_global_authz_service = AuthorizationService(
+    permission_repository=_global_permission_repo,
+    consent_service=ConsentService(consent_repository=_global_consent_repo),
+    audit_service=AuditService(audit_repository=_global_audit_repo),
+)
 
 
 
@@ -157,6 +179,38 @@ def get_processor_registry() -> DocumentProcessorRegistry:
 
 
 # ---------------------------------------------------------------------------
+# Phase 6: Repository & Integration providers
+# ---------------------------------------------------------------------------
+
+def get_prescription_repository() -> PrescriptionRepository:
+    """Dependency provider for PrescriptionRepository."""
+    return _global_prescription_repo
+
+
+def get_medication_repository() -> MedicationRepository:
+    """Dependency provider for MedicationRepository."""
+    return _global_medication_repo
+
+
+def get_patient_medication_repository() -> PatientMedicationRepository:
+    """Dependency provider for PatientMedicationRepository."""
+    return _global_patient_medication_repo
+
+
+def get_medication_terminology_provider() -> MedicationTerminologyProvider:
+    """Dependency provider for MedicationTerminologyProvider."""
+    settings = get_settings()
+    if settings.MEDICATION_TERMINOLOGY_PROVIDER.lower() == "rxnorm":
+        return RxNormProvider(
+            base_url=settings.MEDICATION_TERMINOLOGY_BASE_URL or None,
+            api_key=settings.MEDICATION_TERMINOLOGY_API_KEY or None,
+            timeout_seconds=settings.MEDICATION_TERMINOLOGY_TIMEOUT_SECONDS,
+            max_retries=settings.MEDICATION_NORMALIZATION_MAX_RETRIES,
+        )
+    return _global_medication_terminology_provider
+
+
+# ---------------------------------------------------------------------------
 # Phase 1/2: Service providers
 # ---------------------------------------------------------------------------
 
@@ -187,16 +241,12 @@ def get_consent_service(
 
 
 def get_authorization_service(
-    permission_repo: Annotated[PermissionRepository, Depends(get_permission_repository)],
-    consent_service: Annotated[ConsentService, Depends(get_consent_service)],
-    audit_service: Annotated[AuditService, Depends(get_audit_service)],
+    permission_repo: Annotated[PermissionRepository, Depends(get_permission_repository)] = None,
+    consent_service: Annotated[ConsentService, Depends(get_consent_service)] = None,
+    audit_service: Annotated[AuditService, Depends(get_audit_service)] = None,
 ) -> AuthorizationService:
     """Dependency provider for AuthorizationService."""
-    return AuthorizationService(
-        permission_repository=permission_repo,
-        consent_service=consent_service,
-        audit_service=audit_service,
-    )
+    return _global_authz_service
 
 
 # ---------------------------------------------------------------------------
@@ -258,6 +308,57 @@ def get_document_processing_service(
         registry=registry,
         audit_service=audit_service,
         max_retries=settings.MAX_PROCESSING_RETRIES,
+    )
+
+
+# ---------------------------------------------------------------------------
+# Phase 6: Service providers
+# ---------------------------------------------------------------------------
+
+def get_medication_normalization_service(
+    provider: Annotated[MedicationTerminologyProvider, Depends(get_medication_terminology_provider)],
+    medication_repo: Annotated[MedicationRepository, Depends(get_medication_repository)],
+    patient_medication_repo: Annotated[PatientMedicationRepository, Depends(get_patient_medication_repository)],
+    prescription_repo: Annotated[PrescriptionRepository, Depends(get_prescription_repository)],
+) -> MedicationNormalizationService:
+    """Dependency provider for MedicationNormalizationService."""
+    return MedicationNormalizationService(
+        provider=provider,
+        medication_repo=medication_repo,
+        patient_medication_repo=patient_medication_repo,
+        prescription_repo=prescription_repo,
+    )
+
+
+def get_prescription_service(
+    prescription_repo: Annotated[PrescriptionRepository, Depends(get_prescription_repository)],
+    medication_repo: Annotated[MedicationRepository, Depends(get_medication_repository)],
+    document_repo: Annotated[DocumentRepository, Depends(get_document_repository)],
+    normalization_service: Annotated[MedicationNormalizationService, Depends(get_medication_normalization_service)],
+    audit_service: Annotated[AuditService, Depends(get_audit_service)],
+) -> PrescriptionService:
+    """Dependency provider for PrescriptionService."""
+    return PrescriptionService(
+        prescription_repo=prescription_repo,
+        medication_repo=medication_repo,
+        document_repo=document_repo,
+        normalization_service=normalization_service,
+        audit_service=audit_service,
+    )
+
+
+def get_medication_service(
+    patient_medication_repo: Annotated[PatientMedicationRepository, Depends(get_patient_medication_repository)],
+    medication_repo: Annotated[MedicationRepository, Depends(get_medication_repository)],
+    provider: Annotated[MedicationTerminologyProvider, Depends(get_medication_terminology_provider)],
+    audit_service: Annotated[AuditService, Depends(get_audit_service)],
+) -> MedicationService:
+    """Dependency provider for MedicationService."""
+    return MedicationService(
+        patient_medication_repo=patient_medication_repo,
+        medication_repo=medication_repo,
+        provider=provider,
+        audit_service=audit_service,
     )
 
 
@@ -420,6 +521,7 @@ async def verify_patient_access(
     action: str,
     resource_type: str,
     resource_id: str | None = None,
+    consent_scope: str = "clinical_records",
 ) -> PatientResponse:
     """Evaluate patient access for current user.
 
@@ -459,7 +561,7 @@ async def verify_patient_access(
             ),
             require_relationship=True,
             consent_purpose="care_delivery",
-            consent_scope="clinical_records",
+            consent_scope=consent_scope,
         )
         return patient
 

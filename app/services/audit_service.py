@@ -499,3 +499,162 @@ class AuditService(BaseService[AuditRepository]):
             metadata={"patient_id": patient_id, "document_id": document_id},
         )
 
+    # -----------------------------------------------------------------------
+    # Phase 6: Prescription & Medication Audit Helpers
+    # -----------------------------------------------------------------------
+
+    async def record_prescription_created(
+        self, actor_id: str, patient_id: str, prescription_id: str, source: str
+    ) -> None:
+        """Audit: prescription record created."""
+        await self.record(
+            event_type=AuditEventType.PRESCRIPTION_CREATED,
+            outcome="ALLOW",
+            actor_id=actor_id,
+            action="prescription:create",
+            resource_type="prescription",
+            resource_id=prescription_id,
+            metadata={"patient_id": patient_id, "source": source},
+        )
+
+    async def record_prescription_viewed(
+        self, actor_id: str, patient_id: str, prescription_id: str
+    ) -> None:
+        """Audit: prescription viewed."""
+        await self.record(
+            event_type=AuditEventType.PRESCRIPTION_VIEWED,
+            outcome="ALLOW",
+            actor_id=actor_id,
+            action="prescription:read",
+            resource_type="prescription",
+            resource_id=prescription_id,
+            metadata={"patient_id": patient_id},
+        )
+
+    async def record_prescription_updated(
+        self, actor_id: str, patient_id: str, prescription_id: str
+    ) -> None:
+        """Audit: prescription updated."""
+        await self.record(
+            event_type=AuditEventType.PRESCRIPTION_UPDATED,
+            outcome="ALLOW",
+            actor_id=actor_id,
+            action="prescription:update",
+            resource_type="prescription",
+            resource_id=prescription_id,
+            metadata={"patient_id": patient_id},
+        )
+
+    async def record_prescription_normalization_started(
+        self, actor_id: str, patient_id: str, prescription_id: str
+    ) -> None:
+        """Audit: prescription normalization started."""
+        await self.record(
+            event_type=AuditEventType.PRESCRIPTION_NORMALIZATION_STARTED,
+            outcome="ALLOW",
+            actor_id=actor_id,
+            action="prescription:normalize",
+            resource_type="prescription",
+            resource_id=prescription_id,
+            metadata={"patient_id": patient_id},
+        )
+
+    async def record_prescription_normalization_completed(
+        self, actor_id: str, patient_id: str, prescription_id: str, items_count: int
+    ) -> None:
+        """Audit: prescription normalization completed."""
+        await self.record(
+            event_type=AuditEventType.PRESCRIPTION_NORMALIZATION_COMPLETED,
+            outcome="ALLOW",
+            actor_id=actor_id,
+            action="prescription:normalize",
+            resource_type="prescription",
+            resource_id=prescription_id,
+            metadata={"patient_id": patient_id, "items_count": items_count},
+        )
+
+    async def record_prescription_normalization_failed(
+        self, actor_id: str, patient_id: str, prescription_id: str, reason_code: str
+    ) -> None:
+        """Audit: prescription normalization failed."""
+        await self.record(
+            event_type=AuditEventType.PRESCRIPTION_NORMALIZATION_FAILED,
+            outcome="DENY",
+            actor_id=actor_id,
+            action="prescription:normalize",
+            resource_type="prescription",
+            resource_id=prescription_id,
+            reason_code=reason_code,
+            metadata={"patient_id": patient_id},
+        )
+
+    async def record_medication_created(
+        self, actor_id: str, patient_id: str, medication_id: str, source: str
+    ) -> None:
+        """Audit: patient medication record created."""
+        await self.record(
+            event_type=AuditEventType.MEDICATION_CREATED,
+            outcome="ALLOW",
+            actor_id=actor_id,
+            action="medication:create",
+            resource_type="medication",
+            resource_id=medication_id,
+            metadata={"patient_id": patient_id, "source": source},
+        )
+
+    async def record_medication_viewed(
+        self, actor_id: str, patient_id: str, medication_id: str
+    ) -> None:
+        """Audit: patient medication viewed."""
+        await self.record(
+            event_type=AuditEventType.MEDICATION_VIEWED,
+            outcome="ALLOW",
+            actor_id=actor_id,
+            action="medication:read",
+            resource_type="medication",
+            resource_id=medication_id,
+            metadata={"patient_id": patient_id},
+        )
+
+    async def record_medication_updated(
+        self, actor_id: str, patient_id: str, medication_id: str
+    ) -> None:
+        """Audit: patient medication updated."""
+        await self.record(
+            event_type=AuditEventType.MEDICATION_UPDATED,
+            outcome="ALLOW",
+            actor_id=actor_id,
+            action="medication:update",
+            resource_type="medication",
+            resource_id=medication_id,
+            metadata={"patient_id": patient_id},
+        )
+
+    async def record_medication_status_changed(
+        self, actor_id: str, patient_id: str, medication_id: str, old_status: str, new_status: str
+    ) -> None:
+        """Audit: patient medication status changed."""
+        await self.record(
+            event_type=AuditEventType.MEDICATION_STATUS_CHANGED,
+            outcome="ALLOW",
+            actor_id=actor_id,
+            action="medication:status",
+            resource_type="medication",
+            resource_id=medication_id,
+            metadata={"patient_id": patient_id, "old_status": old_status, "new_status": new_status},
+        )
+
+    async def record_medication_corrected(
+        self, actor_id: str, patient_id: str, medication_id: str
+    ) -> None:
+        """Audit: patient medication corrected."""
+        await self.record(
+            event_type=AuditEventType.MEDICATION_CORRECTED,
+            outcome="ALLOW",
+            actor_id=actor_id,
+            action="medication:correct",
+            resource_type="medication",
+            resource_id=medication_id,
+            metadata={"patient_id": patient_id},
+        )
+

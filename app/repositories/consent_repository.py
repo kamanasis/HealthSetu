@@ -173,7 +173,7 @@ class ConsentRepository(BaseRepository[Any]):
                 record.patient_id == patient_id
                 and record.grantee_id == grantee_id
                 and record.purpose == purpose
-                and record.scope == scope
+                and (record.scope == scope or record.scope == "all_records")
                 and record.status == ConsentStatus.ACTIVE
                 and record.effective_from <= now
                 and (record.expires_at is None or record.expires_at > now)

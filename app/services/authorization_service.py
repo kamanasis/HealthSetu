@@ -74,6 +74,19 @@ class AuthorizationService(BaseService[PermissionRepository]):
         self.permission_repo = permission_repository
         self.consent_service = consent_service
         self.audit_service = audit_service
+        self._relationships: set[tuple[str, str]] = set()
+
+    def add_relationship(self, provider_id: str, patient_id: str) -> None:
+        """Establish an active provider-patient relationship (in-memory until DB team delivers table)."""
+        self._relationships.add((provider_id, patient_id))
+
+    def remove_relationship(self, provider_id: str, patient_id: str) -> None:
+        """Remove an active relationship."""
+        self._relationships.discard((provider_id, patient_id))
+
+    def clear_relationships(self) -> None:
+        """Clear in-memory relationships for testing teardown."""
+        self._relationships.clear()
 
     # -----------------------------------------------------------------------
     # 1. Permission Check
@@ -153,13 +166,8 @@ class AuthorizationService(BaseService[PermissionRepository]):
             # Self-access — always counts as a valid "relationship"
             return AuthorizationDecision.allow()
 
-        # NOTE FOR DATABASE TEAM: replace this stub with real relationship lookup
-        # relationship = await self.relationship_repo.get_active_relationship(
-        #     provider_id=requester_id,
-        #     patient_id=patient_id,
-        # )
-        # if relationship:
-        #     return AuthorizationDecision.allow()
+        if (requester_id, patient_id) in self._relationships:
+            return AuthorizationDecision.allow()
 
         logger.info(
             "Relationship check: no active relationship found (DB dependency pending)",

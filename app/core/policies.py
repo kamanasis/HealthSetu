@@ -73,6 +73,7 @@ class Permission(str, Enum):
     # ---- Prescriptions ----
     PRESCRIPTION_READ = "prescription:read"
     PRESCRIPTION_CREATE = "prescription:create"
+    PRESCRIPTION_NORMALIZE = "prescription:normalize"
 
     # ---- Medications ----
     MEDICATION_READ = "medication:read"
@@ -125,6 +126,7 @@ ROLE_PERMISSIONS: dict[str, FrozenSet[Permission]] = {
         Permission.DOCUMENT_EXTRACTION_READ,  # can read extractions from own documents
         Permission.PRESCRIPTION_READ,
         Permission.MEDICATION_READ,
+        Permission.MEDICATION_UPDATE,
         Permission.CARE_PLAN_READ,
         Permission.CONSENT_CREATE,
         Permission.CONSENT_READ,
@@ -153,6 +155,7 @@ ROLE_PERMISSIONS: dict[str, FrozenSet[Permission]] = {
         Permission.DOCUMENT_EXTRACTION_READ,  # view extraction results
         Permission.PRESCRIPTION_READ,
         Permission.PRESCRIPTION_CREATE,
+        Permission.PRESCRIPTION_NORMALIZE,
         Permission.MEDICATION_READ,
         Permission.MEDICATION_UPDATE,
         Permission.CARE_PLAN_READ,
@@ -208,8 +211,12 @@ ACTION_PERMISSION_MAP: dict[tuple[str, str], Permission] = {
     # Prescriptions / medications / care plans
     ("prescription", "read"):             Permission.PRESCRIPTION_READ,
     ("prescription", "create"):           Permission.PRESCRIPTION_CREATE,
+    ("prescription", "normalize"):        Permission.PRESCRIPTION_NORMALIZE,
+    ("prescription", "item_read"):        Permission.PRESCRIPTION_READ,
     ("medication", "read"):               Permission.MEDICATION_READ,
     ("medication", "update"):             Permission.MEDICATION_UPDATE,
+    ("medication", "status"):             Permission.MEDICATION_UPDATE,
+    ("medication", "correct"):            Permission.MEDICATION_UPDATE,
     ("care_plan", "read"):                Permission.CARE_PLAN_READ,
     ("care_plan", "update"):              Permission.CARE_PLAN_UPDATE,
     # Consent

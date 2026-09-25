@@ -24,6 +24,10 @@ from app.api.deps import (
     _global_vitals_repo,
     _global_document_repo,
     _global_document_storage,
+    _global_prescription_repo,
+    _global_medication_repo,
+    _global_patient_medication_repo,
+    _global_authz_service,
 )
 from app.core.config import get_settings
 from app.core.security import create_access_token, hash_password
@@ -47,6 +51,7 @@ def clean_state():
     # Phase 3
     _global_consent_repo._consents.clear()
     _global_audit_repo._events.clear()
+    _global_authz_service.clear_relationships()
     # Phase 4
     _global_patient_repo._patients.clear()
     _global_patient_repo._user_to_patient.clear()
@@ -57,6 +62,10 @@ def clean_state():
     # Phase 5
     _global_document_repo.clear()
     _global_document_storage.clear()
+    # Phase 6
+    _global_prescription_repo.clear()
+    _global_medication_repo.clear()
+    _global_patient_medication_repo.clear()
     yield
     get_settings.cache_clear()
     _global_user_repo._local_users.clear()
@@ -64,6 +73,7 @@ def clean_state():
     _global_session_repo._sessions_by_hash.clear()
     _global_consent_repo._consents.clear()
     _global_audit_repo._events.clear()
+    _global_authz_service.clear_relationships()
     _global_patient_repo._patients.clear()
     _global_patient_repo._user_to_patient.clear()
     _global_history_repo._records.clear()
@@ -72,6 +82,9 @@ def clean_state():
     _global_encounter_repo._records.clear()
     _global_document_repo.clear()
     _global_document_storage.clear()
+    _global_prescription_repo.clear()
+    _global_medication_repo.clear()
+    _global_patient_medication_repo.clear()
 
 
 

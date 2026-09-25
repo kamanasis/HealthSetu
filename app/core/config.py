@@ -131,6 +131,32 @@ class Settings(BaseSettings):
         description="Maximum execution timeout for OCR extraction operations",
     )
 
+    # Medication & Prescription Configuration (Phase 6)
+    MEDICATION_TERMINOLOGY_PROVIDER: str = Field(
+        default="local",
+        description="Medication terminology provider ('local', 'rxnorm', 'licensed_provider')",
+    )
+    MEDICATION_TERMINOLOGY_BASE_URL: str = Field(
+        default="",
+        description="Base URL for external terminology provider API",
+    )
+    MEDICATION_TERMINOLOGY_API_KEY: str = Field(
+        default="",
+        description="Optional API key for external terminology provider",
+    )
+    MEDICATION_TERMINOLOGY_TIMEOUT_SECONDS: int = Field(
+        default=10,
+        description="Maximum execution timeout for terminology normalization calls",
+    )
+    MEDICATION_NORMALIZATION_ENABLED: bool = Field(
+        default=True,
+        description="Flag enabling medication normalization pipeline",
+    )
+    MEDICATION_NORMALIZATION_MAX_RETRIES: int = Field(
+        default=2,
+        description="Maximum retries for transient terminology provider failures",
+    )
+
     @property
     def max_document_size_bytes(self) -> int:
         """Maximum allowed document upload size in bytes."""
