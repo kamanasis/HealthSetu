@@ -1,7 +1,7 @@
 """Pytest configuration, fixtures, and test testbed."""
 
-import os
 from collections.abc import AsyncGenerator
+import os
 import pytest
 from httpx import ASGITransport, AsyncClient
 
@@ -9,16 +9,77 @@ from httpx import ASGITransport, AsyncClient
 os.environ["APP_ENV"] = "testing"
 os.environ["DATABASE_URL"] = ""
 
+from app.api.deps import _global_session_repo, _global_user_repo
 from app.core.config import get_settings
+from app.core.security import hash_password
 from app.main import create_app
+from app.repositories.user_repository import UserRecord
+from app.schemas.auth import AccountStatus, UserRole
+
+TEST_PASSWORD = "StrongP@ssw0rd123!"
 
 
 @pytest.fixture(autouse=True)
-def clean_settings():
-    """Ensure settings cache is fresh for tests."""
+def clean_state():
+    """Ensure settings cache and test repositories are fresh for each test."""
     get_settings.cache_clear()
+    _global_user_repo._local_users.clear()
+    _global_session_repo._sessions_by_id.clear()
+    _global_session_repo._sessions_by_hash.clear()
     yield
     get_settings.cache_clear()
+    _global_user_repo._local_users.clear()
+    _global_session_repo._sessions_by_id.clear()
+    _global_session_repo._sessions_by_hash.clear()
+
+
+@pytest.fixture
+def seeded_users() -> dict[str, UserRecord]:
+    """Seed test users into the user repository with different roles and statuses."""
+    hashed_pwd = hash_password(TEST_PASSWORD)
+
+    users = {
+        "patient": UserRecord(
+            id="usr-patient-001",
+            identifier="patient@healthsetu.org",
+            password_hash=hashed_pwd,
+            role=UserRole.PATIENT,
+            status=AccountStatus.ACTIVE,
+        ),
+        "doctor": UserRecord(
+            id="usr-doctor-001",
+            identifier="doctor@healthsetu.org",
+            password_hash=hashed_pwd,
+            role=UserRole.DOCTOR,
+            status=AccountStatus.ACTIVE,
+        ),
+        "disabled": UserRecord(
+            id="usr-disabled-001",
+            identifier="disabled@healthsetu.org",
+            password_hash=hashed_pwd,
+            role=UserRole.PATIENT,
+            status=AccountStatus.DISABLED,
+        ),
+        "locked": UserRecord(
+            id="usr-locked-001",
+            identifier="locked@healthsetu.org",
+            password_hash=hashed_pwd,
+            role=UserRole.PATIENT,
+            status=AccountStatus.LOCKED,
+        ),
+        "pending": UserRecord(
+            id="usr-pending-001",
+            identifier="pending@healthsetu.org",
+            password_hash=hashed_pwd,
+            role=UserRole.PATIENT,
+            status=AccountStatus.PENDING,
+        ),
+    }
+
+    for user in users.values():
+        _global_user_repo.register_in_memory_user(user)
+
+    return users
 
 
 @pytest.fixture

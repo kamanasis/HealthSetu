@@ -15,6 +15,10 @@ async def test_openapi_schema_available(async_client: AsyncClient):
     assert schema["info"]["version"] == "0.1.0"
     assert "/api/v1/health" in schema["paths"]
     assert "/api/v1/ready" in schema["paths"]
+    assert "/api/v1/auth/login" in schema["paths"]
+    assert "/api/v1/auth/refresh" in schema["paths"]
+    assert "/api/v1/auth/logout" in schema["paths"]
+    assert "/api/v1/auth/me" in schema["paths"]
 
 
 @pytest.mark.asyncio

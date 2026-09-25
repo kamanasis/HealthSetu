@@ -1,40 +1,54 @@
-# HealthSetu — Backend Foundation (Phase 1)
+# HealthSetu — Backend (Phase 1 + Phase 2)
 
 HealthSetu is a unified healthcare interoperability, clinical coordination, and patient safety backend platform.
 
-Phase 1 establishes the production-oriented engineering foundation of the backend application without business-domain logic or database schema ownership.
+**Phase 1** establishes the production-oriented engineering foundation.
+**Phase 2** builds the Identity & Authentication layer on top of it.
 
 ---
 
 ## 1. Architectural Principles & Boundaries
 
-### Team Boundary: Database Ownership
-- **Database Schema, Models, and Migrations are owned exclusively by the Database Team.**
-- The backend application establishes an asynchronous connection, session factory, and generic repository boundary (`SQLAlchemy 2.x`), but does **not** create or manage clinical/business database tables or Alembic migrations in this phase.
-- If the database is unreachable, the application starts gracefully and reports its readiness state accurately via `/api/v1/ready`.
+### Team Boundaries
+| Team | Responsibility |
+|---|---|
+| **Backend** | FastAPI application, API routes, business logic, authentication/authorization, tests |
+| **Database** | PostgreSQL schema, tables, migrations, indexes — **exclusively owned by Database Team** |
+| **Frontend** | Not in scope for Phase 1 or 2 |
+
+### Database Ownership Rule
+The backend establishes an async connection layer and repository abstractions **only**. It does **not** create or modify database schema. When the database team delivers their models, repositories plug in cleanly.
 
 ### Clean Layered Architecture
 ```
-API Layer (/api/v1/...)
-    ↓ (Dependency Injection)
+HTTP Request
+     ↓
+API Endpoint (/api/v1/...)
+     ↓ (Dependency Injection via FastAPI Depends)
+Authentication Middleware / Dependency (get_current_user)
+     ↓
 Service Layer (app/services)
-    ↓
-Repository Layer (app/repositories)    →    External Integration Adapters (app/integrations)
-    ↓                                                 ↓
-Database (PostgreSQL Async Engine)          External Healthcare APIs (Future)
+     ↓
+Repository Layer (app/repositories)   ←→   External Adapters (app/integrations)
+     ↓
+Database (PostgreSQL Async Engine via SQLAlchemy 2.x)
 ```
 
 ---
 
 ## 2. Technology Stack
 
-- **Runtime**: Python 3.12+
-- **Framework**: FastAPI
-- **Validation & Settings**: Pydantic v2 & `pydantic-settings`
-- **ASGI Server**: Uvicorn
-- **Database Access Layer**: SQLAlchemy 2.x Async Engine (`asyncpg`)
-- **Testing**: `pytest`, `pytest-asyncio`, `httpx`
-- **Containerization**: Docker (multi-stage non-root runtime) & Docker Compose
+| Component | Technology |
+|---|---|
+| Runtime | Python 3.12+ |
+| Framework | FastAPI |
+| Validation & Settings | Pydantic v2, pydantic-settings |
+| ASGI Server | Uvicorn |
+| Database Access Layer | SQLAlchemy 2.x Async Engine + asyncpg |
+| Password Hashing | Argon2id (via `argon2-cffi`) |
+| JWT Tokens | PyJWT |
+| Testing | pytest, pytest-asyncio, httpx |
+| Containerization | Docker (non-root runtime), Docker Compose |
 
 ---
 
@@ -44,57 +58,58 @@ Database (PostgreSQL Async Engine)          External Healthcare APIs (Future)
 healthsetu-backend/
 ├── app/
 │   ├── __init__.py
-│   ├── main.py                  # Application entrypoint & lifespan
+│   ├── main.py                              # Application entrypoint & lifespan
 │   ├── api/
 │   │   ├── __init__.py
-│   │   ├── router.py            # Root API router (v1, future v2)
+│   │   ├── router.py                        # Root API router (v1, future v2)
+│   │   ├── deps.py                          # ⭐ Reusable auth dependencies (get_current_user)
 │   │   └── v1/
 │   │       ├── __init__.py
-│   │       ├── router.py        # v1 router aggregator
+│   │       ├── router.py                    # v1 router aggregator
 │   │       └── endpoints/
 │   │           ├── __init__.py
-│   │           └── health.py    # Health & readiness probes
+│   │           ├── health.py                # Liveness & readiness probes
+│   │           └── auth.py                  # ⭐ Authentication endpoints (Phase 2)
 │   ├── core/
 │   │   ├── __init__.py
-│   │   ├── config.py            # Environment-based Pydantic settings
-│   │   ├── database.py          # SQLAlchemy 2.x async engine & session boundary
-│   │   ├── exceptions.py        # Centralized exception handling & error models
-│   │   ├── logging.py           # Structured JSON logging & sensitive data scrubber
-│   │   ├── middleware.py        # Request ID, security headers, size limiting
-│   │   └── security.py          # Baseline security headers & origin validation
+│   │   ├── config.py                        # Environment-based settings (incl. JWT config)
+│   │   ├── database.py                      # SQLAlchemy 2.x async engine & session boundary
+│   │   ├── exceptions.py                    # Centralized exception handling & error envelopes
+│   │   ├── logging.py                       # Structured JSON logging with clinical data scrubbing
+│   │   ├── middleware.py                    # Request ID, security headers, size limiting
+│   │   └── security.py                      # ⭐ Argon2id, JWT create/decode, token utilities
 │   ├── services/
 │   │   ├── __init__.py
-│   │   ├── base.py              # Generic base service
-│   │   └── health.py            # Health probe service
+│   │   ├── base.py                          # Generic base service
+│   │   ├── health.py                        # Health probe service
+│   │   └── auth_service.py                  # ⭐ Authentication business logic (Phase 2)
 │   ├── repositories/
 │   │   ├── __init__.py
-│   │   └── base.py              # Generic base repository
-│   ├── integrations/            # Future external healthcare adapters
-│   │   ├── __init__.py
-│   │   ├── base.py              # Base adapter interface
-│   │   ├── medication_safety/   # DrugBank, openFDA, RxNorm (Phase 2+)
-│   │   ├── ai/                  # Clinical decision assistance (Phase 2+)
-│   │   ├── ocr/                 # Document OCR processing (Phase 2+)
-│   │   ├── translation/         # Medical vernacular translation (Phase 2+)
-│   │   ├── fhir/                # HL7 FHIR interoperability (Phase 2+)
-│   │   └── abdm/                # Ayushman Bharat Digital Mission (Phase 2+)
-│   ├── models/                  # Database models (owned by Database Team)
+│   │   ├── base.py                          # Generic base repository
+│   │   ├── user_repository.py               # ⭐ User identity data access (Phase 2)
+│   │   └── auth_session_repository.py       # ⭐ Refresh session lifecycle (Phase 2)
+│   ├── integrations/                        # External provider adapters (future phases)
+│   │   ├── __init__.py, base.py
+│   │   └── {medication_safety, ai, ocr, translation, fhir, abdm}/
+│   ├── models/                              # Reserved for Database Team schema models
 │   ├── schemas/
 │   │   ├── __init__.py
-│   │   └── response.py          # Standardized response envelopes
-│   └── utils/
-│       └── __init__.py
+│   │   ├── response.py                      # Standard HTTP response envelopes
+│   │   ├── auth.py                          # ⭐ Auth request/response models (Phase 2)
+│   │   └── user.py                          # ⭐ User identity models & AuthenticatedUserContext
+│   └── utils/__init__.py
 ├── tests/
-│   ├── __init__.py
-│   ├── conftest.py              # Pytest fixtures & async test client
-│   ├── test_config.py           # Settings & parser tests
-│   ├── test_cors.py             # CORS & security headers tests
-│   ├── test_database.py         # Database engine boundary & error tests
-│   ├── test_error_handling.py   # Centralized error formats & status codes
-│   ├── test_health.py           # Liveness probe tests
-│   ├── test_readiness.py        # Readiness probe tests (ready & degraded)
-│   ├── test_request_id.py       # Correlation ID preservation & generation
-│   └── test_startup.py          # Application lifespan & OpenAPI spec
+│   ├── conftest.py                          # Fixtures, seeded test users, clean state
+│   ├── test_auth.py                         # ⭐ 25 authentication test cases (Phase 2)
+│   ├── test_security_auth.py                # ⭐ Security-specific tests (Phase 2)
+│   ├── test_config.py
+│   ├── test_cors.py
+│   ├── test_database.py
+│   ├── test_error_handling.py
+│   ├── test_health.py
+│   ├── test_readiness.py
+│   ├── test_request_id.py
+│   └── test_startup.py
 ├── .env.example
 ├── .gitignore
 ├── Dockerfile
@@ -114,186 +129,306 @@ Copy `.env.example` to `.env`:
 cp .env.example .env
 ```
 
-| Variable | Type | Default | Description |
-|---|---|---|---|
-| `APP_NAME` | string | `HealthSetu` | Application service name |
-| `APP_ENV` | string | `development` | Environment (`development`, `testing`, `production`) |
-| `APP_VERSION` | string | `0.1.0` | Semantic version |
-| `DEBUG` | boolean | `false` | Debug mode (disabled in production) |
-| `HOST` | string | `0.0.0.0` | Host binding |
-| `PORT` | integer | `8000` | Port binding |
-| `DATABASE_URL` | string | `None` | Async PostgreSQL URL (`postgresql+asyncpg://...`) |
-| `CORS_ALLOWED_ORIGINS` | string | `http://localhost:3000` | Comma-separated list of allowed origins |
-| `LOG_LEVEL` | string | `INFO` | Log severity level (`DEBUG`, `INFO`, `WARNING`, `ERROR`) |
-| `API_PREFIX` | string | `/api/v1` | Base API route prefix |
-| `REQUEST_ID_HEADER` | string | `X-Request-ID` | Header used for request correlation |
-| `MAX_REQUEST_SIZE_BYTES` | integer | `10485760` | Maximum request payload size (10MB) |
+### Phase 1 Variables
+
+| Variable | Default | Description |
+|---|---|---|
+| `APP_NAME` | `HealthSetu` | Application service name |
+| `APP_ENV` | `development` | Environment (`development`, `testing`, `production`) |
+| `APP_VERSION` | `0.1.0` | Semantic version |
+| `DEBUG` | `false` | Debug mode |
+| `HOST` | `0.0.0.0` | Host binding |
+| `PORT` | `8000` | Port binding |
+| `DATABASE_URL` | *None* | Async PostgreSQL URL (`postgresql+asyncpg://...`) |
+| `CORS_ALLOWED_ORIGINS` | `http://localhost:3000` | Comma-separated allowed origins |
+| `LOG_LEVEL` | `INFO` | Log severity |
+| `API_PREFIX` | `/api/v1` | Base API route prefix |
+| `REQUEST_ID_HEADER` | `X-Request-ID` | Correlation ID header name |
+| `MAX_REQUEST_SIZE_BYTES` | `10485760` | Max payload size (10MB) |
+
+### Phase 2 Variables (Authentication)
+
+| Variable | Default | Description |
+|---|---|---|
+| `JWT_SECRET_KEY` | *must set in prod* | Cryptographic key for signing JWTs |
+| `JWT_ALGORITHM` | `HS256` | JWT signing algorithm |
+| `ACCESS_TOKEN_EXPIRE_MINUTES` | `15` | Access token lifetime (minutes) |
+| `REFRESH_TOKEN_EXPIRE_DAYS` | `30` | Refresh token lifetime (days) |
+| `PASSWORD_HASHING_SCHEME` | `argon2id` | Password hashing algorithm |
+| `AUTH_RATE_LIMIT_ENABLED` | `false` | Enable login rate limiting hook |
+
+> **Security**: Generate a strong production JWT secret key:
+> ```bash
+> openssl rand -hex 32
+> ```
 
 ---
 
-## 5. Local Setup & Running
+## 5. Phase 2 — Authentication Architecture
 
-### Prerequisites
-- Python 3.12+
-- Git
+### Token Lifecycle
 
-### 1. Create Virtual Environment
+```
+User (POST /auth/login)
+     ↓  identifier + password
+AuthService.authenticate()
+     ↓  verify Argon2id hash
+     ↓  check account status (ACTIVE only)
+Issue: access_token (JWT, 15 min) + refresh_token (opaque, 30 days)
+Persist: hash(refresh_token) → database as RefreshSession
+     ↓
+Protected API calls → Bearer access_token → get_current_user()
+     ↓
+(POST /auth/refresh) → validate + rotate refresh_token
+     ↓  old token revoked, new token issued
+     ↓  token reuse detected → ALL user sessions terminated
+(POST /auth/logout) → revoke refresh session (idempotent)
+```
+
+### Security Design Decisions
+
+| Decision | Implementation |
+|---|---|
+| Password hashing | **Argon2id** (time_cost=2, mem=64MB, parallelism=1) |
+| Access token | **Short-lived JWT** (15 min), signed HS256 |
+| Refresh token | **Opaque random token** (32-byte URL-safe) |
+| Refresh storage | **SHA-256 hash only** — raw token never persisted |
+| Token rotation | ✅ Old token revoked on each refresh |
+| Reuse detection | ✅ Compromised token reuse triggers full session wipe |
+| Account status | ✅ ACTIVE only may authenticate |
+| Error messages | ✅ Generic — never reveals whether account exists |
+| Timing attacks | ✅ Dummy Argon2id hash run even for unknown users |
+| PHI in tokens | ✅ JWT claims contain **zero clinical data** |
+| Credential logging | ✅ Passwords, tokens, and Authorization headers never logged |
+
+### Authenticated User Context
+```python
+AuthenticatedUserContext:
+    user_id: str
+    role: UserRole         # PATIENT | DOCTOR | ADMIN
+    account_status: AccountStatus
+```
+This is the **only** identity object passed to protected endpoints — no clinical data loaded until explicitly required by later phases.
+
+### Using the Authentication Dependency
+
+```python
+from app.api.deps import get_current_user
+from app.schemas.user import AuthenticatedUserContext
+
+@router.get("/some-protected-endpoint")
+async def protected(
+    current_user: AuthenticatedUserContext = Depends(get_current_user),
+):
+    # current_user.user_id, .role, .account_status
+    ...
+```
+
+---
+
+## 6. API Endpoints
+
+### Phase 1 — Health
+
+| Method | Path | Auth | Description |
+|---|---|---|---|
+| `GET` | `/api/v1/health` | None | Application liveness probe |
+| `GET` | `/api/v1/ready` | None | Database readiness probe |
+
+### Phase 2 — Authentication
+
+| Method | Path | Auth | Description |
+|---|---|---|---|
+| `POST` | `/api/v1/auth/login` | None | Authenticate and receive tokens |
+| `POST` | `/api/v1/auth/refresh` | None | Rotate refresh token for new tokens |
+| `POST` | `/api/v1/auth/logout` | None | Revoke session (idempotent) |
+| `GET` | `/api/v1/auth/me` | Bearer | Get authenticated caller identity |
+
+### Standard Response Envelopes
+
+**Success:**
+```json
+{
+  "success": true,
+  "data": { ... },
+  "request_id": "abc-123"
+}
+```
+
+**Error:**
+```json
+{
+  "success": false,
+  "error": {
+    "code": "UNAUTHORIZED",
+    "message": "Invalid credentials.",
+    "request_id": "abc-123"
+  }
+}
+```
+
+---
+
+## 7. Local Setup & Development
+
 ```bash
+# 1. Create & activate virtual environment
 python -m venv .venv
+.venv\Scripts\Activate.ps1       # Windows PowerShell
+# source .venv/bin/activate       # Linux / macOS
 
-# On Linux/macOS:
-source .venv/bin/activate
-
-# On Windows (PowerShell):
-.venv\Scripts\Activate.ps1
-```
-
-### 2. Install Dependencies
-```bash
+# 2. Install dependencies
 pip install -r requirements.txt
-```
 
-### 3. Start Development Server
-```bash
+# 3. Configure environment
+cp .env.example .env
+# Edit .env — set JWT_SECRET_KEY and DATABASE_URL
+
+# 4. Start dev server
 uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 ```
 
-The application starts at `http://localhost:8000`.
+- **Swagger UI**: http://localhost:8000/docs
+- **ReDoc**: http://localhost:8000/redoc
+- **OpenAPI JSON**: http://localhost:8000/openapi.json
 
-- Interactive API Docs (Swagger): `http://localhost:8000/docs`
-- ReDoc API Docs: `http://localhost:8000/redoc`
-- OpenAPI Specification: `http://localhost:8000/openapi.json`
-
-*(Note: API documentation is automatically disabled in production mode).*
+*(API documentation is disabled in `production` mode)*
 
 ---
 
-## 6. Testing
-
-Run the automated test suite with `pytest`:
+## 8. Running Tests
 
 ```bash
 # Run all tests
 pytest -v
 
-# Run with test coverage
-pytest --cov=app tests/
+# Run only auth-related tests
+pytest tests/test_auth.py tests/test_security_auth.py -v
 ```
 
-All 30 automated tests execute in under 1 second without external network or database dependencies.
+**Current Test Suite: 59 tests / 59 passed**
+
+| Test File | Tests | Coverage Area |
+|---|---|---|
+| `test_auth.py` | 25 | Login, refresh, logout, /me, token format, PHI checks |
+| `test_security_auth.py` | 4 | Token reuse attack, credential log scrubbing, secret exposure |
+| `test_config.py` | 3 | Settings loading, CORS parser |
+| `test_cors.py` | 3 | CORS origin filtering, security headers |
+| `test_database.py` | 3 | DB boundary, engine lifecycle |
+| `test_error_handling.py` | 9 | Standardized error envelopes, 404/401/500/413 |
+| `test_health.py` | 3 | Liveness probe |
+| `test_readiness.py` | 3 | Readiness probe (DB mocking) |
+| `test_request_id.py` | 3 | Correlation ID generation & propagation |
+| `test_startup.py` | 3 | OpenAPI schema, Swagger, ReDoc |
 
 ---
 
-## 7. Docker & Local Development Containers
+## 9. Docker
 
-### Build and Run with Docker
 ```bash
+# Build image
 docker build -t healthsetu-backend:latest .
-docker run -p 8000:8000 --env-file .env healthsetu-backend:latest
-```
 
-### Run Full Dev Stack with Docker Compose
-```bash
+# Run with env file
+docker run -p 8000:8000 --env-file .env healthsetu-backend:latest
+
+# Full local dev stack (backend + dev PostgreSQL)
 docker-compose up --build
 ```
-This boots:
-1. `healthsetu-backend`: FastAPI with live volume reload.
-2. `healthsetu-dev-postgres`: Local PostgreSQL 16 container for connectivity testing.
+
+> ⚠️ The dev PostgreSQL container in `docker-compose.yml` is for local connectivity testing only. The **Database Team owns the schema** — no domain tables are initialized automatically.
 
 ---
 
-## 8. Core API Endpoints (Phase 1)
+## 10. Database Team Dependencies
 
-### Liveness Probe
-- **Endpoint**: `GET /api/v1/health`
-- **Authentication**: None required
-- **Status Code**: `200 OK`
-- **Response**:
-```json
-{
-  "status": "ok",
-  "service": "healthsetu-backend",
-  "version": "0.1.0"
-}
-```
+**Phase 2 requires the following entities from the Database Team:**
 
-### Readiness Probe
-- **Endpoint**: `GET /api/v1/ready`
-- **Authentication**: None required
-- **Status Codes**:
-  - `200 OK` when dependencies are healthy
-  - `503 Service Unavailable` when database or critical services are down
-- **Response (Ready)**:
-```json
-{
-  "status": "ready",
-  "checks": {
-    "database": "ok"
-  }
-}
+### User Identity Entity
 ```
-- **Response (Degraded / DB Unavailable)**:
-```json
-{
-  "status": "not_ready",
-  "checks": {
-    "database": "unavailable"
-  }
-}
+id              : Primary Key (UUID / string)
+identifier      : UNIQUE string (email / phone / username) — case-insensitive lookup
+password_hash   : VARCHAR — Argon2id hash (never plaintext)
+role            : ENUM ('PATIENT', 'DOCTOR', 'ADMIN')
+status          : ENUM ('ACTIVE', 'DISABLED', 'LOCKED', 'PENDING')
+created_at      : TIMESTAMP WITH TIME ZONE
+updated_at      : TIMESTAMP WITH TIME ZONE
 ```
 
-### Error Response Envelope
-All error responses adhere to the standard schema:
-```json
-{
-  "success": false,
-  "error": {
-    "code": "NOT_FOUND",
-    "message": "Resource not found.",
-    "request_id": "a4d3bf98-727b-4021-9971-d00ea4cebe8a"
-  }
-}
+### Refresh Session Entity
 ```
-Supported error codes:
-- `VALIDATION_ERROR` (422 / 413)
-- `NOT_FOUND` (404)
-- `UNAUTHORIZED` (401)
-- `FORBIDDEN` (403)
-- `CONFLICT` (409)
-- `INTERNAL_ERROR` (500)
-- `SERVICE_UNAVAILABLE` (503)
+id                      : Primary Key (UUID)
+user_id                 : FOREIGN KEY → users.id
+token_hash              : VARCHAR — SHA-256(raw_token) — NEVER raw token
+expires_at              : TIMESTAMP WITH TIME ZONE
+is_revoked              : BOOLEAN DEFAULT FALSE
+replaced_by_session_id  : NULLABLE FOREIGN KEY → refresh_sessions.id
+created_at              : TIMESTAMP WITH TIME ZONE
+```
+
+> The backend repository interfaces (`UserRepository`, `AuthSessionRepository`) have documented `# NOTE FOR DATABASE TEAM:` comment blocks showing exact integration points. When schema is delivered, swap in the SQLAlchemy model queries without touching the service layer.
 
 ---
 
-## 9. Healthcare Privacy & Logging Safety
+## 11. Security Considerations
 
-In strict compliance with healthcare data protection standards:
-- All logs are formatted as structured JSON lines.
-- Automatic redaction is applied to request context, intercepting clinical tokens, patient identifiers, prescriptions, diagnoses, and secrets.
-- Unhandled internal errors log stack traces internally with correlation IDs, but **never** return raw stack traces or database errors to API clients.
+- Passwords are **never** stored, logged, or returned in plaintext
+- Refresh tokens are **only stored as SHA-256 hashes** — the raw token is ephemeral
+- JWTs contain **zero clinical information** (no diagnoses, prescriptions, history, PHI)
+- All authentication failures return an **identical generic message** to prevent account enumeration
+- Token reuse detection terminates **all sessions for the affected user**
+- `SENSITIVE_FIELD_NAMES` in the logging module automatically redacts credentials and clinical keywords from all structured logs
+- Production: `DEBUG=false`, wildcard CORS blocked, stack traces never exposed
 
 ---
 
-## 10. Phase 1 Implementation Status Matrix
+## 12. What Phase 2 Does NOT Implement
 
-| Component | Status | Details |
+- ❌ Patient registration or onboarding workflow
+- ❌ Doctor registration or verification
+- ❌ OAuth 2.0 / Social login
+- ❌ Multi-factor authentication (MFA)
+- ❌ Role-based access control (RBAC) — deferred to Phase 3
+- ❌ Clinical authorization rules (patient–doctor relationships, consent)
+- ❌ Any medical record access
+- ❌ Database schema creation or migrations
+- ❌ Frontend / UI
+- ❌ Rate limiting in production (hook is present, implementation is Phase 3+)
+
+---
+
+## 13. Phase Status Summary
+
+| Phase | Component | Status |
 |---|---|---|
-| FastAPI Application & Lifespan | **IMPLEMENTED** | App factory, lifespan lifecycle, clean shutdown |
-| Environment Configuration | **IMPLEMENTED** | Pydantic Settings v2, `.env.example`, origin parser |
-| API Versioning (`/api/v1/`) | **IMPLEMENTED** | Modular router architecture ready for v2 |
-| Liveness Probe (`/api/v1/health`) | **IMPLEMENTED** | Process health indicator |
-| Readiness Probe (`/api/v1/ready`) | **IMPLEMENTED** | Async DB health check with 200/503 status |
-| Correlation ID (`X-Request-ID`) | **IMPLEMENTED** | Validates/preserves incoming ID or generates UUID4 |
-| Structured Logging | **IMPLEMENTED** | JSON formatter, contextual request_id, clinical scrubbing |
-| Centralized Error Handling | **IMPLEMENTED** | Standard error envelopes, no stack trace leakage |
-| Baseline Security Middleware | **IMPLEMENTED** | Security headers, size limits, origin check |
-| CORS Configuration | **IMPLEMENTED** | Configurable allowed origins, wildcards blocked in prod |
-| Service / Repository Pattern | **IMPLEMENTED** | Base classes ready for domain injection |
-| External Integration Layer | **PLACEHOLDER** | Abstract adapter, packages created for ABDM, FHIR, AI, OCR, etc. |
-| Database Engine Boundary | **IMPLEMENTED** | SQLAlchemy 2.x async engine & session pool; no schema invented |
-| Automated Test Suite | **IMPLEMENTED** | 30 tests covering all Phase 1 foundations |
-| Docker & Docker Compose | **IMPLEMENTED** | Non-root production Dockerfile & local dev compose |
-| Clinical Decision-Making | **NOT IMPLEMENTED** | Deferred to subsequent phases |
-| Authentication / Authorization | **NOT IMPLEMENTED** | Deferred to Phase 2 |
-| Frontend | **NOT IMPLEMENTED** | Out of scope |
-| Clinical Database Schema | **NOT IMPLEMENTED** | Owned by Database Team |
+| **Phase 1** | Application startup & lifecycle | ✅ IMPLEMENTED |
+| **Phase 1** | Environment configuration | ✅ IMPLEMENTED |
+| **Phase 1** | API versioning | ✅ IMPLEMENTED |
+| **Phase 1** | Liveness & readiness probes | ✅ IMPLEMENTED |
+| **Phase 1** | Correlation ID middleware | ✅ IMPLEMENTED |
+| **Phase 1** | Structured JSON logging | ✅ IMPLEMENTED |
+| **Phase 1** | Centralized error handling | ✅ IMPLEMENTED |
+| **Phase 1** | Security headers & CORS | ✅ IMPLEMENTED |
+| **Phase 1** | Service / Repository pattern | ✅ IMPLEMENTED |
+| **Phase 1** | Database engine boundary | ✅ IMPLEMENTED |
+| **Phase 1** | Docker & Compose | ✅ IMPLEMENTED |
+| **Phase 2** | Argon2id password hashing | ✅ IMPLEMENTED |
+| **Phase 2** | JWT access tokens | ✅ IMPLEMENTED |
+| **Phase 2** | Refresh token (hashed, rotatable) | ✅ IMPLEMENTED |
+| **Phase 2** | Token reuse detection | ✅ IMPLEMENTED |
+| **Phase 2** | `POST /auth/login` | ✅ IMPLEMENTED |
+| **Phase 2** | `POST /auth/refresh` | ✅ IMPLEMENTED |
+| **Phase 2** | `POST /auth/logout` | ✅ IMPLEMENTED |
+| **Phase 2** | `GET /auth/me` | ✅ IMPLEMENTED |
+| **Phase 2** | `get_current_user` reusable dependency | ✅ IMPLEMENTED |
+| **Phase 2** | AuthenticatedUserContext | ✅ IMPLEMENTED |
+| **Phase 2** | Account status enforcement | ✅ IMPLEMENTED |
+| **Phase 2** | Anti-enumeration error messages | ✅ IMPLEMENTED |
+| **Phase 2** | Security event logging | ✅ IMPLEMENTED |
+| **Phase 2** | Clinical data exclusion from JWT | ✅ IMPLEMENTED |
+| **Phase 2** | External integration adapters | 🔲 PLACEHOLDER |
+| **Phase 2** | Database schema & models | 🔲 DATABASE TEAM |
+| **Phase 3+** | RBAC / Authorization rules | ⏳ NOT IMPLEMENTED |
+| **Phase 3+** | Patient–doctor consent | ⏳ NOT IMPLEMENTED |
+| **Phase 3+** | OAuth 2.0 / MFA | ⏳ NOT IMPLEMENTED |
+| **Future** | Clinical domain features | ⏳ NOT IMPLEMENTED |

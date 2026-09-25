@@ -75,8 +75,8 @@ class StructuredJsonFormatter(logging.Formatter):
         if req_id:
             log_data["request_id"] = req_id
 
-        # Attach HTTP context metadata if provided in record
-        for attr in ("method", "path", "status_code", "duration_ms", "user_id", "organization_id"):
+        # Attach HTTP context and security event metadata if provided in record
+        for attr in ("method", "path", "status_code", "duration_ms", "user_id", "organization_id", "event_type", "outcome"):
             val = getattr(record, attr, None)
             if val is not None:
                 log_data[attr] = val

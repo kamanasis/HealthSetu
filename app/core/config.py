@@ -61,10 +61,36 @@ class Settings(BaseSettings):
     # Request Correlation
     REQUEST_ID_HEADER: str = Field(default="X-Request-ID", description="HTTP header key for request correlation ID")
 
-    # Security Settings
+    # Security & Request Limits
     MAX_REQUEST_SIZE_BYTES: int = Field(
         default=10 * 1024 * 1024,
         description="Maximum request payload size in bytes (default 10MB)",
+    )
+
+    # Authentication & JWT Configuration (Phase 2)
+    JWT_SECRET_KEY: str = Field(
+        default="insecure_dev_jwt_secret_key_change_in_production_32bytes_min",
+        description="Cryptographic secret key for signing JWT tokens",
+    )
+    JWT_ALGORITHM: str = Field(
+        default="HS256",
+        description="JWT cryptographic algorithm (e.g. HS256, RS256)",
+    )
+    ACCESS_TOKEN_EXPIRE_MINUTES: int = Field(
+        default=15,
+        description="Access token lifespan in minutes",
+    )
+    REFRESH_TOKEN_EXPIRE_DAYS: int = Field(
+        default=30,
+        description="Refresh token lifespan in days",
+    )
+    PASSWORD_HASHING_SCHEME: str = Field(
+        default="argon2id",
+        description="Primary password hashing scheme",
+    )
+    AUTH_RATE_LIMIT_ENABLED: bool = Field(
+        default=False,
+        description="Flag enabling local/development authentication rate limiting hook",
     )
 
     @property
