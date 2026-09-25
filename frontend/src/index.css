@@ -1,0 +1,54 @@
+@import url('https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Nunito:wght@300;400;500;600;700;800&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --background: #FAF8F3;
+  --foreground: #1C2B3A;
+  --primary: #4A90C4;
+  --primary-foreground: #FFFFFF;
+  --accent: #3D8B6E;
+  --accent-foreground: #FFFFFF;
+  --card: #FFFFFF;
+  --card-foreground: #1C2B3A;
+  --secondary: #EBF5EC;
+  --secondary-foreground: #2D5A40;
+  --muted: #F0EDE7;
+  --muted-foreground: #6B7A8D;
+  --border: #DDD9D1;
+  --ring: #4A90C4;
+  --radius: 0.75rem;
+}
+
+@layer base {
+  body {
+    background-color: var(--background);
+    color: var(--foreground);
+    font-family: 'Nunito', sans-serif;
+    line-height: 1.65;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  h1, h2, h3, .font-serif {
+    font-family: 'DM Serif Display', serif;
+    letter-spacing: -0.01em;
+  }
+}
+
+/* Custom scrollbar matching calm warm tone */
+::-webkit-scrollbar {
+  width: 7px;
+  height: 7px;
+}
+::-webkit-scrollbar-track {
+  background: #FAF8F3;
+}
+::-webkit-scrollbar-thumb {
+  background: #DDD9D1;
+  border-radius: 9999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #C4BFB5;
+}
