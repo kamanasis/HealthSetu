@@ -1,0 +1,55 @@
+version: '3.8'
+
+services:
+  # HealthSetu Backend Application Service
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: healthsetu-backend
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    environment:
+      - APP_NAME=HealthSetu
+      - APP_ENV=development
+      - APP_VERSION=0.1.0
+      - DEBUG=true
+      - HOST=0.0.0.0
+      - PORT=8000
+      - DATABASE_URL=postgresql+asyncpg://healthsetu_dev_user:healthsetu_dev_pass@dev-postgres:5432/healthsetu_dev
+      - CORS_ALLOWED_ORIGINS=http://localhost:3000,http://127.0.0.1:3000
+      - LOG_LEVEL=INFO
+      - API_PREFIX=/api/v1
+      - REQUEST_ID_HEADER=X-Request-ID
+    volumes:
+      - ./app:/app/app:ro
+    depends_on:
+      dev-postgres:
+        condition: service_healthy
+    command: ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
+
+  # LOCAL DEVELOPMENT DATABASE ONLY:
+  # NOTE: The schema, models, and migrations are owned by the Database Team.
+  # This container provides an empty PostgreSQL instance for local development
+  # connectivity testing without initializing any custom domain tables.
+  dev-postgres:
+    image: postgres:16-alpine
+    container_name: healthsetu-dev-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: healthsetu_dev_user
+      POSTGRES_PASSWORD: healthsetu_dev_pass
+      POSTGRES_DB: healthsetu_dev
+    ports:
+      - "5432:5432"
+    volumes:
+      - dev-postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U healthsetu_dev_user -d healthsetu_dev"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  dev-postgres-data:
