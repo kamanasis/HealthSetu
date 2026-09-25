@@ -180,3 +180,151 @@ class AuditService(BaseService[AuditRepository]):
             reason_code=reason_code,
             metadata={"purpose": purpose, "scope": scope},
         )
+
+    # -----------------------------------------------------------------------
+    # Phase 4: Clinical record audit helpers
+    # -----------------------------------------------------------------------
+
+    async def record_clinical_record_viewed(
+        self,
+        actor_id: str,
+        patient_id: str,
+        resource_type: str = "patient",
+    ) -> None:
+        """Audit: clinical record accessed."""
+        await self.record(
+            event_type=AuditEventType.CLINICAL_RECORD_VIEWED,
+            outcome="ALLOW",
+            actor_id=actor_id,
+            action="clinical_record:read",
+            resource_type=resource_type,
+            resource_id=patient_id,
+        )
+
+    async def record_patient_profile_updated(
+        self,
+        actor_id: str,
+        patient_id: str,
+        updated_fields: list[str],
+    ) -> None:
+        """Audit: patient profile updated (field names only, no values)."""
+        await self.record(
+            event_type=AuditEventType.PATIENT_PROFILE_UPDATED,
+            outcome="ALLOW",
+            actor_id=actor_id,
+            action="patient:update",
+            resource_type="patient",
+            resource_id=patient_id,
+            metadata={"updated_fields": updated_fields},
+        )
+
+    async def record_clinical_history_created(
+        self, actor_id: str, patient_id: str, entry_id: str
+    ) -> None:
+        """Audit: clinical history entry created."""
+        await self.record(
+            event_type=AuditEventType.CLINICAL_HISTORY_CREATED,
+            outcome="ALLOW",
+            actor_id=actor_id,
+            action="clinical_history:create",
+            resource_type="clinical_history",
+            resource_id=entry_id,
+            metadata={"patient_id": patient_id},
+        )
+
+    async def record_clinical_history_updated(
+        self, actor_id: str, patient_id: str, entry_id: str
+    ) -> None:
+        """Audit: clinical history entry updated."""
+        await self.record(
+            event_type=AuditEventType.CLINICAL_HISTORY_UPDATED,
+            outcome="ALLOW",
+            actor_id=actor_id,
+            action="clinical_history:update",
+            resource_type="clinical_history",
+            resource_id=entry_id,
+            metadata={"patient_id": patient_id},
+        )
+
+    async def record_allergy_created(
+        self, actor_id: str, patient_id: str, allergy_id: str
+    ) -> None:
+        """Audit: allergy record created."""
+        await self.record(
+            event_type=AuditEventType.ALLERGY_CREATED,
+            outcome="ALLOW",
+            actor_id=actor_id,
+            action="allergy:create",
+            resource_type="allergy",
+            resource_id=allergy_id,
+            metadata={"patient_id": patient_id},
+        )
+
+    async def record_allergy_updated(
+        self, actor_id: str, patient_id: str, allergy_id: str
+    ) -> None:
+        """Audit: allergy record updated."""
+        await self.record(
+            event_type=AuditEventType.ALLERGY_UPDATED,
+            outcome="ALLOW",
+            actor_id=actor_id,
+            action="allergy:update",
+            resource_type="allergy",
+            resource_id=allergy_id,
+            metadata={"patient_id": patient_id},
+        )
+
+    async def record_vital_recorded(
+        self, actor_id: str, patient_id: str, vital_id: str, vital_type: str
+    ) -> None:
+        """Audit: vital measurement recorded."""
+        await self.record(
+            event_type=AuditEventType.VITAL_RECORDED,
+            outcome="ALLOW",
+            actor_id=actor_id,
+            action="vital:create",
+            resource_type="vital",
+            resource_id=vital_id,
+            metadata={"patient_id": patient_id, "vital_type": vital_type},
+        )
+
+    async def record_encounter_viewed(
+        self, actor_id: str, patient_id: str, encounter_id: str
+    ) -> None:
+        """Audit: encounter record viewed."""
+        await self.record(
+            event_type=AuditEventType.ENCOUNTER_VIEWED,
+            outcome="ALLOW",
+            actor_id=actor_id,
+            action="encounter:read",
+            resource_type="encounter",
+            resource_id=encounter_id,
+            metadata={"patient_id": patient_id},
+        )
+
+    async def record_encounter_created(
+        self, actor_id: str, patient_id: str, encounter_id: str
+    ) -> None:
+        """Audit: encounter record created."""
+        await self.record(
+            event_type=AuditEventType.ENCOUNTER_CREATED,
+            outcome="ALLOW",
+            actor_id=actor_id,
+            action="encounter:create",
+            resource_type="encounter",
+            resource_id=encounter_id,
+            metadata={"patient_id": patient_id},
+        )
+
+    async def record_clinical_summary_viewed(
+        self, actor_id: str, patient_id: str
+    ) -> None:
+        """Audit: clinical summary viewed."""
+        await self.record(
+            event_type=AuditEventType.CLINICAL_SUMMARY_VIEWED,
+            outcome="ALLOW",
+            actor_id=actor_id,
+            action="clinical_summary:read",
+            resource_type="clinical_summary",
+            resource_id=patient_id,
+        )

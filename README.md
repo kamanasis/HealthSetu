@@ -1,9 +1,11 @@
-# HealthSetu — Backend (Phase 1 + Phase 2)
+# HealthSetu — Backend (Phases 1 – 4)
 
 HealthSetu is a unified healthcare interoperability, clinical coordination, and patient safety backend platform.
 
-**Phase 1** establishes the production-oriented engineering foundation.
-**Phase 2** builds the Identity & Authentication layer on top of it.
+- **Phase 1**: Production-oriented backend engineering foundation.
+- **Phase 2**: Identity & Authentication layer (Argon2id, JWT, refresh rotation).
+- **Phase 3**: Authorization, Access Control & Consent engine (RBAC, ownership, consent validation).
+- **Phase 4**: Patient Clinical Record foundation (demographics, history, allergies, vitals, encounters, clinical summary).
 
 ---
 
@@ -382,22 +384,60 @@ created_at              : TIMESTAMP WITH TIME ZONE
 
 ---
 
-## 12. What Phase 2 Does NOT Implement
+## 12. Phase 3 — Authorization, Access Control & Consent
 
-- ❌ Patient registration or onboarding workflow
-- ❌ Doctor registration or verification
-- ❌ OAuth 2.0 / Social login
-- ❌ Multi-factor authentication (MFA)
-- ❌ Role-based access control (RBAC) — deferred to Phase 3
-- ❌ Clinical authorization rules (patient–doctor relationships, consent)
-- ❌ Any medical record access
-- ❌ Database schema creation or migrations
-- ❌ Frontend / UI
-- ❌ Rate limiting in production (hook is present, implementation is Phase 3+)
+Phase 3 introduces the centralized authorization evaluation engine and patient consent management:
+
+- **Permission Policy Registry**: Strict role-to-permission mapping (`ROLE_PERMISSIONS`) adhering to least privilege. Admin accounts have zero clinical access by default.
+- **Access Evaluation Pipeline**: Stepwise evaluation (`Authentication` → `Permission Check` → `Ownership Check` → `Relationship Check` → `Consent Check`).
+- **Consent Lifecycle**: Patients grant and revoke access for explicit purposes (`care_delivery`, `research`, `emergency_access`) and scopes (`clinical_records`, `prescriptions`, etc.).
+- **Consent Endpoints**:
+  - `POST /api/v1/consents` — Grant consent
+  - `GET /api/v1/consents` — List active consents
+  - `GET /api/v1/consents/{id}` — Retrieve specific consent grant
+  - `POST /api/v1/consents/{id}/revoke` — Revoke consent grant
 
 ---
 
-## 13. Phase Status Summary
+## 13. Phase 4 — Patient Clinical Record Foundation
+
+Phase 4 implements the core clinical record entities and operations with strict PHI protections and zero inference:
+
+### Endpoints
+- **Patient Profile**:
+  - `GET /api/v1/patients/{patient_id}` — View patient profile (self or authorized doctor)
+  - `PATCH /api/v1/patients/{patient_id}` — Update permitted demographics (self only)
+  - `GET /api/v1/patients/{patient_id}/clinical-summary` — Controlled aggregated summary
+- **Clinical History**:
+  - `GET /api/v1/patients/{patient_id}/history` — List history entries
+  - `POST /api/v1/patients/{patient_id}/history` — Record past condition / event
+  - `GET /api/v1/patients/{patient_id}/history/{id}` — View history entry
+  - `PATCH /api/v1/patients/{patient_id}/history/{id}` — Update history entry (clinician only)
+- **Allergies**:
+  - `GET /api/v1/patients/{patient_id}/allergies` — List patient allergies
+  - `POST /api/v1/patients/{patient_id}/allergies` — Record allergy
+  - `GET /api/v1/patients/{patient_id}/allergies/{id}` — View allergy
+  - `PATCH /api/v1/patients/{patient_id}/allergies/{id}` — Update allergy (clinician only)
+- **Vitals (Append-Only)**:
+  - `GET /api/v1/patients/{patient_id}/vitals` — List vitals with filtering
+  - `POST /api/v1/patients/{patient_id}/vitals` — Append vital measurement
+  - `GET /api/v1/patients/{patient_id}/vitals/{id}` — View vital measurement
+  - *No update or deletion endpoints exist for vitals.*
+- **Encounters**:
+  - `GET /api/v1/patients/{patient_id}/encounters` — List encounters
+  - `POST /api/v1/patients/{patient_id}/encounters` — Record encounter (clinician only)
+  - `GET /api/v1/patients/{patient_id}/encounters/{id}` — View encounter
+
+### Security & Privacy Guarantees
+- **No PHI in logs, JWTs, or audit events**: Audit events record opaque IDs and field names only, never demographic values.
+- **Anti-Enumeration 404s**: Unauthorized attempts to access another patient's records return generic 404s instead of 403s.
+- **Soft-Delete Only**: Clinical records are archived with `is_archived=True`, never hard deleted. Archived records cannot be updated.
+- **Append-Only Vitals**: Measurements cannot be updated or removed once recorded.
+- **No Clinical Inference**: Backend does not diagnose, score severity, infer allergies, or triage.
+
+---
+
+## 14. Phase Status Summary
 
 | Phase | Component | Status |
 |---|---|---|
@@ -426,9 +466,18 @@ created_at              : TIMESTAMP WITH TIME ZONE
 | **Phase 2** | Anti-enumeration error messages | ✅ IMPLEMENTED |
 | **Phase 2** | Security event logging | ✅ IMPLEMENTED |
 | **Phase 2** | Clinical data exclusion from JWT | ✅ IMPLEMENTED |
-| **Phase 2** | External integration adapters | 🔲 PLACEHOLDER |
-| **Phase 2** | Database schema & models | 🔲 DATABASE TEAM |
-| **Phase 3+** | RBAC / Authorization rules | ⏳ NOT IMPLEMENTED |
-| **Phase 3+** | Patient–doctor consent | ⏳ NOT IMPLEMENTED |
-| **Phase 3+** | OAuth 2.0 / MFA | ⏳ NOT IMPLEMENTED |
-| **Future** | Clinical domain features | ⏳ NOT IMPLEMENTED |
+| **Phase 3** | Centralized Policy Registry | ✅ IMPLEMENTED |
+| **Phase 3** | AuthorizationService (RBAC + Ownership + Relationship + Consent) | ✅ IMPLEMENTED |
+| **Phase 3** | Consent management service & repository | ✅ IMPLEMENTED |
+| **Phase 3** | Consent API endpoints (`/api/v1/consents`) | ✅ IMPLEMENTED |
+| **Phase 3** | Audit event emission for authorization & consent decisions | ✅ IMPLEMENTED |
+| **Phase 4** | Patient profile lifecycle (`/api/v1/patients/{id}`) | ✅ IMPLEMENTED |
+| **Phase 4** | Clinical history management (`/patients/{id}/history`) | ✅ IMPLEMENTED |
+| **Phase 4** | Allergy tracking (`/patients/{id}/allergies`) | ✅ IMPLEMENTED |
+| **Phase 4** | Vitals append-only recording (`/patients/{id}/vitals`) | ✅ IMPLEMENTED |
+| **Phase 4** | Clinical encounters (`/patients/{id}/encounters`) | ✅ IMPLEMENTED |
+| **Phase 4** | Clinical summary assembly (`/patients/{id}/clinical-summary`) | ✅ IMPLEMENTED |
+| **Phase 4** | PHI redaction & anti-enumeration 404 security | ✅ IMPLEMENTED |
+| **Database Team** | PostgreSQL schema & migrations | 🔲 PENDING CONTRACT |
+| **Future Phases** | Prescriptions, Triage, ABHA / FHIR Interop | ⏳ UPCOMING |
+

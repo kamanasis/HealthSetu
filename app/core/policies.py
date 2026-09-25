@@ -42,6 +42,27 @@ class Permission(str, Enum):
     CLINICAL_RECORD_CREATE = "clinical_record:create"
     CLINICAL_RECORD_UPDATE = "clinical_record:update"
 
+    # ---- Clinical history (Phase 4) ----
+    CLINICAL_HISTORY_READ = "clinical_history:read"
+    CLINICAL_HISTORY_CREATE = "clinical_history:create"
+    CLINICAL_HISTORY_UPDATE = "clinical_history:update"
+
+    # ---- Allergies (Phase 4) ----
+    ALLERGY_READ = "allergy:read"
+    ALLERGY_CREATE = "allergy:create"
+    ALLERGY_UPDATE = "allergy:update"
+
+    # ---- Vitals (Phase 4) ----
+    VITAL_READ = "vital:read"
+    VITAL_CREATE = "vital:create"
+
+    # ---- Encounters (Phase 4) ----
+    ENCOUNTER_READ = "encounter:read"
+    ENCOUNTER_CREATE = "encounter:create"
+
+    # ---- Clinical summary (Phase 4) ----
+    CLINICAL_SUMMARY_READ = "clinical_summary:read"
+
     # ---- Prescriptions ----
     PRESCRIPTION_READ = "prescription:read"
     PRESCRIPTION_CREATE = "prescription:create"
@@ -81,8 +102,16 @@ ROLE_PERMISSIONS: dict[str, FrozenSet[Permission]] = {
     "PATIENT": frozenset({
         Permission.PATIENT_READ_SELF,
         Permission.PATIENT_UPDATE_SELF,
-        Permission.CLINICAL_RECORD_READ,   # own records only — ownership enforced in service
-        Permission.PRESCRIPTION_READ,      # own prescriptions only
+        Permission.CLINICAL_RECORD_READ,      # own records only — ownership enforced in service
+        Permission.CLINICAL_HISTORY_READ,     # own history
+        Permission.CLINICAL_HISTORY_CREATE,   # can add own history entries
+        Permission.ALLERGY_READ,
+        Permission.ALLERGY_CREATE,
+        Permission.VITAL_READ,
+        Permission.VITAL_CREATE,              # patient-reported vitals
+        Permission.ENCOUNTER_READ,
+        Permission.CLINICAL_SUMMARY_READ,
+        Permission.PRESCRIPTION_READ,
         Permission.MEDICATION_READ,
         Permission.CARE_PLAN_READ,
         Permission.CONSENT_CREATE,
@@ -90,22 +119,34 @@ ROLE_PERMISSIONS: dict[str, FrozenSet[Permission]] = {
         Permission.CONSENT_REVOKE,
     }),
     "DOCTOR": frozenset({
-        Permission.CLINICAL_RECORD_READ,   # gated by relationship + consent
+        Permission.PATIENT_READ_SELF,         # can read patient profile in context
+        Permission.CLINICAL_RECORD_READ,      # gated by relationship + consent
         Permission.CLINICAL_RECORD_CREATE,
         Permission.CLINICAL_RECORD_UPDATE,
+        Permission.CLINICAL_HISTORY_READ,
+        Permission.CLINICAL_HISTORY_CREATE,
+        Permission.CLINICAL_HISTORY_UPDATE,
+        Permission.ALLERGY_READ,
+        Permission.ALLERGY_CREATE,
+        Permission.ALLERGY_UPDATE,
+        Permission.VITAL_READ,
+        Permission.VITAL_CREATE,
+        Permission.ENCOUNTER_READ,
+        Permission.ENCOUNTER_CREATE,
+        Permission.CLINICAL_SUMMARY_READ,
         Permission.PRESCRIPTION_READ,
         Permission.PRESCRIPTION_CREATE,
         Permission.MEDICATION_READ,
         Permission.MEDICATION_UPDATE,
         Permission.CARE_PLAN_READ,
         Permission.CARE_PLAN_UPDATE,
-        Permission.CONSENT_READ,           # can view consent that applies to their access
+        Permission.CONSENT_READ,
     }),
     "ADMIN": frozenset({
         # Administrative capabilities ONLY — no automatic clinical data access
         Permission.ADMIN_USER_MANAGE,
         Permission.ADMIN_AUDIT_READ,
-        Permission.CONSENT_READ,           # for compliance/audit purposes
+        Permission.CONSENT_READ,
     }),
 }
 
@@ -117,20 +158,41 @@ ROLE_PERMISSIONS: dict[str, FrozenSet[Permission]] = {
 # Centralizes policy intent without embedding strings in handlers.
 
 ACTION_PERMISSION_MAP: dict[tuple[str, str], Permission] = {
+    # Patient profile
     ("patient_profile", "read"):          Permission.PATIENT_READ_SELF,
     ("patient_profile", "update"):        Permission.PATIENT_UPDATE_SELF,
+    # Clinical records (broad)
     ("clinical_record", "read"):          Permission.CLINICAL_RECORD_READ,
     ("clinical_record", "create"):        Permission.CLINICAL_RECORD_CREATE,
     ("clinical_record", "update"):        Permission.CLINICAL_RECORD_UPDATE,
+    # Clinical history (Phase 4)
+    ("clinical_history", "read"):         Permission.CLINICAL_HISTORY_READ,
+    ("clinical_history", "create"):       Permission.CLINICAL_HISTORY_CREATE,
+    ("clinical_history", "update"):       Permission.CLINICAL_HISTORY_UPDATE,
+    # Allergies (Phase 4)
+    ("allergy", "read"):                  Permission.ALLERGY_READ,
+    ("allergy", "create"):                Permission.ALLERGY_CREATE,
+    ("allergy", "update"):                Permission.ALLERGY_UPDATE,
+    # Vitals (Phase 4)
+    ("vital", "read"):                    Permission.VITAL_READ,
+    ("vital", "create"):                  Permission.VITAL_CREATE,
+    # Encounters (Phase 4)
+    ("encounter", "read"):                Permission.ENCOUNTER_READ,
+    ("encounter", "create"):              Permission.ENCOUNTER_CREATE,
+    # Clinical summary (Phase 4)
+    ("clinical_summary", "read"):         Permission.CLINICAL_SUMMARY_READ,
+    # Prescriptions / medications / care plans
     ("prescription", "read"):             Permission.PRESCRIPTION_READ,
     ("prescription", "create"):           Permission.PRESCRIPTION_CREATE,
     ("medication", "read"):               Permission.MEDICATION_READ,
     ("medication", "update"):             Permission.MEDICATION_UPDATE,
     ("care_plan", "read"):                Permission.CARE_PLAN_READ,
     ("care_plan", "update"):              Permission.CARE_PLAN_UPDATE,
+    # Consent
     ("consent", "create"):                Permission.CONSENT_CREATE,
     ("consent", "read"):                  Permission.CONSENT_READ,
     ("consent", "revoke"):                Permission.CONSENT_REVOKE,
+    # Admin
     ("user_management", "manage"):        Permission.ADMIN_USER_MANAGE,
     ("audit_log", "read"):                Permission.ADMIN_AUDIT_READ,
 }

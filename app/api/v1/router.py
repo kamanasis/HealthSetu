@@ -1,7 +1,16 @@
 """API Version 1 Router."""
 
 from fastapi import APIRouter
-from app.api.v1.endpoints import auth, consents, health
+from app.api.v1.endpoints import (
+    allergies,
+    auth,
+    clinical_history,
+    consents,
+    encounters,
+    health,
+    patients,
+    vitals,
+)
 
 v1_router = APIRouter()
 
@@ -14,7 +23,10 @@ v1_router.include_router(auth.router)
 # Register Phase 3 consent management endpoints
 v1_router.include_router(consents.router)
 
-# Future domain routers will be registered here in subsequent phases:
-# - v1_router.include_router(patient.router, prefix="/patients", tags=["Patients"])
-# - v1_router.include_router(prescriptions.router, prefix="/prescriptions", tags=["Prescriptions"])
-# - v1_router.include_router(triage.router, prefix="/triage", tags=["Triage"])
+# Register Phase 4 patient clinical record endpoints
+v1_router.include_router(patients.router)
+v1_router.include_router(clinical_history.router)
+v1_router.include_router(allergies.router)
+v1_router.include_router(vitals.router)
+v1_router.include_router(encounters.router)
+

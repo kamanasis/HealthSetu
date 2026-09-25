@@ -9,18 +9,27 @@ from httpx import ASGITransport, AsyncClient
 os.environ["APP_ENV"] = "testing"
 os.environ["DATABASE_URL"] = ""
 
+from datetime import date, datetime, timezone
+
 from app.api.deps import (
+    _global_allergy_repo,
     _global_audit_repo,
     _global_consent_repo,
+    _global_encounter_repo,
+    _global_history_repo,
+    _global_patient_repo,
     _global_permission_repo,
     _global_session_repo,
     _global_user_repo,
+    _global_vitals_repo,
 )
 from app.core.config import get_settings
 from app.core.security import create_access_token, hash_password
 from app.main import create_app
+from app.repositories.patient_repository import PatientRecord
 from app.repositories.user_repository import UserRecord
 from app.schemas.auth import AccountStatus, UserRole
+from app.schemas.patient import BiologicalSex, PatientStatus
 
 TEST_PASSWORD = "StrongP@ssw0rd123!"
 
@@ -36,6 +45,13 @@ def clean_state():
     # Phase 3
     _global_consent_repo._consents.clear()
     _global_audit_repo._events.clear()
+    # Phase 4
+    _global_patient_repo._patients.clear()
+    _global_patient_repo._user_to_patient.clear()
+    _global_history_repo._records.clear()
+    _global_allergy_repo._records.clear()
+    _global_vitals_repo._records.clear()
+    _global_encounter_repo._records.clear()
     yield
     get_settings.cache_clear()
     _global_user_repo._local_users.clear()
@@ -43,6 +59,13 @@ def clean_state():
     _global_session_repo._sessions_by_hash.clear()
     _global_consent_repo._consents.clear()
     _global_audit_repo._events.clear()
+    _global_patient_repo._patients.clear()
+    _global_patient_repo._user_to_patient.clear()
+    _global_history_repo._records.clear()
+    _global_allergy_repo._records.clear()
+    _global_vitals_repo._records.clear()
+    _global_encounter_repo._records.clear()
+
 
 
 @pytest.fixture
@@ -106,6 +129,49 @@ def seeded_users() -> dict[str, UserRecord]:
         _global_user_repo.register_in_memory_user(user)
 
     return users
+
+
+@pytest.fixture
+def seeded_patients(seeded_users) -> dict[str, PatientRecord]:
+    """Seed test patients into the patient repository linked to seeded users."""
+    now = datetime.now(timezone.utc)
+    patients = {
+        "patient": PatientRecord(
+            id="pat-001",
+            user_id="usr-patient-001",
+            first_name="Aarav",
+            last_name="Sharma",
+            date_of_birth=date(1990, 5, 15),
+            sex=BiologicalSex.MALE,
+            status=PatientStatus.ACTIVE,
+            preferred_language="en",
+            phone="+919876543210",
+            email="aarav.sharma@example.com",
+            created_at=now,
+            updated_at=now,
+        ),
+        "patient2": PatientRecord(
+            id="pat-002",
+            user_id="usr-patient-002",
+            first_name="Diya",
+            last_name="Patel",
+            date_of_birth=date(1995, 8, 22),
+            sex=BiologicalSex.FEMALE,
+            status=PatientStatus.ACTIVE,
+            preferred_language="hi",
+            phone="+919876543211",
+            email="diya.patel@example.com",
+            created_at=now,
+            updated_at=now,
+        ),
+    }
+
+    for p in patients.values():
+        _global_patient_repo._patients[p.id] = p
+        if p.user_id:
+            _global_patient_repo._user_to_patient[p.user_id] = p.id
+
+    return patients
 
 
 @pytest.fixture
