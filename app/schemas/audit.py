@@ -203,3 +203,8 @@ class AuditEventRecord(BaseModel):
         default=None,
         description="Optional minimal supplementary metadata. Must not contain PHI.",
     )
+
+    @property
+    def details(self) -> dict | None:
+        """Alias for metadata for backwards compatibility."""
+        return self.metadata

@@ -47,8 +47,11 @@ from app.repositories.patient_medication_repository import PatientMedicationReco
 from app.repositories.patient_repository import PatientRecord
 from app.repositories.user_repository import UserRecord
 from app.repositories.vitals_repository import VitalRecord
+from app.schemas.allergy import AllergySeverity, AllergyStatus
 from app.schemas.audit import AuditEventType
 from app.schemas.auth import AccountStatus, UserRole
+from app.schemas.clinical_history import ClinicalDataSource
+from app.schemas.encounter import EncounterStatus, EncounterType
 from app.schemas.interoperability import (
     ExportScope,
     ExternalIdentifierMapping,
@@ -160,9 +163,11 @@ def seed_interoperability_data():
     allergy = AllergyRecord(
         id="alg-001",
         patient_id="pat-001",
-        substance="Penicillin",
+        allergen="Penicillin",
         reaction="Anaphylaxis",
-        severity="SEVERE",
+        severity=AllergySeverity.SEVERE,
+        status=AllergyStatus.ACTIVE,
+        source=ClinicalDataSource.CLINIC_ENTERED,
         recorded_by="usr-doc-001",
         created_at=now,
         updated_at=now,
@@ -170,42 +175,40 @@ def seed_interoperability_data():
     _global_allergy_repo._records["alg-001"] = allergy
 
     # Vital
+    from app.schemas.vital import VitalSource, VitalType
     vital = VitalRecord(
         id="vit-001",
         patient_id="pat-001",
-        vital_type="HEART_RATE",
+        vital_type=VitalType.HEART_RATE,
         value=72.0,
         unit="bpm",
         measured_at=now,
+        source=VitalSource.CLINIC_RECORDED,
         recorded_by="usr-doc-001",
         created_at=now,
-        updated_at=now,
     )
     _global_vitals_repo._records["vit-001"] = vital
 
     # Medication
+    from app.schemas.medication import MedicationSource
     med = PatientMedicationRecord(
         id="pmed-001",
         patient_id="pat-001",
         drug_name_raw="Metformin 500mg",
-        dosage="500mg",
-        frequency="twice daily",
-        route="oral",
-        source="DOCTOR",
-        status="ACTIVE",
+        source=MedicationSource.DOCTOR_ENTERED,
         created_at=now,
         updated_at=now,
     )
-    _global_patient_medication_repo._records["pmed-001"] = med
+    _global_patient_medication_repo._medications["pmed-001"] = med
 
     # Encounter
     encounter = EncounterRecord(
         id="enc-001",
         patient_id="pat-001",
-        encounter_type="CONSULTATION",
-        reason="Follow up diabetes management",
-        clinician_user_id="usr-doc-001",
-        status="COMPLETED",
+        encounter_type=EncounterType.OUTPATIENT,
+        status=EncounterStatus.COMPLETED,
+        start_time=now,
+        source=ClinicalDataSource.CLINIC_ENTERED,
         created_at=now,
         updated_at=now,
     )
@@ -215,24 +218,17 @@ def seed_interoperability_data():
     consent = ConsentRecord(
         id="cst-001",
         patient_id="pat-001",
-        granted_to_user_id="usr-doc-001",
+        grantee_id="usr-doc-001",
         scope="interoperability",
         purpose="care_delivery",
         status=ConsentStatus.ACTIVE,
-        created_at=now,
-        updated_at=now,
+        granted_at=now,
+        effective_from=now,
     )
     _global_consent_repo._consents["cst-001"] = consent
 
-    # 5. External Identifier Mapping
-    _global_interoperability_repo.save_mapping(
-        ExternalIdentifierMapping(
-            source_system="Hospital-A",
-            external_patient_id="EXT-PAT-001",
-            healthsetu_patient_id="pat-001",
-            mapping_type="DIRECT",
-        )
-    )
+    # 5. External Identifier Mapping — insert directly into repo dict (sync setup)
+    _global_interoperability_repo._identity_mappings[("Hospital-A", "EXT-PAT-001")] = "pat-001"
 
     return {
         "patient_id": "pat-001",
@@ -301,17 +297,18 @@ def test_fhir_mapper_bi_directional_observation():
     assert candidate["unit"] == "bpm"
 
     # Outbound
+    from app.schemas.vital import VitalSource, VitalType
     vital_rec = VitalRecord(
         id="vit-99",
         patient_id="pat-001",
-        vital_type="HEART_RATE",
+        vital_type=VitalType.HEART_RATE,
         value=75.0,
         unit="bpm",
         measured_at=datetime.now(timezone.utc),
-        source="CLINICIAN",
+        source=VitalSource.CLINIC_RECORDED,
         created_at=datetime.now(timezone.utc),
     )
-    mapped_fhir = mapper.vital_to_fhir(vital_rec)
+    mapped_fhir = mapper.map_vital_outbound(vital_rec, "pat-001")
     assert mapped_fhir["resourceType"] == "Observation"
     assert mapped_fhir["valueQuantity"]["value"] == 75.0
 

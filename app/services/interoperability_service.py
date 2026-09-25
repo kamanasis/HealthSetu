@@ -130,13 +130,13 @@ class InteroperabilityService:
             logger.info(
                 f"Idempotent hit: Resource '{request_data.external_resource_id}' from '{request_data.source_system}' already imported as '{existing_import.id}'"
             )
-            return InteroperabilityImportResponse.model_validate(existing_import)
+            return existing_import
 
         await self.audit_service.record(
             event_type=AuditEventType.INTEROPERABILITY_IMPORT_STARTED,
             outcome="ALLOW",
             actor_id=user_context.user_id,
-            action="interoperability:import",
+            action=AuditEventType.INTEROPERABILITY_IMPORT_STARTED.value,
             resource_type=request_data.resource_type,
             resource_id=request_data.external_resource_id,
             metadata={
@@ -208,7 +208,7 @@ class InteroperabilityService:
                 event_type=AuditEventType.INTEROPERABILITY_IMPORT_COMPLETED,
                 outcome="ALLOW",
                 actor_id=user_context.user_id,
-                action="interoperability:import",
+                action=AuditEventType.INTEROPERABILITY_IMPORT_COMPLETED.value,
                 resource_type=request_data.resource_type,
                 resource_id=import_id,
                 metadata={
@@ -222,24 +222,64 @@ class InteroperabilityService:
                 event_type=AuditEventType.INTEROPERABILITY_VERIFICATION_REQUIRED,
                 outcome="ALLOW",
                 actor_id=user_context.user_id,
-                action="interoperability:verification_gate",
+                action=AuditEventType.INTEROPERABILITY_VERIFICATION_REQUIRED.value,
                 resource_type="interoperability_import",
                 resource_id=import_id,
             )
 
-            return InteroperabilityImportResponse.model_validate(persisted)
+            return persisted
 
         except Exception as exc:
             await self.audit_service.record(
                 event_type=AuditEventType.INTEROPERABILITY_IMPORT_FAILED,
                 outcome="DENY",
                 actor_id=user_context.user_id,
-                action="interoperability:import",
+                action=AuditEventType.INTEROPERABILITY_IMPORT_FAILED.value,
                 resource_type=request_data.resource_type,
                 resource_id=request_data.external_resource_id,
                 reason_code=type(exc).__name__,
             )
             raise
+
+    async def import_external_data(
+        self,
+        request: InteroperabilityImportRequest | None = None,
+        current_user: AuthenticatedUserContext | None = None,
+        request_id: str | None = None,
+        request_data: InteroperabilityImportRequest | None = None,
+        user_context: AuthenticatedUserContext | None = None,
+    ) -> InteroperabilityImportRecord:
+        """Alias for import_resource compatible with API routes."""
+        req = request or request_data
+        usr = current_user or user_context
+        if not req or not usr:
+            raise ValueError("Request and user context are required for import.")
+        return await self.import_resource(request_data=req, user_context=usr)
+
+    async def get_import_record(self, import_id: str) -> InteroperabilityImportRecord | None:
+        """Retrieve import record directly by ID without altering audit context."""
+        return await self.interop_repo.get_import(import_id)
+
+    async def get_export_record(self, export_id: str) -> InteroperabilityExportRecord | None:
+        """Retrieve export record directly by ID."""
+        return await self.interop_repo.get_export(export_id)
+
+    async def audit_resource_viewed(
+        self,
+        user_id: str,
+        resource_type: str,
+        resource_id: str,
+        request_id: str | None = None,
+    ) -> None:
+        """Emit INTEROPERABILITY_RESOURCE_VIEWED audit event."""
+        await self.audit_service.record(
+            event_type=AuditEventType.INTEROPERABILITY_RESOURCE_VIEWED,
+            outcome="ALLOW",
+            actor_id=user_id,
+            action=AuditEventType.INTEROPERABILITY_RESOURCE_VIEWED.value,
+            resource_type=resource_type,
+            resource_id=resource_id,
+        )
 
     async def get_import(
         self,
@@ -255,7 +295,7 @@ class InteroperabilityService:
             event_type=AuditEventType.INTEROPERABILITY_RESOURCE_VIEWED,
             outcome="ALLOW",
             actor_id=user_context.user_id,
-            action="interoperability:read",
+            action=AuditEventType.INTEROPERABILITY_RESOURCE_VIEWED.value,
             resource_type="interoperability_import",
             resource_id=import_id,
         )
@@ -268,10 +308,20 @@ class InteroperabilityService:
 
     async def export_patient_data(
         self,
-        request_data: InteroperabilityExportRequest,
-        user_context: AuthenticatedUserContext,
-    ) -> InteroperabilityExportResponse:
+        request: InteroperabilityExportRequest | None = None,
+        current_user: AuthenticatedUserContext | None = None,
+        request_id: str | None = None,
+        request_data: InteroperabilityExportRequest | None = None,
+        user_context: AuthenticatedUserContext | None = None,
+    ) -> InteroperabilityExportRecord:
         """Extract, transform, and export authorized patient clinical data into FHIR R4 Bundle."""
+        req = request or request_data
+        usr = current_user or user_context
+        if not req or not usr:
+            raise ValueError("Request and user context are required for export.")
+        request_data = req
+        user_context = usr
+
         if not self.settings.INTEROPERABILITY_ENABLED:
             raise InteroperabilityDisabledException()
 
@@ -310,7 +360,7 @@ class InteroperabilityService:
             event_type=AuditEventType.INTEROPERABILITY_EXPORT_STARTED,
             outcome="ALLOW",
             actor_id=user_context.user_id,
-            action="interoperability:export",
+            action=AuditEventType.INTEROPERABILITY_EXPORT_STARTED.value,
             resource_type="patient",
             resource_id=patient_id,
             metadata={
@@ -341,35 +391,39 @@ class InteroperabilityService:
                 patient_fhir = self.fhir_mapper.map_patient_outbound(patient)
                 resources.append(patient_fhir)
 
-            if request_data.scope in (ExportScope.FULL_AUTHORIZED_RECORD, ExportScope.VITALS):
+            if request_data.scope in (ExportScope.FULL_AUTHORIZED_RECORD, ExportScope.CLINICAL_SUMMARY, ExportScope.VITALS):
                 if not requested_types or "observation" in requested_types:
                     vitals = await self.vitals_repo.list_by_patient(patient_id=patient_id, limit=20)
                     for v in vitals:
                         resources.append(self.fhir_mapper.map_vital_outbound(v, patient_id))
 
-            if request_data.scope in (ExportScope.FULL_AUTHORIZED_RECORD, ExportScope.ALLERGIES):
+            if request_data.scope in (ExportScope.FULL_AUTHORIZED_RECORD, ExportScope.CLINICAL_SUMMARY, ExportScope.ALLERGIES):
                 if not requested_types or "allergyintolerance" in requested_types:
                     allergies = await self.allergy_repo.list_by_patient(patient_id=patient_id)
                     for a in allergies:
                         resources.append(self.fhir_mapper.map_allergy_outbound(a, patient_id))
 
-            if request_data.scope in (ExportScope.FULL_AUTHORIZED_RECORD, ExportScope.MEDICATIONS):
+            if request_data.scope in (ExportScope.FULL_AUTHORIZED_RECORD, ExportScope.CLINICAL_SUMMARY, ExportScope.MEDICATIONS):
                 if not requested_types or "medicationrequest" in requested_types:
                     meds = await self.medication_repo.list_by_patient(patient_id=patient_id, limit=20)
                     for m in meds:
                         resources.append(self.fhir_mapper.map_medication_outbound(m, patient_id))
 
-            if request_data.scope in (ExportScope.FULL_AUTHORIZED_RECORD, ExportScope.ENCOUNTER):
+            if request_data.scope in (ExportScope.FULL_AUTHORIZED_RECORD, ExportScope.CLINICAL_SUMMARY, ExportScope.ENCOUNTER):
                 if not requested_types or "encounter" in requested_types:
-                    encs, _ = await self.encounter_repo.list_by_patient(patient_id=patient_id, limit=10)
+                    encs = await self.encounter_repo.list_by_patient(patient_id=patient_id, limit=10)
                     for enc in encs:
                         resources.append(self.fhir_mapper.map_encounter_outbound(enc, patient_id))
 
             if request_data.scope in (ExportScope.FULL_AUTHORIZED_RECORD, ExportScope.DOCUMENTS):
                 if not requested_types or "documentreference" in requested_types:
-                    docs, _ = await self.document_repo.list_by_patient(patient_id=patient_id, limit=10)
-                    for doc in docs:
-                        resources.append(self.fhir_mapper.map_document_outbound(doc, patient_id))
+                    docs_getter = getattr(self.document_repo, "list_documents_by_patient", None) or getattr(self.document_repo, "list_by_patient", None)
+                    if docs_getter:
+                        docs = await docs_getter(patient_id=patient_id)
+                        if isinstance(docs, tuple):
+                            docs = docs[0]
+                        for doc in docs[:10]:
+                            resources.append(self.fhir_mapper.map_document_outbound(doc, patient_id))
 
             # 4. Construct and Validate FHIR Bundle
             fhir_bundle = self.fhir_mapper.create_fhir_bundle(resources)
@@ -410,7 +464,7 @@ class InteroperabilityService:
                 event_type=AuditEventType.INTEROPERABILITY_EXPORT_COMPLETED,
                 outcome="ALLOW",
                 actor_id=user_context.user_id,
-                action="interoperability:export",
+                action=AuditEventType.INTEROPERABILITY_EXPORT_COMPLETED.value,
                 resource_type="patient",
                 resource_id=patient_id,
                 metadata={
@@ -424,7 +478,7 @@ class InteroperabilityService:
                 event_type=AuditEventType.INTEROPERABILITY_DATA_SHARED,
                 outcome="ALLOW",
                 actor_id=user_context.user_id,
-                action="interoperability:share",
+                action=AuditEventType.INTEROPERABILITY_DATA_SHARED.value,
                 resource_type="export_bundle",
                 resource_id=export_id,
                 metadata={
@@ -433,25 +487,14 @@ class InteroperabilityService:
                 },
             )
 
-            return InteroperabilityExportResponse(
-                export_id=export_id,
-                patient_id=patient_id,
-                target_system=request_data.target_system,
-                format=request_data.format,
-                format_version=request_data.format_version or "R4",
-                scope=request_data.scope,
-                status=ExportStatus.DELIVERED,
-                resource_count=len(resources),
-                data=fhir_bundle,
-                created_at=now,
-            )
+            return persisted
 
         except Exception as exc:
             await self.audit_service.record(
                 event_type=AuditEventType.INTEROPERABILITY_EXPORT_FAILED,
                 outcome="DENY",
                 actor_id=user_context.user_id,
-                action="interoperability:export",
+                action=AuditEventType.INTEROPERABILITY_EXPORT_FAILED.value,
                 resource_type="patient",
                 resource_id=patient_id,
                 reason_code=type(exc).__name__,
@@ -472,7 +515,7 @@ class InteroperabilityService:
             event_type=AuditEventType.INTEROPERABILITY_RESOURCE_VIEWED,
             outcome="ALLOW",
             actor_id=user_context.user_id,
-            action="interoperability:read",
+            action=AuditEventType.INTEROPERABILITY_RESOURCE_VIEWED.value,
             resource_type="interoperability_export",
             resource_id=export_id,
         )
@@ -486,8 +529,10 @@ class InteroperabilityService:
             scope=record.scope,
             status=record.status,
             resource_count=record.exported_count,
+            delivered_bundle_id=record.id,
             data=record.exported_bundle,
             created_at=record.created_at,
+            updated_at=record.updated_at,
         )
 
     # ========================================================================
@@ -519,7 +564,7 @@ class InteroperabilityService:
                     event_type=AuditEventType.EXTERNAL_IDENTITY_UNRESOLVED,
                     outcome="DENY",
                     actor_id="system",
-                    action="identity:resolve",
+                    action=AuditEventType.EXTERNAL_IDENTITY_UNRESOLVED.value,
                     resource_type="patient",
                     resource_id=healthsetu_patient_id,
                 )
@@ -533,7 +578,7 @@ class InteroperabilityService:
                 event_type=AuditEventType.EXTERNAL_IDENTITY_RESOLVED,
                 outcome="ALLOW",
                 actor_id="system",
-                action="identity:resolve",
+                action=AuditEventType.EXTERNAL_IDENTITY_RESOLVED.value,
                 resource_type="patient",
                 resource_id=healthsetu_patient_id,
                 metadata={"source_system": source_system, "method": "direct_id"},
@@ -550,7 +595,7 @@ class InteroperabilityService:
                         event_type=AuditEventType.EXTERNAL_IDENTITY_RESOLVED,
                         outcome="ALLOW",
                         actor_id="system",
-                        action="identity:resolve",
+                        action=AuditEventType.EXTERNAL_IDENTITY_RESOLVED.value,
                         resource_type="patient",
                         resource_id=mapped_id,
                         metadata={"source_system": source_system, "method": "saved_mapping"},
@@ -600,7 +645,7 @@ class InteroperabilityService:
             event_type=AuditEventType.EXTERNAL_IDENTITY_UNRESOLVED,
             outcome="DENY",
             actor_id="system",
-            action="identity:resolve",
+            action=AuditEventType.EXTERNAL_IDENTITY_UNRESOLVED.value,
             resource_type="external_resource",
             resource_id=str(payload.get("id") or "unknown"),
             metadata={"source_system": source_system, "external_patient_id": external_patient_id},

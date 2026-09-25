@@ -15,7 +15,7 @@ from datetime import datetime, timezone
 from enum import Enum
 from typing import Any
 import uuid
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, computed_field
 
 
 # ---------------------------------------------------------------------------
@@ -157,6 +157,16 @@ class InteroperabilityImportRecord(BaseModel):
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
+    @computed_field
+    @property
+    def provenance(self) -> dict[str, Any]:
+        return {
+            "source_system": self.source_system,
+            "source_organization_id": self.source_organization_id,
+            "external_resource_id": self.external_resource_id,
+            "external_patient_id": self.external_patient_id,
+        }
+
 
 class InteroperabilityImportResponse(BaseModel):
     """API response for an import operation without leaking full raw payloads."""
@@ -167,12 +177,14 @@ class InteroperabilityImportResponse(BaseModel):
     source_system: str
     resource_type: str
     external_resource_id: str
+    healthsetu_patient_id: str | None = None
     patient_id: str | None = None
     status: ImportStatus
     verification_status: VerificationStatus
+    message: str | None = None
     validation_errors: list[str] = Field(default_factory=list)
     created_at: datetime
-    updated_at: datetime
+    updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
 
 # ---------------------------------------------------------------------------
@@ -239,10 +251,12 @@ class InteroperabilityExportResponse(BaseModel):
     patient_id: str
     target_system: str
     format: InteroperabilityFormat
-    format_version: str
+    format_version: str = "R4"
     scope: ExportScope
     status: ExportStatus
-    resource_count: int
+    resource_count: int = 0
+    delivered_bundle_id: str | None = None
+    message: str | None = None
     data: dict[str, Any] | None = None
     created_at: datetime
-    updated_at: datetime
+    updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))

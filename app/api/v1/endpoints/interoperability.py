@@ -163,7 +163,7 @@ async def export_patient_data(
         authz_service=authz_service,
         action="interoperability:export",
         resource_type="patient",
-        consent_scope="interoperability",
+        consent_scope=None,
     )
 
     record = await interop_service.export_patient_data(
@@ -177,11 +177,14 @@ async def export_patient_data(
         status=record.status,
         patient_id=record.patient_id,
         format=record.format,
+        format_version=record.format_version,
         scope=record.scope,
         target_system=record.target_system,
-        delivered_bundle_id=record.delivered_bundle_id,
+        delivered_bundle_id=record.id,
+        resource_count=record.exported_count,
         message=f"Export request completed with status {record.status.value}",
         created_at=record.created_at,
+        updated_at=record.updated_at,
     )
 
     return StandardSuccessResponse(
@@ -262,7 +265,7 @@ async def export_specific_patient(
         authz_service=authz_service,
         action="interoperability:export",
         resource_type="patient",
-        consent_scope="interoperability",
+        consent_scope=None,
     )
 
     full_request = InteroperabilityExportRequest(
@@ -285,11 +288,14 @@ async def export_specific_patient(
         status=record.status,
         patient_id=record.patient_id,
         format=record.format,
+        format_version=record.format_version,
         scope=record.scope,
         target_system=record.target_system,
-        delivered_bundle_id=record.delivered_bundle_id,
+        delivered_bundle_id=record.id,
+        resource_count=record.exported_count,
         message=f"Export request completed with status {record.status.value}",
         created_at=record.created_at,
+        updated_at=record.updated_at,
     )
 
     return StandardSuccessResponse(

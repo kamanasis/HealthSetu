@@ -114,14 +114,16 @@ class FHIRValidator:
         elif not code.get("coding") and not code.get("text"):
             errs.append("Observation.code must contain either 'coding' or 'text'.")
 
-        if not obs.get("subject") and not obs.get("patient"):
-            errs.append("Observation missing required 'subject' reference.")
+        subj = obs.get("subject") or obs.get("patient")
+        if subj is not None and not isinstance(subj, dict):
+            errs.append("Observation 'subject' must be a JSON object reference.")
         return errs
 
     def _validate_allergy_intolerance(self, a: dict[str, Any]) -> list[str]:
         errs = []
-        if not a.get("patient") and not a.get("subject"):
-            errs.append("AllergyIntolerance missing required 'patient' or 'subject' reference.")
+        subj = a.get("patient") or a.get("subject")
+        if subj is not None and not isinstance(subj, dict):
+            errs.append("AllergyIntolerance 'patient' must be a JSON object reference.")
         if not a.get("code") and not a.get("reaction"):
             errs.append("AllergyIntolerance must contain 'code' or 'reaction'.")
         return errs
