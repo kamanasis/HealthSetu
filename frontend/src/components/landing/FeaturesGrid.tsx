@@ -8,74 +8,48 @@ import {
   CalendarClock, 
   Volume2, 
   Building2, 
-  Activity 
+  Activity,
+  Check
 } from 'lucide-react';
 import { TextReveal, SectionReveal } from '../common/TextReveal';
 
 export const FeaturesGrid: React.FC = () => {
-  const features = [
+  const capabilities = [
     {
-      icon: <FileText className="w-5 h-5 text-[#4A90C4]" strokeWidth={1.8} />,
+      index: '01',
       title: 'Longitudinal Health Record',
-      description: 'Preserves your complete healthcare story across clinics, diagnostics, and hospitals in one patient-owned timeline.',
-      tag: 'Core Continuity',
-      tagColor: 'bg-[#EBF4FB] text-[#2B5F8A]',
+      description: 'Preserves your complete healthcare journey across clinics, labs, and hospital visits in a single patient-owned timeline.',
+      domain: 'Continuity',
     },
     {
-      icon: <ScanLine className="w-5 h-5 text-[#4A90C4]" strokeWidth={1.8} />,
-      title: 'Prescription Intelligence',
-      description: 'Ingests physical prescriptions with OCR and multimodal vision, followed by mandatory patient verification before saving.',
-      tag: 'Intelligent Ingestion',
-      tagColor: 'bg-[#EBF4FB] text-[#2B5F8A]',
+      index: '02',
+      title: 'Prescription Intelligence & OCR',
+      description: 'Multimodal extraction of physical slips followed by mandatory patient verification before saving to the permanent record.',
+      domain: 'Ingestion',
     },
     {
-      icon: <ShieldCheck className="w-5 h-5 text-[#3D8B6E]" strokeWidth={1.8} />,
-      title: 'Consent-Controlled Access',
-      description: 'Doctors must request permission. Patients view active sessions with full audit trails and instant 1-click access revocation.',
-      tag: 'Patient Sovereignty',
-      tagColor: 'bg-[#EBF5EC] text-[#2D5A40]',
+      index: '03',
+      title: 'Consent-Controlled Access & 1-Click Revocation',
+      description: 'Consulting clinicians request time-scoped access. Patients view active sessions with complete audit trails and instant revocation.',
+      domain: 'Governance',
     },
     {
-      icon: <AlertTriangle className="w-5 h-5 text-[#E07B39]" strokeWidth={1.8} />,
-      title: 'Medication Safety Engine',
-      description: 'Deterministic checks for drug-drug interactions, duplicate therapies, allergy conflicts, and food-drug contraindications.',
-      tag: 'Clinical Safety',
-      tagColor: 'bg-[#FEF3E8] text-[#A05520]',
+      index: '04',
+      title: 'Evidence-Linked AI SBAR Summaries',
+      description: 'Surfaces recurring symptoms, medication changes, and patterns with clickable links directly back to original clinical records.',
+      domain: 'Decision Support',
     },
     {
-      icon: <Sparkles className="w-5 h-5 text-[#7B5EA7]" strokeWidth={1.8} />,
-      title: 'Evidence-Linked AI SBAR',
-      description: 'Surfaces recurring symptoms, medication changes, and historical patterns with clickable links to underlying clinical sources.',
-      tag: 'Decision Support',
-      tagColor: 'bg-[#F5F0FC] text-[#5B3D8A]',
+      index: '05',
+      title: 'Actionable & Multilingual Care Plans',
+      description: 'Translates post-visit instructions into morning, afternoon, and bedtime tasks with meal cues and audio synthesis in regional languages.',
+      domain: 'Adherence',
     },
     {
-      icon: <CalendarClock className="w-5 h-5 text-[#4A90C4]" strokeWidth={1.8} />,
-      title: 'Actionable Care Plans',
-      description: 'Translates complex post-visit instructions into clear morning, afternoon, evening, and bedtime tasks with meal cues.',
-      tag: 'Patient Adherence',
-      tagColor: 'bg-[#EBF4FB] text-[#2B5F8A]',
-    },
-    {
-      icon: <Volume2 className="w-5 h-5 text-[#3D8B6E]" strokeWidth={1.8} />,
-      title: 'Multilingual & Audio Guidance',
-      description: 'Supports localized terminology and speech synthesis while rigorously preserving drug names, dosages, and critical metrics.',
-      tag: 'Accessibility',
-      tagColor: 'bg-[#EBF5EC] text-[#2D5A40]',
-    },
-    {
-      icon: <Activity className="w-5 h-5 text-[#E07B39]" strokeWidth={1.8} />,
-      title: 'Emergency Facility Discovery',
-      description: 'Identifies nearby hospitals matching your emergency condition with verified ICU beds, stroke units, and cath lab readiness.',
-      tag: 'Emergency Routing',
-      tagColor: 'bg-[#FEF3E8] text-[#A05520]',
-    },
-    {
-      icon: <Building2 className="w-5 h-5 text-[#7B5EA7]" strokeWidth={1.8} />,
-      title: 'Hospital Capacity Network',
-      description: 'Enables healthcare organizations to publish operational bed and service availability without exposing internal private records.',
-      tag: 'Interoperability',
-      tagColor: 'bg-[#F5F0FC] text-[#5B3D8A]',
+      index: '06',
+      title: 'Hospital Capacity & Emergency Routing',
+      description: 'Live availability tracking for ICU beds, Cath Labs, and trauma suites so emergency decisions are never based on stale information.',
+      domain: 'Operations',
     },
   ];
 
@@ -83,46 +57,95 @@ export const FeaturesGrid: React.FC = () => {
     <section className="bg-white py-20 border-b border-[#DDD9D1]">
       <div className="max-w-6xl mx-auto px-6 space-y-12">
         
-        <div className="text-center max-w-2xl mx-auto space-y-3">
+        {/* Section Header */}
+        <div className="max-w-2xl space-y-3">
           <SectionReveal>
-            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-[#FAF8F3] border border-[#DDD9D1] text-[#6B7A8D]">
-              Comprehensive Capabilities
+            <span className="text-[11px] uppercase tracking-wider font-semibold text-[#6B7A8D]">
+              Platform Architecture
             </span>
           </SectionReveal>
-          <h2 className="font-serif text-3xl sm:text-4xl text-[#1C2B3A]">
-            <TextReveal text="Designed for safety, trust, and continuity" stagger={0.02} yOffset={24} />
+          <h2 className="font-serif text-3xl sm:text-4xl text-[#1C2B3A] font-normal leading-tight">
+            <TextReveal text="Designed for clinical safety, trust, and continuity" stagger={0.02} yOffset={24} />
           </h2>
           <SectionReveal delay={0.2}>
-            <p className="text-[#6B7A8D] text-base leading-relaxed">
-              Every feature works within HealthSetu's overarching trust architecture: data provenance is maintained, clinicians remain the deciders, and patients remain in control.
+            <p className="text-[#6B7A8D] text-sm sm:text-base leading-relaxed">
+              Every system capability is governed by deterministic safety rules and cryptographic consent. No hallucinated health records, no unverified data ingestion.
             </p>
           </SectionReveal>
         </div>
 
-        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
-          {features.map((feature, idx) => (
-            <SectionReveal key={idx} delay={(idx % 3) * 0.1} yOffset={40}>
-              <div
-                className="bg-white rounded-2xl border border-[#DDD9D1] p-6 hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 flex flex-col justify-between group h-full"
-              >
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <div className="w-10 h-10 rounded-xl bg-[#FAF8F3] border border-[#DDD9D1] flex items-center justify-center group-hover:scale-110 transition-transform duration-200">
-                      {feature.icon}
-                    </div>
-                    <span className={`text-[10px] font-bold px-2.5 py-0.5 rounded-full ${feature.tagColor}`}>
-                      {feature.tag}
-                    </span>
+        {/* Asymmetric Composition: Flagship Capability Feature Split */}
+        <SectionReveal delay={0.1} yOffset={30}>
+          <div className="bg-[#FAF8F3] border border-[#DDD9D1] rounded-sm p-6 sm:p-8">
+            <div className="grid lg:grid-cols-12 gap-8 items-center">
+              
+              <div className="lg:col-span-6 space-y-4">
+                <span className="font-mono text-[10px] uppercase font-semibold text-[#4A90C4]">
+                  Flagship Capability
+                </span>
+                <h3 className="font-serif text-2xl text-[#1C2B3A] font-normal">
+                  Deterministic Medication Safety Engine
+                </h3>
+                <p className="text-xs text-[#6B7A8D] leading-relaxed">
+                  Unlike generative models that can fabricate drug interactions, HealthSetu runs deterministic checks against curated medical ontologies (RxNorm, OpenFDA, and CDSCO guidelines).
+                </p>
+                <div className="space-y-2 pt-2 text-xs text-[#1C2B3A]">
+                  <div className="flex items-center gap-2">
+                    <Check className="w-3.5 h-3.5 text-[#3D8B6E]" strokeWidth={2.5} />
+                    <span>Real-time Drug-Drug Interaction analysis</span>
                   </div>
-
-                  <div>
-                    <h3 className="font-serif text-xl font-bold text-[#1C2B3A]">{feature.title}</h3>
-                    <p className="text-xs text-[#6B7A8D] mt-1.5 leading-relaxed">
-                      {feature.description}
-                    </p>
+                  <div className="flex items-center gap-2">
+                    <Check className="w-3.5 h-3.5 text-[#3D8B6E]" strokeWidth={2.5} />
+                    <span>Cross-visit duplicate therapy detection</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Check className="w-3.5 h-3.5 text-[#3D8B6E]" strokeWidth={2.5} />
+                    <span>Documented allergy conflict interception</span>
                   </div>
                 </div>
               </div>
+
+              {/* Specimen Safety Alert Output */}
+              <div className="lg:col-span-6 bg-white border border-[#DDD9D1] p-4 rounded-sm space-y-3">
+                <div className="flex items-center justify-between border-b border-[#DDD9D1] pb-2 text-xs">
+                  <span className="font-mono font-semibold text-[#1C2B3A]">CLINICAL SAFETY ALERT #MS-842</span>
+                  <span className="text-[10px] font-semibold text-[#A05520] bg-[#FEF3E8] border border-[#FCDDC1] px-2 py-0.5 rounded-sm">
+                    Moderate Risk
+                  </span>
+                </div>
+                <div className="text-xs text-[#1C2B3A] space-y-1">
+                  <div className="font-semibold text-[#D94F7A]">Interaction: Telmisartan + Ibuprofen / NSAIDs</div>
+                  <p className="text-[11px] text-[#6B7A8D] leading-normal">
+                    Concomitant use may diminish the antihypertensive effect of Telmisartan and increase the risk of renal impairment in hypertensive patients.
+                  </p>
+                </div>
+                <div className="border-t border-[#DDD9D1] pt-2 text-[10px] font-mono text-[#6B7A8D] flex items-center justify-between">
+                  <span>Engine: Deterministic Rule Matrix v7</span>
+                  <span className="text-[#3D8B6E] font-semibold">Interception Verified</span>
+                </div>
+              </div>
+
+            </div>
+          </div>
+        </SectionReveal>
+
+        {/* Structured Capability Matrix (Clean hairline grid, zero rounded pill cards) */}
+        <div className="grid sm:grid-cols-2 lg:grid-cols-3 border border-[#DDD9D1] divide-y sm:divide-y-0 sm:divide-x divide-[#DDD9D1] bg-white">
+          {capabilities.map((cap, idx) => (
+            <SectionReveal
+              key={idx}
+              delay={idx * 0.05}
+              yOffset={16}
+              className={`p-6 space-y-3 hover:bg-[#FAF8F3] transition-colors ${
+                idx >= 3 ? 'sm:border-t sm:border-[#DDD9D1]' : ''
+              }`}
+            >
+              <div className="flex items-center justify-between">
+                <span className="font-mono text-xs text-[#6B7A8D] font-medium">[{cap.index}]</span>
+                <span className="text-[10px] font-mono uppercase text-[#6B7A8D]">{cap.domain}</span>
+              </div>
+              <h4 className="text-sm font-semibold text-[#1C2B3A]">{cap.title}</h4>
+              <p className="text-xs text-[#6B7A8D] leading-relaxed">{cap.description}</p>
             </SectionReveal>
           ))}
         </div>

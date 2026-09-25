@@ -1,5 +1,5 @@
 import React from 'react';
-import { ArrowRight, ShieldCheck, HeartHandshake } from 'lucide-react';
+import { ArrowRight, ShieldCheck } from 'lucide-react';
 import { TextReveal, SectionReveal } from '../common/TextReveal';
 import type { Role } from '../../types';
 
@@ -10,54 +10,53 @@ interface CTAProps {
 export const CTA: React.FC<CTAProps> = ({ onSelectRole }) => {
   return (
     <section className="py-24 max-w-6xl mx-auto px-6">
-      <SectionReveal yOffset={50}>
-        <div className="bg-gradient-to-br from-[#EBF4FB] via-[#FAF8F3] to-[#EBF5EC] border border-[#DDD9D1] rounded-3xl p-10 md:p-16 text-center space-y-8 shadow-sm">
+      <SectionReveal yOffset={32}>
+        <div className="bg-white border border-[#DDD9D1] rounded-sm p-8 sm:p-12 text-center space-y-6">
           
-          <div className="w-14 h-14 rounded-2xl bg-white border border-[#D5E8F8] flex items-center justify-center mx-auto text-[#4A90C4] shadow-sm">
-            <HeartHandshake className="w-7 h-7" strokeWidth={1.8} />
-          </div>
-
           <div className="max-w-2xl mx-auto space-y-3">
-            <h2 className="font-serif text-3xl sm:text-5xl text-[#1C2B3A] tracking-tight">
-              <TextReveal text="Healthcare works better when information is connected" stagger={0.02} yOffset={28} />
+            <span className="text-[11px] uppercase tracking-wider font-semibold text-[#6B7A8D]">
+              Start Healthcare Continuity
+            </span>
+            <h2 className="font-serif text-3xl sm:text-4xl text-[#1C2B3A] font-normal tracking-tight">
+              <TextReveal text="Healthcare works better when information is connected" stagger={0.02} yOffset={24} />
             </h2>
-            <SectionReveal delay={0.3}>
-              <p className="text-base text-[#6B7A8D] leading-relaxed">
-                Eliminate fragmented prescriptions, repeated tests, and emergency blind spots. Experience HealthSetu today.
+            <SectionReveal delay={0.2}>
+              <p className="text-sm sm:text-base text-[#6B7A8D] leading-relaxed">
+                Eliminate fragmented paper records, repeated diagnostic tests, and emergency facility blind spots. Experience HealthSetu today.
               </p>
             </SectionReveal>
           </div>
 
-          <SectionReveal delay={0.45} yOffset={24}>
+          <SectionReveal delay={0.35} yOffset={16}>
             <div className="flex flex-wrap items-center justify-center gap-4 pt-2">
               <button
                 onClick={() => onSelectRole('patient')}
-                className="bg-[#4A90C4] text-white font-semibold text-sm px-7 py-3.5 rounded-xl hover:bg-[#3A7DB0] transition-colors duration-200 shadow-sm flex items-center gap-2 group"
+                className="bg-[#4A90C4] text-white font-semibold text-xs px-6 py-3 rounded-sm hover:bg-[#3A7DB0] transition-colors flex items-center gap-2 group focus-visible:ring-1 focus-visible:ring-[#4A90C4]"
               >
-                <span>Create Patient Account</span>
-                <ArrowRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
+                <span>Enter Patient Portal</span>
+                <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
               </button>
 
               <button
                 onClick={() => onSelectRole('doctor')}
-                className="border border-[#DDD9D1] bg-white text-[#1C2B3A] font-semibold text-sm px-7 py-3.5 rounded-xl hover:border-[#4A90C4] hover:bg-[#FAF8F3] transition-colors duration-200"
+                className="border border-[#DDD9D1] bg-white text-[#1C2B3A] font-semibold text-xs px-6 py-3 rounded-sm hover:border-[#1C2B3A] hover:bg-[#FAF8F3] transition-colors focus-visible:ring-1 focus-visible:ring-[#1C2B3A]"
               >
-                Doctor Portal Access
+                Doctor Clinical Workspace
               </button>
 
               <button
                 onClick={() => onSelectRole('hospital')}
-                className="border border-[#DDD9D1] bg-white text-[#1C2B3A] font-semibold text-sm px-7 py-3.5 rounded-xl hover:border-[#7B5EA7] hover:bg-[#FAF8F3] transition-colors duration-200"
+                className="border border-[#DDD9D1] bg-white text-[#1C2B3A] font-semibold text-xs px-6 py-3 rounded-sm hover:border-[#1C2B3A] hover:bg-[#FAF8F3] transition-colors focus-visible:ring-1 focus-visible:ring-[#1C2B3A]"
               >
                 Hospital Capacity Network
               </button>
             </div>
           </SectionReveal>
 
-          <SectionReveal delay={0.55} yOffset={16}>
-            <div className="text-xs text-[#6B7A8D] flex items-center justify-center gap-2 pt-2">
-              <ShieldCheck className="w-4 h-4 text-[#3D8B6E]" />
-              <span>Compliant with Indian digital health guidelines · Patient retains 100% consent control</span>
+          <SectionReveal delay={0.45} yOffset={12}>
+            <div className="text-xs text-[#6B7A8D] flex items-center justify-center gap-2 pt-4 border-t border-[#DDD9D1] max-w-lg mx-auto">
+              <ShieldCheck className="w-3.5 h-3.5 text-[#3D8B6E]" />
+              <span>Compliant with Indian digital health guidelines · 100% patient consent control</span>
             </div>
           </SectionReveal>
 

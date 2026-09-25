@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { X, UploadCloud, CheckCircle2, AlertTriangle, FileText, Sparkles, Edit3 } from 'lucide-react';
-import { Medication } from '../../types';
+import { X, UploadCloud, CheckCircle2, AlertTriangle, FileText, Sparkles } from 'lucide-react';
+import type { Medication } from '../../types';
 
 interface PrescriptionUploadModalProps {
   isOpen: boolean;
@@ -39,7 +39,7 @@ export const PrescriptionUploadModal: React.FC<PrescriptionUploadModalProps> = (
     setStep('extracting');
     setTimeout(() => {
       setStep('review');
-    }, 1400);
+    }, 1200);
   };
 
   const handleConfirm = () => {
@@ -67,22 +67,22 @@ export const PrescriptionUploadModal: React.FC<PrescriptionUploadModalProps> = (
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#1C2B3A]/40 backdrop-blur-sm animate-in fade-in duration-200">
-      <div className="bg-white rounded-3xl border border-[#DDD9D1] max-w-3xl w-full p-6 sm:p-8 shadow-xl space-y-6">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#1C2B3A]/70">
+      <div className="bg-white rounded-sm border border-[#DDD9D1] max-w-3xl w-full p-6 sm:p-8 space-y-6">
         
         {/* Modal Header */}
         <div className="flex items-center justify-between border-b border-[#DDD9D1] pb-4">
           <div>
-            <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-[#EBF4FB] text-[#2B5F8A]">
+            <span className="text-[10px] font-mono uppercase font-semibold text-[#2B5F8A]">
               Human-in-the-Loop Extraction
-            </div>
-            <h3 className="font-serif text-2xl font-bold text-[#1C2B3A] mt-1">
+            </span>
+            <h3 className="font-serif text-xl text-[#1C2B3A] mt-0.5">
               Upload & Verify Prescription
             </h3>
           </div>
           <button
             onClick={onClose}
-            className="p-2 rounded-xl text-[#6B7A8D] hover:text-[#1C2B3A] hover:bg-[#F0EDE7] transition-colors"
+            className="p-1 rounded-sm text-[#6B7A8D] hover:text-[#1C2B3A] hover:bg-[#FAF8F3] transition-colors"
           >
             <X className="w-5 h-5" />
           </button>
@@ -91,31 +91,33 @@ export const PrescriptionUploadModal: React.FC<PrescriptionUploadModalProps> = (
         {/* Step 1: Upload */}
         {step === 'upload' && (
           <div className="space-y-6">
-            <div className="bg-[#FAF8F3] border-2 border-dashed border-[#DDD9D1] rounded-2xl p-8 text-center space-y-4 hover:border-[#4A90C4] transition-colors cursor-pointer"
-                 onClick={handleSimulateUpload}>
-              <div className="w-14 h-14 rounded-2xl bg-white border border-[#DDD9D1] flex items-center justify-center mx-auto text-[#4A90C4] shadow-sm">
-                <UploadCloud className="w-7 h-7" strokeWidth={1.8} />
+            <div
+              className="bg-[#FAF8F3] border border-dashed border-[#DDD9D1] rounded-sm p-8 text-center space-y-4 hover:border-[#1C2B3A] transition-colors cursor-pointer"
+              onClick={handleSimulateUpload}
+            >
+              <div className="w-10 h-10 rounded-sm bg-white border border-[#DDD9D1] flex items-center justify-center mx-auto text-[#4A90C4]">
+                <UploadCloud className="w-5 h-5" strokeWidth={2} />
               </div>
               <div className="space-y-1">
-                <p className="text-sm font-bold text-[#1C2B3A]">
-                  Click to upload prescription or diagnostic slip
+                <p className="text-xs font-semibold text-[#1C2B3A]">
+                  Click to select prescription or lab slip
                 </p>
-                <p className="text-xs text-[#6B7A8D]">
-                  Supports high-resolution PNG, JPG, or PDF (Max 15MB)
+                <p className="text-[11px] text-[#6B7A8D]">
+                  Supports PNG, JPG, or PDF (Max 15MB)
                 </p>
               </div>
               <button
                 type="button"
-                className="bg-[#4A90C4] text-white font-semibold text-xs px-5 py-2.5 rounded-xl hover:bg-[#3A7DB0] transition-colors shadow-sm"
+                className="bg-[#4A90C4] text-white font-semibold text-xs px-4 py-2 rounded-sm hover:bg-[#3A7DB0] transition-colors"
               >
                 Select Prescription File
               </button>
             </div>
 
-            <div className="bg-[#FEF3E8] border border-[#FCDDC1] rounded-xl p-3.5 flex items-start gap-3">
+            <div className="bg-[#FAF8F3] border border-[#DDD9D1] rounded-sm p-3.5 flex items-start gap-3">
               <AlertTriangle className="w-4 h-4 text-[#E07B39] shrink-0 mt-0.5" />
-              <p className="text-xs text-[#A05520] leading-relaxed">
-                <strong className="font-bold">Patient Trust Rule:</strong> HealthSetu uses AI vision to extract medication names and dosage instructions, but <span className="underline">you must review and confirm</span> the extracted fields before they become trusted health data.
+              <p className="text-xs text-[#6B7A8D] leading-relaxed">
+                <strong className="text-[#1C2B3A] font-semibold">Patient Verification Gate:</strong> HealthSetu uses multimodal vision to parse medication records, but <span className="underline text-[#1C2B3A]">you must verify extracted names and instructions</span> before they are saved to your permanent record.
               </p>
             </div>
           </div>
@@ -124,15 +126,15 @@ export const PrescriptionUploadModal: React.FC<PrescriptionUploadModalProps> = (
         {/* Step 2: Extracting Loading */}
         {step === 'extracting' && (
           <div className="py-12 text-center space-y-4">
-            <div className="w-16 h-16 rounded-2xl bg-[#EBF4FB] border border-[#D5E8F8] flex items-center justify-center mx-auto text-[#4A90C4] animate-pulse">
-              <Sparkles className="w-8 h-8 animate-spin" style={{ animationDuration: '3s' }} />
+            <div className="w-10 h-10 rounded-sm bg-[#FAF8F3] border border-[#DDD9D1] flex items-center justify-center mx-auto text-[#4A90C4] animate-pulse">
+              <Sparkles className="w-5 h-5 animate-spin" style={{ animationDuration: '3s' }} />
             </div>
             <div className="space-y-1">
-              <h4 className="font-serif text-xl font-bold text-[#1C2B3A]">
+              <h4 className="font-serif text-lg text-[#1C2B3A]">
                 Analyzing Prescription Document...
               </h4>
               <p className="text-xs text-[#6B7A8D]">
-                Extracting medicine name, strength, frequency, and prescribing physician
+                Extracting medicine name, active strength, frequency, and prescriber signature
               </p>
             </div>
           </div>
@@ -144,28 +146,28 @@ export const PrescriptionUploadModal: React.FC<PrescriptionUploadModalProps> = (
             <div className="grid md:grid-cols-12 gap-6 items-start">
               
               {/* Document Preview (Left) */}
-              <div className="md:col-span-5 bg-[#FAF8F3] border border-[#DDD9D1] rounded-2xl p-4 space-y-3">
-                <div className="flex items-center justify-between text-xs font-bold text-[#6B7A8D]">
-                  <span className="flex items-center gap-1.5">
+              <div className="md:col-span-5 bg-[#FAF8F3] border border-[#DDD9D1] rounded-sm p-4 space-y-3">
+                <div className="flex items-center justify-between text-xs text-[#6B7A8D]">
+                  <span className="flex items-center gap-1.5 font-semibold text-[#1C2B3A]">
                     <FileText className="w-3.5 h-3.5 text-[#4A90C4]" />
-                    Original Prescription
+                    Original Slip
                   </span>
-                  <span className="text-[10px] bg-white border border-[#DDD9D1] px-2 py-0.5 rounded-full">
-                    Scanned Slip
+                  <span className="text-[10px] font-mono bg-white border border-[#DDD9D1] px-1.5 py-0.5 rounded-sm">
+                    Scanned PDF
                   </span>
                 </div>
 
-                <div className="bg-white border border-[#DDD9D1] rounded-xl p-3 text-xs font-mono text-[#1C2B3A] space-y-2 select-none shadow-inner">
-                  <div className="font-bold border-b border-[#DDD9D1] pb-1">
+                <div className="bg-white border border-[#DDD9D1] rounded-sm p-3 text-xs font-mono text-[#1C2B3A] space-y-2 select-none">
+                  <div className="font-semibold border-b border-[#DDD9D1] pb-1">
                     FORTIS ESCORTS HEART INSTITUTE
                   </div>
                   <div className="text-[11px] text-[#6B7A8D]">
                     Dr. Vikrant Mehta · Reg: MCI-39102<br />
                     Patient: Rohan Sharma (42 M)
                   </div>
-                  <div className="bg-[#FAF8F3] p-2 rounded border border-[#DDD9D1]/60 text-[11px]">
+                  <div className="bg-[#FAF8F3] p-2 border border-[#DDD9D1] text-[11px]">
                     Rx:<br />
-                    <span className="font-bold text-[#2B5F8A]">Tab. Amlodipine 5mg</span><br />
+                    <span className="font-semibold text-[#2B5F8A]">Tab. Amlodipine 5mg</span><br />
                     1 tab OD morning after food x 30 days
                   </div>
                   <div className="text-[10px] text-[#6B7A8D] pt-1">
@@ -174,89 +176,89 @@ export const PrescriptionUploadModal: React.FC<PrescriptionUploadModalProps> = (
                 </div>
 
                 <p className="text-[11px] text-[#6B7A8D]">
-                  Compare the extracted data on the right with the uploaded slip.
+                  Confirm the extracted values on the right match the slip before saving.
                 </p>
               </div>
 
               {/* Extracted Fields Form (Right) */}
-              <div className="md:col-span-7 space-y-3.5">
-                <div className="flex items-center justify-between">
-                  <span className="text-xs font-bold text-[#1C2B3A]">Extracted Medication Fields</span>
-                  <span className="text-xs font-bold text-[#A05520] bg-[#FEF3E8] px-2.5 py-0.5 rounded-full border border-[#FCDDC1]">
+              <div className="md:col-span-7 space-y-3">
+                <div className="flex items-center justify-between border-b border-[#DDD9D1] pb-2">
+                  <span className="text-xs font-semibold text-[#1C2B3A]">Extracted Medication Fields</span>
+                  <span className="text-[10px] font-mono font-semibold text-[#A05520] bg-[#FEF3E8] px-2 py-0.5 rounded-sm border border-[#FCDDC1]">
                     Verification Required
                   </span>
                 </div>
 
                 <div className="grid grid-cols-2 gap-3">
                   <div className="space-y-1">
-                    <label className="text-[11px] font-bold text-[#6B7A8D]">Medicine Name</label>
+                    <label className="text-[11px] font-semibold text-[#6B7A8D]">Medicine Name</label>
                     <input
                       type="text"
                       value={extractedData.name}
                       onChange={(e) => setExtractedData({ ...extractedData, name: e.target.value })}
-                      className="w-full bg-[#FAF8F3] border border-[#DDD9D1] rounded-xl px-3 py-2 text-xs text-[#1C2B3A] font-semibold focus:ring-1 focus:ring-[#4A90C4] outline-none"
+                      className="w-full bg-[#FAF8F3] border border-[#DDD9D1] rounded-sm px-2.5 py-1.5 text-xs text-[#1C2B3A] focus:border-[#4A90C4] outline-none"
                     />
                   </div>
 
                   <div className="space-y-1">
-                    <label className="text-[11px] font-bold text-[#6B7A8D]">Strength</label>
+                    <label className="text-[11px] font-semibold text-[#6B7A8D]">Strength</label>
                     <input
                       type="text"
                       value={extractedData.strength}
                       onChange={(e) => setExtractedData({ ...extractedData, strength: e.target.value })}
-                      className="w-full bg-[#FAF8F3] border border-[#DDD9D1] rounded-xl px-3 py-2 text-xs text-[#1C2B3A] font-semibold focus:ring-1 focus:ring-[#4A90C4] outline-none"
+                      className="w-full bg-[#FAF8F3] border border-[#DDD9D1] rounded-sm px-2.5 py-1.5 text-xs text-[#1C2B3A] focus:border-[#4A90C4] outline-none"
                     />
                   </div>
 
                   <div className="space-y-1">
-                    <label className="text-[11px] font-bold text-[#6B7A8D]">Frequency</label>
+                    <label className="text-[11px] font-semibold text-[#6B7A8D]">Frequency</label>
                     <input
                       type="text"
                       value={extractedData.frequency}
                       onChange={(e) => setExtractedData({ ...extractedData, frequency: e.target.value })}
-                      className="w-full bg-[#FAF8F3] border border-[#DDD9D1] rounded-xl px-3 py-2 text-xs text-[#1C2B3A] font-semibold focus:ring-1 focus:ring-[#4A90C4] outline-none"
+                      className="w-full bg-[#FAF8F3] border border-[#DDD9D1] rounded-sm px-2.5 py-1.5 text-xs text-[#1C2B3A] focus:border-[#4A90C4] outline-none"
                     />
                   </div>
 
                   <div className="space-y-1">
-                    <label className="text-[11px] font-bold text-[#6B7A8D]">Duration</label>
+                    <label className="text-[11px] font-semibold text-[#6B7A8D]">Duration</label>
                     <input
                       type="text"
                       value={extractedData.duration}
                       onChange={(e) => setExtractedData({ ...extractedData, duration: e.target.value })}
-                      className="w-full bg-[#FAF8F3] border border-[#DDD9D1] rounded-xl px-3 py-2 text-xs text-[#1C2B3A] font-semibold focus:ring-1 focus:ring-[#4A90C4] outline-none"
+                      className="w-full bg-[#FAF8F3] border border-[#DDD9D1] rounded-sm px-2.5 py-1.5 text-xs text-[#1C2B3A] focus:border-[#4A90C4] outline-none"
                     />
                   </div>
                 </div>
 
                 <div className="space-y-1">
-                  <label className="text-[11px] font-bold text-[#6B7A8D]">Instructions</label>
+                  <label className="text-[11px] font-semibold text-[#6B7A8D]">Instructions</label>
                   <input
                     type="text"
                     value={extractedData.instructions}
                     onChange={(e) => setExtractedData({ ...extractedData, instructions: e.target.value })}
-                    className="w-full bg-[#FAF8F3] border border-[#DDD9D1] rounded-xl px-3 py-2 text-xs text-[#1C2B3A] font-semibold focus:ring-1 focus:ring-[#4A90C4] outline-none"
+                    className="w-full bg-[#FAF8F3] border border-[#DDD9D1] rounded-sm px-2.5 py-1.5 text-xs text-[#1C2B3A] focus:border-[#4A90C4] outline-none"
                   />
                 </div>
 
                 <div className="grid grid-cols-2 gap-3">
                   <div className="space-y-1">
-                    <label className="text-[11px] font-bold text-[#6B7A8D]">Prescribing Doctor</label>
+                    <label className="text-[11px] font-semibold text-[#6B7A8D]">Prescribing Doctor</label>
                     <input
                       type="text"
                       value={extractedData.prescribingDoctor}
                       onChange={(e) => setExtractedData({ ...extractedData, prescribingDoctor: e.target.value })}
-                      className="w-full bg-[#FAF8F3] border border-[#DDD9D1] rounded-xl px-3 py-2 text-xs text-[#1C2B3A] focus:ring-1 focus:ring-[#4A90C4] outline-none"
+                      className="w-full bg-[#FAF8F3] border border-[#DDD9D1] rounded-sm px-2.5 py-1.5 text-xs text-[#1C2B3A] focus:border-[#4A90C4] outline-none"
                     />
                   </div>
 
                   <div className="space-y-1">
-                    <label className="text-[11px] font-bold text-[#6B7A8D]">Hospital / Clinic</label>
+                    <label className="text-[11px] font-semibold text-[#6B7A8D]">Hospital / Clinic</label>
                     <input
                       type="text"
                       value={extractedData.hospital}
                       onChange={(e) => setExtractedData({ ...extractedData, hospital: e.target.value })}
-                      className="w-full bg-[#FAF8F3] border border-[#DDD9D1] rounded-xl px-3 py-2 text-xs text-[#1C2B3A] focus:ring-1 focus:ring-[#4A90C4] outline-none"
+                      className="w-full bg-[#FAF8F3] border border-[#DDD9D1] rounded-sm px-2.5 py-1.5 text-xs text-[#1C2B3A] focus:border-[#4A90C4] outline-none"
                     />
                   </div>
                 </div>
@@ -269,7 +271,7 @@ export const PrescriptionUploadModal: React.FC<PrescriptionUploadModalProps> = (
               <button
                 type="button"
                 onClick={() => setStep('upload')}
-                className="text-xs font-bold text-[#6B7A8D] hover:text-[#1C2B3A] px-3 py-2"
+                className="text-xs font-semibold text-[#6B7A8D] hover:text-[#1C2B3A]"
               >
                 ← Back to Upload
               </button>
@@ -278,17 +280,17 @@ export const PrescriptionUploadModal: React.FC<PrescriptionUploadModalProps> = (
                 <button
                   type="button"
                   onClick={onClose}
-                  className="border border-[#DDD9D1] bg-white text-[#1C2B3A] font-semibold text-xs px-4 py-2.5 rounded-xl hover:bg-[#FAF8F3] transition-colors"
+                  className="border border-[#DDD9D1] bg-white text-[#1C2B3A] font-semibold text-xs px-4 py-2 rounded-sm hover:bg-[#FAF8F3] transition-colors"
                 >
                   Discard
                 </button>
                 <button
                   type="button"
                   onClick={handleConfirm}
-                  className="bg-[#3D8B6E] text-white font-semibold text-xs px-6 py-2.5 rounded-xl hover:bg-[#2D5A40] transition-colors shadow-sm flex items-center gap-2"
+                  className="bg-[#3D8B6E] text-white font-semibold text-xs px-5 py-2 rounded-sm hover:bg-[#2D5A40] transition-colors flex items-center gap-2"
                 >
-                  <CheckCircle2 className="w-4 h-4" />
-                  <span>Verify & Add to My Timeline</span>
+                  <CheckCircle2 className="w-3.5 h-3.5" />
+                  <span>Verify & Add to My Record</span>
                 </button>
               </div>
             </div>

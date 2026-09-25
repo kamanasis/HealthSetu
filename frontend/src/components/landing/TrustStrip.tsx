@@ -1,45 +1,47 @@
 import React from 'react';
-import { ShieldCheck, Database, Sparkles, Building2, Lock } from 'lucide-react';
 import { SectionReveal } from '../common/TextReveal';
 
 export const TrustStrip: React.FC = () => {
   const trustItems = [
     {
-      icon: <Lock className="w-4 h-4 text-[#4A90C4]" strokeWidth={2} />,
+      index: '01',
       label: 'Patient-Controlled Consent',
-      sub: 'Time-scoped, instantly revocable access',
+      sub: 'Time-scoped, instantly revocable access token',
     },
     {
-      icon: <Database className="w-4 h-4 text-[#3D8B6E]" strokeWidth={2} />,
+      index: '02',
       label: 'Deterministic Medication Safety',
-      sub: 'Authoritative rules, not LLM guesses',
+      sub: 'Rule-based ontology checks, zero hallucinated data',
     },
     {
-      icon: <Sparkles className="w-4 h-4 text-[#7B5EA7]" strokeWidth={2} />,
-      label: 'Evidence-Linked AI Summaries',
-      sub: 'Full provenance back to original records',
+      index: '03',
+      label: 'Evidence-Linked AI SBAR',
+      sub: 'Provenance traceable to primary physical scans',
     },
     {
-      icon: <Building2 className="w-4 h-4 text-[#E07B39]" strokeWidth={2} />,
-      label: 'Verified Hospital Capacity',
-      sub: 'Freshness-tracked ICU & emergency beds',
+      index: '04',
+      label: 'Verified Facility Capacity',
+      sub: 'Freshness-stamped ICU & emergency readiness',
     },
   ];
 
   return (
-    <section className="bg-[#EBF4FB] border-y border-[#D5E8F8] py-6">
+    <section className="bg-[#FAF8F3] border-y border-[#DDD9D1] py-8">
       <div className="max-w-6xl mx-auto px-6">
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 divide-y sm:divide-y-0 sm:divide-x divide-[#DDD9D1]">
           {trustItems.map((item, index) => (
-            <SectionReveal key={index} delay={index * 0.1} yOffset={24}>
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-white border border-[#D5E8F8] flex items-center justify-center shrink-0 shadow-sm">
-                  {item.icon}
-                </div>
-                <div>
-                  <h4 className="text-xs font-bold text-[#1C2B3A]">{item.label}</h4>
-                  <p className="text-[11px] text-[#6B7A8D]">{item.sub}</p>
-                </div>
+            <SectionReveal
+              key={index}
+              delay={index * 0.08}
+              yOffset={16}
+              className={`${index > 0 ? 'sm:pl-6' : ''} ${index < trustItems.length - 1 ? 'sm:pr-6' : ''} py-4 sm:py-0`}
+            >
+              <div className="space-y-1">
+                <span className="font-mono text-[10px] text-[#6B7A8D] font-medium tracking-wider">
+                  [{item.index}]
+                </span>
+                <h4 className="text-xs font-semibold text-[#1C2B3A]">{item.label}</h4>
+                <p className="text-[11px] text-[#6B7A8D] leading-normal">{item.sub}</p>
               </div>
             </SectionReveal>
           ))}
