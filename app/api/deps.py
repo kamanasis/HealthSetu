@@ -67,6 +67,14 @@ from app.services.symptom_service import SymptomService
 from app.services.triage_service import TriageService
 from app.services.sbar_service import SBARService
 
+# Phase 9: Care Plan & Discharge imports
+from app.repositories.discharge_repository import DischargeRepository
+from app.repositories.care_plan_repository import CarePlanRepository
+from app.integrations.discharge.base import DischargeExtractor
+from app.integrations.discharge.extractor import LocalDischargeExtractor
+from app.services.discharge_service import DischargeService
+from app.services.care_plan_service import CarePlanService
+
 # ---------------------------------------------------------------------------
 # HTTP Bearer scheme
 # ---------------------------------------------------------------------------
@@ -114,6 +122,13 @@ _global_triage_engine = HealthSetuDeterministicTriageEngine()
 _global_template_generator = TemplateClinicalTextGenerator()
 _global_ai_generator = MockLLMClinicalTextGenerator()
 _global_sbar_validator = SBARFactValidator()
+
+# ---------------------------------------------------------------------------
+# Phase 9: Global default repositories & providers
+# ---------------------------------------------------------------------------
+_global_discharge_repo = DischargeRepository()
+_global_care_plan_repo = CarePlanRepository()
+_global_discharge_extractor = LocalDischargeExtractor()
 
 _global_authz_service = AuthorizationService(
     permission_repository=_global_permission_repo,
@@ -288,6 +303,26 @@ def get_ai_generator() -> ClinicalTextGenerator:
 def get_sbar_validator() -> SBARFactValidator:
     """Dependency provider for SBARFactValidator."""
     return _global_sbar_validator
+
+
+# ---------------------------------------------------------------------------
+# Phase 9: Repository & Provider dependencies
+# ---------------------------------------------------------------------------
+
+def get_discharge_repository() -> DischargeRepository:
+    """Dependency provider for DischargeRepository."""
+    return _global_discharge_repo
+
+
+def get_care_plan_repository() -> CarePlanRepository:
+    """Dependency provider for CarePlanRepository."""
+    return _global_care_plan_repo
+
+
+def get_discharge_extractor() -> DischargeExtractor:
+    """Dependency provider for DischargeExtractor."""
+    return _global_discharge_extractor
+
 
 
 # ---------------------------------------------------------------------------
@@ -538,6 +573,39 @@ def get_sbar_service(
         patient_medication_repo=patient_medication_repo,
         encounter_repo=encounter_repo,
     )
+
+
+# ---------------------------------------------------------------------------
+# Phase 9: Service providers
+# ---------------------------------------------------------------------------
+
+def get_discharge_service(
+    discharge_repo: Annotated[DischargeRepository, Depends(get_discharge_repository)],
+    document_repo: Annotated[DocumentRepository, Depends(get_document_repository)],
+    audit_service: Annotated[AuditService, Depends(get_audit_service)],
+    extractor: Annotated[DischargeExtractor, Depends(get_discharge_extractor)],
+) -> DischargeService:
+    """Dependency provider for DischargeService."""
+    return DischargeService(
+        discharge_repo=discharge_repo,
+        document_repo=document_repo,
+        audit_service=audit_service,
+        extractor=extractor,
+    )
+
+
+def get_care_plan_service(
+    care_plan_repo: Annotated[CarePlanRepository, Depends(get_care_plan_repository)],
+    discharge_repo: Annotated[DischargeRepository, Depends(get_discharge_repository)],
+    audit_service: Annotated[AuditService, Depends(get_audit_service)],
+) -> CarePlanService:
+    """Dependency provider for CarePlanService."""
+    return CarePlanService(
+        care_plan_repo=care_plan_repo,
+        discharge_repo=discharge_repo,
+        audit_service=audit_service,
+    )
+
 
 
 # ---------------------------------------------------------------------------

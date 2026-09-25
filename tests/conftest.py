@@ -31,6 +31,8 @@ from app.api.deps import (
     _global_symptom_repo,
     _global_triage_repo,
     _global_sbar_repo,
+    _global_discharge_repo,
+    _global_care_plan_repo,
     _global_authz_service,
 )
 from app.core.config import get_settings
@@ -76,6 +78,9 @@ def clean_state():
     _global_symptom_repo.clear()
     _global_triage_repo.clear()
     _global_sbar_repo.clear()
+    # Phase 9
+    _global_discharge_repo.clear()
+    _global_care_plan_repo.clear()
     yield
     get_settings.cache_clear()
     _global_user_repo._local_users.clear()
@@ -99,6 +104,9 @@ def clean_state():
     _global_symptom_repo.clear()
     _global_triage_repo.clear()
     _global_sbar_repo.clear()
+    # Phase 9
+    _global_discharge_repo.clear()
+    _global_care_plan_repo.clear()
 
 
 

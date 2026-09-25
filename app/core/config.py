@@ -233,6 +233,20 @@ class Settings(BaseSettings):
         description="Maximum allowed output tokens for AI text generation",
     )
 
+    # Care Plan & Discharge Configuration (Phase 9)
+    CARE_PLAN_ENABLED: bool = Field(
+        default=True,
+        description="Flag enabling Care Plan and Discharge processing pipeline",
+    )
+    CARE_PLAN_DEFAULT_HORIZON_DAYS: int = Field(
+        default=30,
+        description="Default duration horizon in days for personalized care plans",
+    )
+    DISCHARGE_EXTRACTION_PROVIDER: str = Field(
+        default="local",
+        description="Provider for discharge instruction extraction ('local', 'mock', 'licensed')",
+    )
+
     @property
     def max_document_size_bytes(self) -> int:
         """Maximum allowed document upload size in bytes."""

@@ -953,3 +953,173 @@ class AuditService(BaseService[AuditRepository]):
             },
         )
 
+    # -----------------------------------------------------------------------
+    # Phase 9 — Care Plan & Discharge Audit Helpers
+    # -----------------------------------------------------------------------
+
+    async def record_discharge_extraction_started(
+        self,
+        actor_id: str,
+        patient_id: str,
+        discharge_id: str,
+        document_id: str,
+    ) -> None:
+        """Audit: discharge instruction extraction started from medical document."""
+        await self.record(
+            event_type=AuditEventType.DISCHARGE_EXTRACTION_STARTED,
+            outcome="ALLOW",
+            actor_id=actor_id,
+            action="discharge:extract",
+            resource_type="discharge_instruction",
+            resource_id=discharge_id,
+            metadata={
+                "patient_id": patient_id,
+                "document_id": document_id,
+            },
+        )
+
+    async def record_discharge_extraction_completed(
+        self,
+        actor_id: str,
+        patient_id: str,
+        discharge_id: str,
+        document_id: str,
+        duration_ms: float,
+    ) -> None:
+        """Audit: discharge instruction extraction completed."""
+        await self.record(
+            event_type=AuditEventType.DISCHARGE_EXTRACTION_COMPLETED,
+            outcome="ALLOW",
+            actor_id=actor_id,
+            action="discharge:extract",
+            resource_type="discharge_instruction",
+            resource_id=discharge_id,
+            metadata={
+                "patient_id": patient_id,
+                "document_id": document_id,
+                "duration_ms": duration_ms,
+            },
+        )
+
+    async def record_discharge_extraction_failed(
+        self,
+        actor_id: str,
+        patient_id: str,
+        discharge_id: str,
+        document_id: str,
+        error_code: str,
+    ) -> None:
+        """Audit: discharge extraction failed."""
+        await self.record(
+            event_type=AuditEventType.DISCHARGE_EXTRACTION_FAILED,
+            outcome="DENY",
+            actor_id=actor_id,
+            action="discharge:extract",
+            resource_type="discharge_instruction",
+            resource_id=discharge_id,
+            reason_code=error_code,
+            metadata={
+                "patient_id": patient_id,
+                "document_id": document_id,
+            },
+        )
+
+    async def record_discharge_verified(
+        self,
+        actor_id: str,
+        patient_id: str,
+        discharge_id: str,
+    ) -> None:
+        """Audit: discharge instructions verified by clinician."""
+        await self.record(
+            event_type=AuditEventType.DISCHARGE_VERIFIED,
+            outcome="ALLOW",
+            actor_id=actor_id,
+            action="discharge:verify",
+            resource_type="discharge_instruction",
+            resource_id=discharge_id,
+            metadata={"patient_id": patient_id},
+        )
+
+    async def record_care_plan_created(
+        self,
+        actor_id: str,
+        patient_id: str,
+        care_plan_id: str,
+        source: str,
+    ) -> None:
+        """Audit: personalized care plan created."""
+        await self.record(
+            event_type=AuditEventType.CARE_PLAN_CREATED,
+            outcome="ALLOW",
+            actor_id=actor_id,
+            action="care_plan:create",
+            resource_type="care_plan",
+            resource_id=care_plan_id,
+            metadata={
+                "patient_id": patient_id,
+                "source": source,
+            },
+        )
+
+    async def record_care_plan_updated(
+        self,
+        actor_id: str,
+        patient_id: str,
+        care_plan_id: str,
+        updated_fields: list[str],
+    ) -> None:
+        """Audit: care plan updated (field names only, no values)."""
+        await self.record(
+            event_type=AuditEventType.CARE_PLAN_UPDATED,
+            outcome="ALLOW",
+            actor_id=actor_id,
+            action="care_plan:update",
+            resource_type="care_plan",
+            resource_id=care_plan_id,
+            metadata={
+                "patient_id": patient_id,
+                "updated_fields": updated_fields,
+            },
+        )
+
+    async def record_care_plan_viewed(
+        self,
+        actor_id: str,
+        patient_id: str,
+        care_plan_id: str,
+    ) -> None:
+        """Audit: care plan viewed."""
+        await self.record(
+            event_type=AuditEventType.CARE_PLAN_VIEWED,
+            outcome="ALLOW",
+            actor_id=actor_id,
+            action="care_plan:read",
+            resource_type="care_plan",
+            resource_id=care_plan_id,
+            metadata={"patient_id": patient_id},
+        )
+
+    async def record_care_plan_status_changed(
+        self,
+        actor_id: str,
+        patient_id: str,
+        care_plan_id: str,
+        old_status: str,
+        new_status: str,
+    ) -> None:
+        """Audit: care plan status changed."""
+        await self.record(
+            event_type=AuditEventType.CARE_PLAN_STATUS_CHANGED,
+            outcome="ALLOW",
+            actor_id=actor_id,
+            action="care_plan:update",
+            resource_type="care_plan",
+            resource_id=care_plan_id,
+            metadata={
+                "patient_id": patient_id,
+                "old_status": old_status,
+                "new_status": new_status,
+            },
+        )
+

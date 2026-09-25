@@ -121,9 +121,17 @@ class DocumentRepository(BaseRepository[Any]):
         self._documents[record.id] = record
         return record
 
+    create = create_document
+
     async def get_document_by_id(self, document_id: str) -> DocumentRecord | None:
         """Fetch document metadata by ID."""
         return self._documents.get(document_id)
+
+    get_by_id = get_document_by_id
+
+    async def get_extractions(self, document_id: str) -> list[ExtractionRecord]:
+        """Fetch all extractions for document."""
+        return self._extractions.get(document_id, [])
 
     async def list_documents_by_patient(
         self, patient_id: str, include_archived: bool = False

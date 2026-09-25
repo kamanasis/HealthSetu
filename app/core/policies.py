@@ -91,9 +91,13 @@ class Permission(str, Enum):
     SBAR_READ = "sbar:read"
     SBAR_CREATE = "sbar:create"
 
-    # ---- Care plans ----
+    # ---- Care plans & Discharge (Phase 9) ----
     CARE_PLAN_READ = "care_plan:read"
+    CARE_PLAN_CREATE = "care_plan:create"
     CARE_PLAN_UPDATE = "care_plan:update"
+    DISCHARGE_EXTRACT = "discharge:extract"
+    DISCHARGE_VERIFY = "discharge:verify"
+    DISCHARGE_READ = "discharge:read"
 
     # ---- Consent lifecycle ----
     CONSENT_CREATE = "consent:create"
@@ -147,6 +151,9 @@ ROLE_PERMISSIONS: dict[str, FrozenSet[Permission]] = {
         Permission.TRIAGE_ASSESS,
         Permission.SBAR_READ,
         Permission.CARE_PLAN_READ,
+        Permission.CARE_PLAN_UPDATE,
+        Permission.DISCHARGE_EXTRACT,
+        Permission.DISCHARGE_READ,
         Permission.CONSENT_CREATE,
         Permission.CONSENT_READ,
         Permission.CONSENT_REVOKE,
@@ -186,7 +193,11 @@ ROLE_PERMISSIONS: dict[str, FrozenSet[Permission]] = {
         Permission.SBAR_READ,
         Permission.SBAR_CREATE,
         Permission.CARE_PLAN_READ,
+        Permission.CARE_PLAN_CREATE,
         Permission.CARE_PLAN_UPDATE,
+        Permission.DISCHARGE_EXTRACT,
+        Permission.DISCHARGE_VERIFY,
+        Permission.DISCHARGE_READ,
         Permission.CONSENT_READ,
     }),
     "ADMIN": frozenset({
@@ -254,8 +265,13 @@ ACTION_PERMISSION_MAP: dict[tuple[str, str], Permission] = {
     ("triage", "assess"):                 Permission.TRIAGE_ASSESS,
     ("sbar", "read"):                     Permission.SBAR_READ,
     ("sbar", "create"):                   Permission.SBAR_CREATE,
+    # Care Plan & Discharge (Phase 9)
     ("care_plan", "read"):                Permission.CARE_PLAN_READ,
+    ("care_plan", "create"):              Permission.CARE_PLAN_CREATE,
     ("care_plan", "update"):              Permission.CARE_PLAN_UPDATE,
+    ("discharge", "extract"):             Permission.DISCHARGE_EXTRACT,
+    ("discharge", "verify"):              Permission.DISCHARGE_VERIFY,
+    ("discharge", "read"):                Permission.DISCHARGE_READ,
     # Consent
     ("consent", "create"):                Permission.CONSENT_CREATE,
     ("consent", "read"):                  Permission.CONSENT_READ,

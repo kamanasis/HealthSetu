@@ -100,6 +100,8 @@ class ConsentRepository(BaseRepository[Any]):
         self._consents[record.id] = record
         return record
 
+    create = create_consent
+
     async def update_consent_status(
         self,
         consent_id: str,

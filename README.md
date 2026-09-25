@@ -1,4 +1,4 @@
-# HealthSetu — Backend (Phases 1 – 8)
+# HealthSetu — Backend (Phases 1 – 9)
 
 HealthSetu is a unified healthcare interoperability, clinical coordination, and patient safety backend platform.
 
@@ -10,6 +10,7 @@ HealthSetu is a unified healthcare interoperability, clinical coordination, and 
 - **Phase 6**: Prescription & Medication System (extraction linkage, terminology normalization, longitudinal medication record).
 - **Phase 7**: Medication Safety System (authoritative provider abstraction, DDI, allergy cross-reactivity, contraindications, duplicate therapy).
 - **Phase 8**: Clinical Triage & SBAR Communication System (deterministic protocol-driven urgency assessment, symptom intake, fact-validated SBAR summaries).
+- **Phase 9**: Post-Discharge Care Plan & Clinical Verification System (discharge summary extraction, clinician verification boundary, personalized daily recovery schedule, task check-off).
 
 ---
 
@@ -650,5 +651,51 @@ Clinical Review / Care Pathway
 | `GET` | `/api/v1/patients/{id}/triage/{assessment_id}` | `triage:read` | Retrieve complete triage evaluation with reasons, explanation, and missing data |
 | `POST` | `/api/v1/patients/{id}/sbar` | `sbar:create` | Generate structured SBAR summary (Situation, Background, Assessment, Recommendation) |
 | `GET` | `/api/v1/patients/{id}/sbar/{sbar_id}` | `sbar:read` | Retrieve generated SBAR record with structured sections and formatted plain text |
+
+---
+
+## Phase 9 — Care Plan & Discharge Instruction Architecture
+
+### Pipeline
+```
+Discharge Document (Phase 5)
+        ↓
+Document Processing (Phase 5 OCR & Extraction)
+        ↓
+Discharge Information Extraction (Phase 9 Local/AI Extractor)
+        ↓
+Structured Discharge Instructions (Status: UNVERIFIED)
+        ↓
+Clinical Verification Boundary (Clinician Review & Correction)
+        ↓
+Personalized Care Plan (Actionable Daily Schedule & Red Flags)
+        ↓
+Medication / Activity / Follow-up / Wound Care Instructions
+        ↓
+Patient Care Plan (Goal Tracking, Task Check-off, Status Lifecycle)
+```
+
+### Critical Clinical Safety & Verification Boundaries
+> [!IMPORTANT]
+> **Extracted discharge instructions require clinician verification before generating active care plans.**
+> 1. **Zero Autonomous Diagnosis**: All extracted discharge diagnoses are attributed directly to the hospital discharge document and discharging clinician. The system never autonomously creates diagnoses.
+> 2. **Zero Autonomous Prescriptions**: Extracted discharge medications reflect orders from hospital discharge documentation; the system never autonomously prescribes or alters drug therapies.
+> 3. **Clinical Verification Boundary**: Extraction outputs are initially marked `UNVERIFIED`. Generating an active personalized recovery plan requires clinician sign-off (`VERIFIED` or `CORRECTED`) unless explicitly overridden with permission.
+> 4. **Daily Recovery Tasks**: Care plans decompose clinical discharge regimens into actionable daily schedules (medications, activity, dietary guidance, wound care, and follow-up appointments).
+> 5. **Patient Task Check-off**: Patients can check off completed tasks and log notes, incrementing care plan version tracking while preserving audit integrity.
+> 6. **Safety-Netting Red Flags**: Unhedged emergency guidance and warning signs are prominently attached to both discharge records and care plans.
+
+### Phase 9 API Endpoints
+
+| Method | Path | Auth / Scope | Description |
+|---|---|---|---|
+| `POST` | `/api/v1/patients/{id}/discharge/extract` | `discharge:extract` (`discharge_summary`) | Extract structured discharge instructions from a processed Phase 5 document (Status: `UNVERIFIED`) |
+| `GET` | `/api/v1/patients/{id}/discharge/{discharge_id}` | `discharge:read` (`discharge_summary`) | Retrieve extracted discharge instructions with clinical provenance and verification state |
+| `POST` | `/api/v1/patients/{id}/discharge/{discharge_id}/verify` | `discharge:verify` (`discharge_summary`) | Clinician verification boundary: review, correct, and verify discharge instructions (Doctor only) |
+| `POST` | `/api/v1/patients/{id}/care-plans` | `care_plan:create` (`care_plan`) | Directly create a personalized patient care plan with goals, schedule tasks, and warning signs |
+| `POST` | `/api/v1/patients/{id}/care-plans/from-discharge` | `care_plan:create` (`care_plan`) | Synthesize an actionable recovery care plan from clinically verified discharge instructions |
+| `GET` | `/api/v1/patients/{id}/care-plans` | `care_plan:read` (`care_plan`) | List paginated care plans for a patient, optionally filtered by status |
+| `GET` | `/api/v1/patients/{id}/care-plans/{care_plan_id}` | `care_plan:read` (`care_plan`) | Retrieve specific care plan with daily tasks, recovery goals, and red flag guidance |
+| `PATCH` | `/api/v1/patients/{id}/care-plans/{care_plan_id}` | `care_plan:update` (`care_plan`) | Update care plan status, complete daily schedule tasks, or append coordination notes |
 
 

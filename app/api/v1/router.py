@@ -4,8 +4,10 @@ from fastapi import APIRouter
 from app.api.v1.endpoints import (
     allergies,
     auth,
+    care_plans,
     clinical_history,
     consents,
+    discharge,
     documents,
     encounters,
     health,
@@ -51,5 +53,9 @@ v1_router.include_router(medication_safety.router)
 v1_router.include_router(symptoms.router)
 v1_router.include_router(triage.router)
 v1_router.include_router(sbar.router)
+
+# Register Phase 9 care plan and discharge endpoints
+v1_router.include_router(discharge.router)
+v1_router.include_router(care_plans.router)
 
 
