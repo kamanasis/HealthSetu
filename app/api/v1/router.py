@@ -6,17 +6,24 @@ from app.api.v1.endpoints import (
     auth,
     care_plans,
     clinical_history,
+    clinical_workflow,
     consents,
+    department,
     discharge,
     documents,
     encounters,
+    facility,
+    facility_discovery,
     health,
+    interoperability,
     medications,
     medication_safety,
+    organization,
     patients,
     prescriptions,
     sbar,
     symptoms,
+    transfers,
     triage,
     vitals,
 )
@@ -57,5 +64,22 @@ v1_router.include_router(sbar.router)
 # Register Phase 9 care plan and discharge endpoints
 v1_router.include_router(discharge.router)
 v1_router.include_router(care_plans.router)
+
+# Register Phase 10 doctor clinical workflow endpoints
+v1_router.include_router(clinical_workflow.router)
+
+# Register Phase 12 facility discovery (must be before facility detail router to avoid shadowing /facilities/discover)
+v1_router.include_router(facility_discovery.router)
+
+# Register Phase 11 hospital & organization network endpoints
+v1_router.include_router(organization.router)
+v1_router.include_router(facility.router)
+v1_router.include_router(department.router)
+
+# Register Phase 12 transfer endpoints
+v1_router.include_router(transfers.router)
+
+# Register Phase 13 interoperability & data exchange endpoints
+v1_router.include_router(interoperability.router)
 
 

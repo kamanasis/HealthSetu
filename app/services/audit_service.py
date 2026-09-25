@@ -1123,3 +1123,44 @@ class AuditService(BaseService[AuditRepository]):
             },
         )
 
+
+    # Phase 10: Doctor Clinical Workflow
+
+    async def record_clinical_note_created(self, actor_id, patient_id, note_id, note_type):
+        await self.record(event_type=AuditEventType.CLINICAL_NOTE_CREATED, outcome="ALLOW", actor_id=actor_id, action="clinical_note:create", resource_type="clinical_note", resource_id=note_id, metadata={"patient_id": patient_id, "note_type": note_type})
+
+    async def record_clinical_note_updated(self, actor_id, patient_id, note_id, updated_fields):
+        await self.record(event_type=AuditEventType.CLINICAL_NOTE_UPDATED, outcome="ALLOW", actor_id=actor_id, action="clinical_note:update", resource_type="clinical_note", resource_id=note_id, metadata={"patient_id": patient_id, "updated_fields": updated_fields})
+
+    async def record_clinical_note_signed(self, actor_id, patient_id, note_id):
+        await self.record(event_type=AuditEventType.CLINICAL_NOTE_SIGNED, outcome="ALLOW", actor_id=actor_id, action="clinical_note:sign", resource_type="clinical_note", resource_id=note_id, metadata={"patient_id": patient_id})
+
+    async def record_clinical_note_viewed(self, actor_id, patient_id, note_id):
+        await self.record(event_type=AuditEventType.CLINICAL_NOTE_VIEWED, outcome="ALLOW", actor_id=actor_id, action="clinical_note:read", resource_type="clinical_note", resource_id=note_id, metadata={"patient_id": patient_id})
+
+    async def record_clinical_assessment_created(self, actor_id, patient_id, assessment_id, assessment_type):
+        await self.record(event_type=AuditEventType.CLINICAL_ASSESSMENT_CREATED, outcome="ALLOW", actor_id=actor_id, action="clinical_assessment:create", resource_type="clinical_assessment", resource_id=assessment_id, metadata={"patient_id": patient_id, "assessment_type": assessment_type})
+
+    async def record_clinical_assessment_updated(self, actor_id, patient_id, assessment_id, updated_fields):
+        await self.record(event_type=AuditEventType.CLINICAL_ASSESSMENT_UPDATED, outcome="ALLOW", actor_id=actor_id, action="clinical_assessment:update", resource_type="clinical_assessment", resource_id=assessment_id, metadata={"patient_id": patient_id, "updated_fields": updated_fields})
+
+    async def record_clinical_assessment_finalized(self, actor_id, patient_id, assessment_id):
+        await self.record(event_type=AuditEventType.CLINICAL_ASSESSMENT_FINALIZED, outcome="ALLOW", actor_id=actor_id, action="clinical_assessment:finalize", resource_type="clinical_assessment", resource_id=assessment_id, metadata={"patient_id": patient_id})
+
+    async def record_clinical_assessment_viewed(self, actor_id, patient_id, assessment_id):
+        await self.record(event_type=AuditEventType.CLINICAL_ASSESSMENT_VIEWED, outcome="ALLOW", actor_id=actor_id, action="clinical_assessment:read", resource_type="clinical_assessment", resource_id=assessment_id, metadata={"patient_id": patient_id})
+
+    async def record_clinical_plan_created(self, actor_id, patient_id, plan_id, plan_type):
+        await self.record(event_type=AuditEventType.CLINICAL_PLAN_CREATED, outcome="ALLOW", actor_id=actor_id, action="clinical_plan:create", resource_type="clinical_plan", resource_id=plan_id, metadata={"patient_id": patient_id, "plan_type": plan_type})
+
+    async def record_clinical_plan_updated(self, actor_id, patient_id, plan_id, updated_fields):
+        await self.record(event_type=AuditEventType.CLINICAL_PLAN_UPDATED, outcome="ALLOW", actor_id=actor_id, action="clinical_plan:update", resource_type="clinical_plan", resource_id=plan_id, metadata={"patient_id": patient_id, "updated_fields": updated_fields})
+
+    async def record_clinical_plan_finalized(self, actor_id, patient_id, plan_id):
+        await self.record(event_type=AuditEventType.CLINICAL_PLAN_FINALIZED, outcome="ALLOW", actor_id=actor_id, action="clinical_plan:finalize", resource_type="clinical_plan", resource_id=plan_id, metadata={"patient_id": patient_id})
+
+    async def record_clinical_plan_viewed(self, actor_id, patient_id, plan_id):
+        await self.record(event_type=AuditEventType.CLINICAL_PLAN_VIEWED, outcome="ALLOW", actor_id=actor_id, action="clinical_plan:read", resource_type="clinical_plan", resource_id=plan_id, metadata={"patient_id": patient_id})
+
+    async def record_clinical_workspace_accessed(self, actor_id, patient_id, encounter_id=None):
+        await self.record(event_type=AuditEventType.CLINICAL_WORKSPACE_ACCESSED, outcome="ALLOW", actor_id=actor_id, action="clinical_workspace:read", resource_type="clinical_workspace", resource_id=patient_id, metadata={"patient_id": patient_id, "encounter_id": encounter_id})

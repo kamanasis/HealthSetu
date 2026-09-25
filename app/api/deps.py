@@ -75,6 +75,45 @@ from app.integrations.discharge.extractor import LocalDischargeExtractor
 from app.services.discharge_service import DischargeService
 from app.services.care_plan_service import CarePlanService
 
+# Phase 10: Doctor Clinical Workflow imports
+from app.repositories.clinical_note_repository import ClinicalNoteRepository
+from app.repositories.clinical_assessment_repository import ClinicalAssessmentRepository
+from app.repositories.clinical_plan_repository import ClinicalPlanRepository
+from app.services.clinical_note_service import ClinicalNoteService
+from app.services.clinical_assessment_service import ClinicalAssessmentService
+from app.services.clinical_plan_service import ClinicalPlanService
+from app.services.clinical_workspace_service import ClinicalWorkspaceService
+
+# Phase 11: Hospital & Organization Network imports
+from app.repositories.organization_repository import OrganizationRepository
+from app.repositories.facility_repository import FacilityRepository
+from app.repositories.department_repository import DepartmentRepository
+from app.integrations.healthcare_directory.provider import (
+    HealthcareDirectoryProvider,
+    get_healthcare_directory_provider,
+)
+from app.services.organization_access_service import OrganizationAccessService
+from app.services.facility_access_service import FacilityAccessService
+from app.services.organization_service import OrganizationService
+from app.services.facility_service import FacilityService
+from app.services.department_service import DepartmentService
+
+# Phase 12: Facility Discovery & Transfer imports
+from app.repositories.facility_discovery_repository import FacilityDiscoveryRepository
+from app.repositories.transfer_repository import TransferRepository
+from app.services.geographic_service import GeographicService
+from app.services.facility_capability_service import FacilityCapabilityService
+from app.services.facility_discovery_service import FacilityDiscoveryService
+from app.services.transfer_service import TransferService
+
+# Phase 13: Interoperability imports
+from app.repositories.interoperability_repository import InteroperabilityRepository
+from app.integrations.interoperability.base import InteroperabilityProvider
+from app.integrations.interoperability.providers.mock_provider import MockInteroperabilityProvider
+from app.integrations.interoperability.fhir.mapper import FHIRMapper
+from app.integrations.interoperability.fhir.validator import FHIRValidator
+from app.services.interoperability_service import InteroperabilityService
+
 # ---------------------------------------------------------------------------
 # HTTP Bearer scheme
 # ---------------------------------------------------------------------------
@@ -129,6 +168,42 @@ _global_sbar_validator = SBARFactValidator()
 _global_discharge_repo = DischargeRepository()
 _global_care_plan_repo = CarePlanRepository()
 _global_discharge_extractor = LocalDischargeExtractor()
+
+# ---------------------------------------------------------------------------
+# Phase 10: Global default repositories
+# ---------------------------------------------------------------------------
+_global_clinical_note_repo = ClinicalNoteRepository()
+_global_clinical_assessment_repo = ClinicalAssessmentRepository()
+_global_clinical_plan_repo = ClinicalPlanRepository()
+
+# ---------------------------------------------------------------------------
+# Phase 11: Global default repositories & providers
+# ---------------------------------------------------------------------------
+_global_organization_repo = OrganizationRepository()
+_global_facility_repo = FacilityRepository()
+_global_department_repo = DepartmentRepository()
+_global_healthcare_directory_provider = get_healthcare_directory_provider()
+
+# ---------------------------------------------------------------------------
+# Phase 12: Global default repositories & services
+# ---------------------------------------------------------------------------
+_global_facility_discovery_repo = FacilityDiscoveryRepository(
+    facility_repo=_global_facility_repo,
+    department_repo=_global_department_repo,
+)
+_global_transfer_repo = TransferRepository()
+_global_geo_service = GeographicService()
+_global_facility_capability_service = FacilityCapabilityService(
+    discovery_repo=_global_facility_discovery_repo
+)
+
+# ---------------------------------------------------------------------------
+# Phase 13: Global default repositories & providers
+# ---------------------------------------------------------------------------
+_global_interoperability_repo = InteroperabilityRepository()
+_global_fhir_validator = FHIRValidator()
+_global_fhir_mapper = FHIRMapper()
+_global_interoperability_provider = MockInteroperabilityProvider(name="MockProvider")
 
 _global_authz_service = AuthorizationService(
     permission_repository=_global_permission_repo,
@@ -323,6 +398,24 @@ def get_discharge_extractor() -> DischargeExtractor:
     """Dependency provider for DischargeExtractor."""
     return _global_discharge_extractor
 
+
+# ---------------------------------------------------------------------------
+# Phase 10: Repository providers
+# ---------------------------------------------------------------------------
+
+def get_clinical_note_repository() -> ClinicalNoteRepository:
+    """Dependency provider for ClinicalNoteRepository."""
+    return _global_clinical_note_repo
+
+
+def get_clinical_assessment_repository() -> ClinicalAssessmentRepository:
+    """Dependency provider for ClinicalAssessmentRepository."""
+    return _global_clinical_assessment_repo
+
+
+def get_clinical_plan_repository() -> ClinicalPlanRepository:
+    """Dependency provider for ClinicalPlanRepository."""
+    return _global_clinical_plan_repo
 
 
 # ---------------------------------------------------------------------------
@@ -607,6 +700,317 @@ def get_care_plan_service(
     )
 
 
+# ---------------------------------------------------------------------------
+# Phase 10: Service providers
+# ---------------------------------------------------------------------------
+
+def get_clinical_note_service(
+    note_repo: Annotated[ClinicalNoteRepository, Depends(get_clinical_note_repository)],
+    audit_service: Annotated[AuditService, Depends(get_audit_service)],
+) -> ClinicalNoteService:
+    """Dependency provider for ClinicalNoteService."""
+    return ClinicalNoteService(
+        note_repo=note_repo,
+        audit_service=audit_service,
+    )
+
+
+def get_clinical_assessment_service(
+    assessment_repo: Annotated[ClinicalAssessmentRepository, Depends(get_clinical_assessment_repository)],
+    audit_service: Annotated[AuditService, Depends(get_audit_service)],
+) -> ClinicalAssessmentService:
+    """Dependency provider for ClinicalAssessmentService."""
+    return ClinicalAssessmentService(
+        assessment_repo=assessment_repo,
+        audit_service=audit_service,
+    )
+
+
+def get_clinical_plan_service(
+    plan_repo: Annotated[ClinicalPlanRepository, Depends(get_clinical_plan_repository)],
+    audit_service: Annotated[AuditService, Depends(get_audit_service)],
+) -> ClinicalPlanService:
+    """Dependency provider for ClinicalPlanService."""
+    return ClinicalPlanService(
+        plan_repo=plan_repo,
+        audit_service=audit_service,
+    )
+
+
+def get_clinical_workspace_service(
+    patient_repo: Annotated[PatientRepository, Depends(get_patient_repository)],
+    history_repo: Annotated[ClinicalHistoryRepository, Depends(get_clinical_history_repository)],
+    allergy_repo: Annotated[AllergyRepository, Depends(get_allergy_repository)],
+    vitals_repo: Annotated[VitalsRepository, Depends(get_vitals_repository)],
+    encounter_repo: Annotated[EncounterRepository, Depends(get_encounter_repository)],
+    document_repo: Annotated[DocumentRepository, Depends(get_document_repository)],
+    prescription_repo: Annotated[PrescriptionRepository, Depends(get_prescription_repository)],
+    patient_medication_repo: Annotated[PatientMedicationRepository, Depends(get_patient_medication_repository)],
+    safety_repo: Annotated[MedicationSafetyRepository, Depends(get_medication_safety_repository)],
+    symptom_repo: Annotated[SymptomRepository, Depends(get_symptom_repository)],
+    triage_repo: Annotated[TriageRepository, Depends(get_triage_repository)],
+    sbar_repo: Annotated[SBARRepository, Depends(get_sbar_repository)],
+    discharge_repo: Annotated[DischargeRepository, Depends(get_discharge_repository)],
+    care_plan_repo: Annotated[CarePlanRepository, Depends(get_care_plan_repository)],
+    note_repo: Annotated[ClinicalNoteRepository, Depends(get_clinical_note_repository)],
+    assessment_repo: Annotated[ClinicalAssessmentRepository, Depends(get_clinical_assessment_repository)],
+    plan_repo: Annotated[ClinicalPlanRepository, Depends(get_clinical_plan_repository)],
+    note_service: Annotated[ClinicalNoteService, Depends(get_clinical_note_service)],
+    assessment_service: Annotated[ClinicalAssessmentService, Depends(get_clinical_assessment_service)],
+    plan_service: Annotated[ClinicalPlanService, Depends(get_clinical_plan_service)],
+    audit_service: Annotated[AuditService, Depends(get_audit_service)],
+) -> ClinicalWorkspaceService:
+    """Dependency provider for ClinicalWorkspaceService."""
+    return ClinicalWorkspaceService(
+        patient_repo=patient_repo,
+        history_repo=history_repo,
+        allergy_repo=allergy_repo,
+        vitals_repo=vitals_repo,
+        encounter_repo=encounter_repo,
+        document_repo=document_repo,
+        prescription_repo=prescription_repo,
+        patient_medication_repo=patient_medication_repo,
+        safety_repo=safety_repo,
+        symptom_repo=symptom_repo,
+        triage_repo=triage_repo,
+        sbar_repo=sbar_repo,
+        discharge_repo=discharge_repo,
+        care_plan_repo=care_plan_repo,
+        note_repo=note_repo,
+        assessment_repo=assessment_repo,
+        plan_repo=plan_repo,
+        note_service=note_service,
+        assessment_service=assessment_service,
+        plan_service=plan_service,
+        audit_service=audit_service,
+    )
+
+
+# ---------------------------------------------------------------------------
+# Phase 11: Repository providers
+# ---------------------------------------------------------------------------
+
+def get_organization_repository() -> OrganizationRepository:
+    """Dependency provider for OrganizationRepository."""
+    return _global_organization_repo
+
+
+def get_facility_repository() -> FacilityRepository:
+    """Dependency provider for FacilityRepository."""
+    return _global_facility_repo
+
+
+def get_department_repository() -> DepartmentRepository:
+    """Dependency provider for DepartmentRepository."""
+    return _global_department_repo
+
+
+def get_directory_provider() -> HealthcareDirectoryProvider:
+    """Dependency provider for HealthcareDirectoryProvider."""
+    return _global_healthcare_directory_provider
+
+
+# ---------------------------------------------------------------------------
+# Phase 11: Service providers
+# ---------------------------------------------------------------------------
+
+def get_organization_access_service(
+    org_repo: Annotated[OrganizationRepository, Depends(get_organization_repository)],
+    audit_service: Annotated[AuditService, Depends(get_audit_service)],
+) -> OrganizationAccessService:
+    """Dependency provider for OrganizationAccessService."""
+    return OrganizationAccessService(
+        organization_repo=org_repo,
+        audit_service=audit_service,
+    )
+
+
+def get_facility_access_service(
+    facility_repo: Annotated[FacilityRepository, Depends(get_facility_repository)],
+    org_repo: Annotated[OrganizationRepository, Depends(get_organization_repository)],
+    audit_service: Annotated[AuditService, Depends(get_audit_service)],
+) -> FacilityAccessService:
+    """Dependency provider for FacilityAccessService."""
+    return FacilityAccessService(
+        facility_repo=facility_repo,
+        organization_repo=org_repo,
+        audit_service=audit_service,
+    )
+
+
+def get_organization_service(
+    org_repo: Annotated[OrganizationRepository, Depends(get_organization_repository)],
+    facility_repo: Annotated[FacilityRepository, Depends(get_facility_repository)],
+    org_access_service: Annotated[OrganizationAccessService, Depends(get_organization_access_service)],
+    audit_service: Annotated[AuditService, Depends(get_audit_service)],
+) -> OrganizationService:
+    """Dependency provider for OrganizationService."""
+    return OrganizationService(
+        organization_repo=org_repo,
+        facility_repo=facility_repo,
+        organization_access_service=org_access_service,
+        audit_service=audit_service,
+    )
+
+
+def get_facility_service(
+    facility_repo: Annotated[FacilityRepository, Depends(get_facility_repository)],
+    org_repo: Annotated[OrganizationRepository, Depends(get_organization_repository)],
+    dept_repo: Annotated[DepartmentRepository, Depends(get_department_repository)],
+    facility_access_service: Annotated[FacilityAccessService, Depends(get_facility_access_service)],
+    audit_service: Annotated[AuditService, Depends(get_audit_service)],
+) -> FacilityService:
+    """Dependency provider for FacilityService."""
+    return FacilityService(
+        facility_repo=facility_repo,
+        organization_repo=org_repo,
+        department_repo=dept_repo,
+        facility_access_service=facility_access_service,
+        audit_service=audit_service,
+    )
+
+
+def get_department_service(
+    dept_repo: Annotated[DepartmentRepository, Depends(get_department_repository)],
+    facility_repo: Annotated[FacilityRepository, Depends(get_facility_repository)],
+    audit_service: Annotated[AuditService, Depends(get_audit_service)],
+) -> DepartmentService:
+    """Dependency provider for DepartmentService."""
+    return DepartmentService(
+        department_repo=dept_repo,
+        facility_repo=facility_repo,
+        audit_service=audit_service,
+    )
+
+
+# ---------------------------------------------------------------------------
+# Phase 12: Repository & Service providers
+# ---------------------------------------------------------------------------
+
+def get_facility_discovery_repository() -> FacilityDiscoveryRepository:
+    """Dependency provider for FacilityDiscoveryRepository."""
+    return _global_facility_discovery_repo
+
+
+def get_transfer_repository() -> TransferRepository:
+    """Dependency provider for TransferRepository."""
+    return _global_transfer_repo
+
+
+def get_geographic_service() -> GeographicService:
+    """Dependency provider for GeographicService."""
+    return _global_geo_service
+
+
+def get_facility_capability_service(
+    discovery_repo: Annotated[FacilityDiscoveryRepository, Depends(get_facility_discovery_repository)],
+) -> FacilityCapabilityService:
+    """Dependency provider for FacilityCapabilityService."""
+    return FacilityCapabilityService(discovery_repo=discovery_repo)
+
+
+def get_facility_discovery_service(
+    discovery_repo: Annotated[FacilityDiscoveryRepository, Depends(get_facility_discovery_repository)],
+    capability_service: Annotated[FacilityCapabilityService, Depends(get_facility_capability_service)],
+    geo_service: Annotated[GeographicService, Depends(get_geographic_service)],
+    triage_repo: Annotated[TriageRepository, Depends(get_triage_repository)],
+    audit_service: Annotated[AuditService, Depends(get_audit_service)],
+) -> FacilityDiscoveryService:
+    """Dependency provider for FacilityDiscoveryService."""
+    return FacilityDiscoveryService(
+        discovery_repo=discovery_repo,
+        capability_service=capability_service,
+        geo_service=geo_service,
+        triage_repo=triage_repo,
+        audit_service=audit_service,
+    )
+
+
+def get_transfer_service(
+    transfer_repo: Annotated[TransferRepository, Depends(get_transfer_repository)],
+    facility_repo: Annotated[FacilityRepository, Depends(get_facility_repository)],
+    patient_repo: Annotated[PatientRepository, Depends(get_patient_repository)],
+    encounter_repo: Annotated[EncounterRepository, Depends(get_encounter_repository)],
+    consent_repo: Annotated[ConsentRepository, Depends(get_consent_repository)],
+    sbar_repo: Annotated[SBARRepository, Depends(get_sbar_repository)],
+    triage_repo: Annotated[TriageRepository, Depends(get_triage_repository)],
+    symptom_repo: Annotated[SymptomRepository, Depends(get_symptom_repository)],
+    allergy_repo: Annotated[AllergyRepository, Depends(get_allergy_repository)],
+    medication_repo: Annotated[PatientMedicationRepository, Depends(get_patient_medication_repository)],
+    vitals_repo: Annotated[VitalsRepository, Depends(get_vitals_repository)],
+    audit_service: Annotated[AuditService, Depends(get_audit_service)],
+) -> TransferService:
+    """Dependency provider for TransferService."""
+    return TransferService(
+        transfer_repo=transfer_repo,
+        facility_repo=facility_repo,
+        patient_repo=patient_repo,
+        encounter_repo=encounter_repo,
+        consent_repo=consent_repo,
+        sbar_repo=sbar_repo,
+        triage_repo=triage_repo,
+        symptom_repo=symptom_repo,
+        allergy_repo=allergy_repo,
+        medication_repo=medication_repo,
+        vitals_repo=vitals_repo,
+        audit_service=audit_service,
+    )
+
+
+# ---------------------------------------------------------------------------
+# Phase 13: Repository & Service providers
+# ---------------------------------------------------------------------------
+
+def get_interoperability_repository() -> InteroperabilityRepository:
+    """Dependency provider for InteroperabilityRepository."""
+    return _global_interoperability_repo
+
+
+def get_fhir_validator() -> FHIRValidator:
+    """Dependency provider for FHIRValidator."""
+    return _global_fhir_validator
+
+
+def get_fhir_mapper() -> FHIRMapper:
+    """Dependency provider for FHIRMapper."""
+    return _global_fhir_mapper
+
+
+def get_interoperability_provider() -> InteroperabilityProvider:
+    """Dependency provider for InteroperabilityProvider."""
+    return _global_interoperability_provider
+
+
+def get_interoperability_service(
+    interop_repo: Annotated[InteroperabilityRepository, Depends(get_interoperability_repository)],
+    patient_repo: Annotated[PatientRepository, Depends(get_patient_repository)],
+    allergy_repo: Annotated[AllergyRepository, Depends(get_allergy_repository)],
+    medication_repo: Annotated[PatientMedicationRepository, Depends(get_patient_medication_repository)],
+    vitals_repo: Annotated[VitalsRepository, Depends(get_vitals_repository)],
+    encounter_repo: Annotated[EncounterRepository, Depends(get_encounter_repository)],
+    document_repo: Annotated[DocumentRepository, Depends(get_document_repository)],
+    consent_repo: Annotated[ConsentRepository, Depends(get_consent_repository)],
+    audit_service: Annotated[AuditService, Depends(get_audit_service)],
+    fhir_mapper: Annotated[FHIRMapper, Depends(get_fhir_mapper)],
+    fhir_validator: Annotated[FHIRValidator, Depends(get_fhir_validator)],
+    provider: Annotated[InteroperabilityProvider, Depends(get_interoperability_provider)],
+) -> InteroperabilityService:
+    """Dependency provider for InteroperabilityService."""
+    return InteroperabilityService(
+        interop_repo=interop_repo,
+        patient_repo=patient_repo,
+        allergy_repo=allergy_repo,
+        medication_repo=medication_repo,
+        vitals_repo=vitals_repo,
+        encounter_repo=encounter_repo,
+        document_repo=document_repo,
+        consent_repo=consent_repo,
+        audit_service=audit_service,
+        fhir_mapper=fhir_mapper,
+        fhir_validator=fhir_validator,
+        provider=provider,
+    )
+
 
 # ---------------------------------------------------------------------------
 # Phase 2: Authentication dependency
@@ -767,7 +1171,7 @@ async def verify_patient_access(
     action: str,
     resource_type: str,
     resource_id: str | None = None,
-    consent_scope: str = "clinical_records",
+    consent_scope: str | None = "clinical_records",
 ) -> PatientResponse:
     """Evaluate patient access for current user.
 
@@ -806,7 +1210,7 @@ async def verify_patient_access(
                 resource_owner_id=owner_id,
             ),
             require_relationship=True,
-            consent_purpose="care_delivery",
+            consent_purpose="care_delivery" if consent_scope is not None else None,
             consent_scope=consent_scope,
         )
         return patient

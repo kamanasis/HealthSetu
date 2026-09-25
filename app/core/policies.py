@@ -99,6 +99,38 @@ class Permission(str, Enum):
     DISCHARGE_VERIFY = "discharge:verify"
     DISCHARGE_READ = "discharge:read"
 
+    # ---- Doctor Clinical Workflow (Phase 10) ----
+    CLINICAL_NOTE_READ = "clinical_note:read"
+    CLINICAL_NOTE_CREATE = "clinical_note:create"
+    CLINICAL_NOTE_UPDATE = "clinical_note:update"
+    CLINICAL_NOTE_SIGN = "clinical_note:sign"
+    CLINICAL_ASSESSMENT_READ = "clinical_assessment:read"
+    CLINICAL_ASSESSMENT_CREATE = "clinical_assessment:create"
+    CLINICAL_ASSESSMENT_UPDATE = "clinical_assessment:update"
+    CLINICAL_ASSESSMENT_FINALIZE = "clinical_assessment:finalize"
+    CLINICAL_PLAN_READ = "clinical_plan:read"
+    CLINICAL_PLAN_CREATE = "clinical_plan:create"
+    CLINICAL_PLAN_UPDATE = "clinical_plan:update"
+    CLINICAL_PLAN_FINALIZE = "clinical_plan:finalize"
+    CLINICAL_WORKSPACE_READ = "clinical_workspace:read"
+
+    # ---- Organization, Facility & Department (Phase 11) ----
+    ORGANIZATION_READ = "organization:read"
+    FACILITY_READ = "facility:read"
+    DEPARTMENT_READ = "department:read"
+    CLINICIAN_NETWORK_READ = "clinician_network:read"
+
+    # ---- Facility Discovery & Transfer (Phase 12) ----
+    FACILITY_DISCOVER = "facility:discover"
+    TRANSFER_CREATE = "transfer:create"
+    TRANSFER_READ = "transfer:read"
+    TRANSFER_UPDATE_STATUS = "transfer:update_status"
+
+    # ---- Interoperability & Healthcare Data Exchange (Phase 13) ----
+    INTEROPERABILITY_IMPORT = "interoperability:import"
+    INTEROPERABILITY_EXPORT = "interoperability:export"
+    INTEROPERABILITY_READ = "interoperability:read"
+
     # ---- Consent lifecycle ----
     CONSENT_CREATE = "consent:create"
     CONSENT_READ = "consent:read"
@@ -154,9 +186,23 @@ ROLE_PERMISSIONS: dict[str, FrozenSet[Permission]] = {
         Permission.CARE_PLAN_UPDATE,
         Permission.DISCHARGE_EXTRACT,
         Permission.DISCHARGE_READ,
+        Permission.CLINICAL_NOTE_READ,          # own notes authored by clinician
+        Permission.CLINICAL_ASSESSMENT_READ,    # own assessments
+        Permission.CLINICAL_PLAN_READ,          # own plans
         Permission.CONSENT_CREATE,
         Permission.CONSENT_READ,
         Permission.CONSENT_REVOKE,
+        # Organization network
+        Permission.ORGANIZATION_READ,
+        Permission.FACILITY_READ,
+        Permission.DEPARTMENT_READ,
+        # Phase 12: Discovery & Transfer
+        Permission.FACILITY_DISCOVER,
+        Permission.TRANSFER_CREATE,
+        Permission.TRANSFER_READ,
+        # Phase 13: Interoperability
+        Permission.INTEROPERABILITY_EXPORT,
+        Permission.INTEROPERABILITY_READ,
     }),
     "DOCTOR": frozenset({
         Permission.PATIENT_READ_SELF,         # can read patient profile in context
@@ -198,13 +244,52 @@ ROLE_PERMISSIONS: dict[str, FrozenSet[Permission]] = {
         Permission.DISCHARGE_EXTRACT,
         Permission.DISCHARGE_VERIFY,
         Permission.DISCHARGE_READ,
+        Permission.CLINICAL_NOTE_READ,
+        Permission.CLINICAL_NOTE_CREATE,
+        Permission.CLINICAL_NOTE_UPDATE,
+        Permission.CLINICAL_NOTE_SIGN,
+        Permission.CLINICAL_ASSESSMENT_READ,
+        Permission.CLINICAL_ASSESSMENT_CREATE,
+        Permission.CLINICAL_ASSESSMENT_UPDATE,
+        Permission.CLINICAL_ASSESSMENT_FINALIZE,
+        Permission.CLINICAL_PLAN_READ,
+        Permission.CLINICAL_PLAN_CREATE,
+        Permission.CLINICAL_PLAN_UPDATE,
+        Permission.CLINICAL_PLAN_FINALIZE,
+        Permission.CLINICAL_WORKSPACE_READ,
         Permission.CONSENT_READ,
+        # Organization network
+        Permission.ORGANIZATION_READ,
+        Permission.FACILITY_READ,
+        Permission.DEPARTMENT_READ,
+        Permission.CLINICIAN_NETWORK_READ,
+        # Phase 12: Discovery & Transfer
+        Permission.FACILITY_DISCOVER,
+        Permission.TRANSFER_CREATE,
+        Permission.TRANSFER_READ,
+        Permission.TRANSFER_UPDATE_STATUS,
+        # Phase 13: Interoperability
+        Permission.INTEROPERABILITY_IMPORT,
+        Permission.INTEROPERABILITY_EXPORT,
+        Permission.INTEROPERABILITY_READ,
     }),
     "ADMIN": frozenset({
         # Administrative capabilities ONLY — no automatic clinical data access
         Permission.ADMIN_USER_MANAGE,
         Permission.ADMIN_AUDIT_READ,
         Permission.CONSENT_READ,
+        # Organization network administration/read
+        Permission.ORGANIZATION_READ,
+        Permission.FACILITY_READ,
+        Permission.DEPARTMENT_READ,
+        Permission.CLINICIAN_NETWORK_READ,
+        # Phase 12: Discovery & Transfer administration
+        Permission.FACILITY_DISCOVER,
+        Permission.TRANSFER_READ,
+        # Phase 13: Interoperability
+        Permission.INTEROPERABILITY_IMPORT,
+        Permission.INTEROPERABILITY_EXPORT,
+        Permission.INTEROPERABILITY_READ,
     }),
 }
 
@@ -272,6 +357,20 @@ ACTION_PERMISSION_MAP: dict[tuple[str, str], Permission] = {
     ("discharge", "extract"):             Permission.DISCHARGE_EXTRACT,
     ("discharge", "verify"):              Permission.DISCHARGE_VERIFY,
     ("discharge", "read"):                Permission.DISCHARGE_READ,
+    # Doctor Clinical Workflow (Phase 10)
+    ("clinical_note", "read"):            Permission.CLINICAL_NOTE_READ,
+    ("clinical_note", "create"):          Permission.CLINICAL_NOTE_CREATE,
+    ("clinical_note", "update"):          Permission.CLINICAL_NOTE_UPDATE,
+    ("clinical_note", "sign"):            Permission.CLINICAL_NOTE_SIGN,
+    ("clinical_assessment", "read"):      Permission.CLINICAL_ASSESSMENT_READ,
+    ("clinical_assessment", "create"):    Permission.CLINICAL_ASSESSMENT_CREATE,
+    ("clinical_assessment", "update"):    Permission.CLINICAL_ASSESSMENT_UPDATE,
+    ("clinical_assessment", "finalize"): Permission.CLINICAL_ASSESSMENT_FINALIZE,
+    ("clinical_plan", "read"):            Permission.CLINICAL_PLAN_READ,
+    ("clinical_plan", "create"):          Permission.CLINICAL_PLAN_CREATE,
+    ("clinical_plan", "update"):          Permission.CLINICAL_PLAN_UPDATE,
+    ("clinical_plan", "finalize"):        Permission.CLINICAL_PLAN_FINALIZE,
+    ("clinical_workspace", "read"):       Permission.CLINICAL_WORKSPACE_READ,
     # Consent
     ("consent", "create"):                Permission.CONSENT_CREATE,
     ("consent", "read"):                  Permission.CONSENT_READ,
@@ -279,6 +378,20 @@ ACTION_PERMISSION_MAP: dict[tuple[str, str], Permission] = {
     # Admin
     ("user_management", "manage"):        Permission.ADMIN_USER_MANAGE,
     ("audit_log", "read"):                Permission.ADMIN_AUDIT_READ,
+    # Phase 11: Organization, Facility & Department
+    ("organization", "read"):             Permission.ORGANIZATION_READ,
+    ("facility", "read"):                 Permission.FACILITY_READ,
+    ("department", "read"):               Permission.DEPARTMENT_READ,
+    ("clinician_network", "read"):        Permission.CLINICIAN_NETWORK_READ,
+    # Phase 12: Facility Discovery & Transfer
+    ("facility_discovery", "read"):       Permission.FACILITY_DISCOVER,
+    ("transfer", "create"):               Permission.TRANSFER_CREATE,
+    ("transfer", "read"):                 Permission.TRANSFER_READ,
+    ("transfer", "update_status"):        Permission.TRANSFER_UPDATE_STATUS,
+    # Phase 13: Interoperability & Healthcare Data Exchange
+    ("interoperability", "import"):       Permission.INTEROPERABILITY_IMPORT,
+    ("interoperability", "export"):       Permission.INTEROPERABILITY_EXPORT,
+    ("interoperability", "read"):         Permission.INTEROPERABILITY_READ,
 }
 
 
@@ -325,6 +438,8 @@ class ConsentScope(str, Enum):
     CARE_PLAN = "care_plan"
     DOCUMENTS = "documents"
     DISCHARGE_SUMMARY = "discharge_summary"
+    TRANSFER = "transfer"
+    INTEROPERABILITY = "interoperability"
     ALL_RECORDS = "all_records"   # broad scope — must require explicit grant
 
 

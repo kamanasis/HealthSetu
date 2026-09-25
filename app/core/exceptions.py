@@ -44,6 +44,62 @@ class ErrorCode(str, Enum):
     CARE_PLAN_INVALID_INPUT = "CARE_PLAN_INVALID_INPUT"
     CARE_PLAN_UNVERIFIED_DISCHARGE = "CARE_PLAN_UNVERIFIED_DISCHARGE"
 
+    # Phase 11: Hospital & Organization Network Error Codes
+    ORGANIZATION_NOT_FOUND = "ORGANIZATION_NOT_FOUND"
+    ORGANIZATION_ACCESS_DENIED = "ORGANIZATION_ACCESS_DENIED"
+    ORGANIZATION_INACTIVE = "ORGANIZATION_INACTIVE"
+    FACILITY_NOT_FOUND = "FACILITY_NOT_FOUND"
+    FACILITY_ACCESS_DENIED = "FACILITY_ACCESS_DENIED"
+    FACILITY_INACTIVE = "FACILITY_INACTIVE"
+    FACILITY_ORGANIZATION_MISMATCH = "FACILITY_ORGANIZATION_MISMATCH"
+    DEPARTMENT_NOT_FOUND = "DEPARTMENT_NOT_FOUND"
+    CLINICIAN_ORGANIZATION_ACCESS_DENIED = "CLINICIAN_ORGANIZATION_ACCESS_DENIED"
+    CLINICIAN_FACILITY_ACCESS_DENIED = "CLINICIAN_FACILITY_ACCESS_DENIED"
+    INVALID_ORGANIZATION_FILTER = "INVALID_ORGANIZATION_FILTER"
+    INVALID_FACILITY_FILTER = "INVALID_FACILITY_FILTER"
+
+    # Phase 12: Facility Discovery & Transfer Error Codes
+    FACILITY_DISCOVERY_DISABLED = "FACILITY_DISCOVERY_DISABLED"
+    FACILITY_CAPABILITY_NOT_SUPPORTED = "FACILITY_CAPABILITY_NOT_SUPPORTED"
+    INVALID_LATITUDE = "INVALID_LATITUDE"
+    INVALID_LONGITUDE = "INVALID_LONGITUDE"
+    INVALID_RADIUS = "INVALID_RADIUS"
+    INCOMPLETE_LOCATION = "INCOMPLETE_LOCATION"
+    PATIENT_ACCESS_DENIED = "PATIENT_ACCESS_DENIED"
+    ENCOUNTER_ACCESS_DENIED = "ENCOUNTER_ACCESS_DENIED"
+    TRANSFER_NOT_FOUND = "TRANSFER_NOT_FOUND"
+    TRANSFER_ACCESS_DENIED = "TRANSFER_ACCESS_DENIED"
+    TRANSFER_INVALID_STATE = "TRANSFER_INVALID_STATE"
+    TRANSFER_NOT_ALLOWED = "TRANSFER_NOT_ALLOWED"
+    TRANSFER_CONSENT_REQUIRED = "TRANSFER_CONSENT_REQUIRED"
+    SENDING_FACILITY_INVALID = "SENDING_FACILITY_INVALID"
+    RECEIVING_FACILITY_INVALID = "RECEIVING_FACILITY_INVALID"
+    SBAR_ACCESS_DENIED = "SBAR_ACCESS_DENIED"
+    CLINICAL_CONTEXT_NOT_AVAILABLE = "CLINICAL_CONTEXT_NOT_AVAILABLE"
+
+    # Phase 13: Interoperability & Data Exchange Error Codes
+    INTEROPERABILITY_DISABLED = "INTEROPERABILITY_DISABLED"
+    UNSUPPORTED_INTEROPERABILITY_FORMAT = "UNSUPPORTED_INTEROPERABILITY_FORMAT"
+    UNSUPPORTED_FHIR_VERSION = "UNSUPPORTED_FHIR_VERSION"
+    UNSUPPORTED_RESOURCE_TYPE = "UNSUPPORTED_RESOURCE_TYPE"
+    INVALID_EXTERNAL_RESOURCE = "INVALID_EXTERNAL_RESOURCE"
+    INVALID_FHIR_RESOURCE = "INVALID_FHIR_RESOURCE"
+    INVALID_HL7_MESSAGE = "INVALID_HL7_MESSAGE"
+    EXTERNAL_IDENTITY_UNRESOLVED = "EXTERNAL_IDENTITY_UNRESOLVED"
+    AMBIGUOUS_PATIENT_MATCH = "AMBIGUOUS_PATIENT_MATCH"
+    INTEROPERABILITY_CONSENT_REQUIRED = "INTEROPERABILITY_CONSENT_REQUIRED"
+    IMPORT_NOT_FOUND = "IMPORT_NOT_FOUND"
+    IMPORT_FAILED = "IMPORT_FAILED"
+    IMPORT_REJECTED = "IMPORT_REJECTED"
+    EXPORT_NOT_FOUND = "EXPORT_NOT_FOUND"
+    EXPORT_FAILED = "EXPORT_FAILED"
+    EXPORT_NOT_AUTHORIZED = "EXPORT_NOT_AUTHORIZED"
+    EXTERNAL_PROVIDER_UNAVAILABLE = "EXTERNAL_PROVIDER_UNAVAILABLE"
+    EXTERNAL_PROVIDER_TIMEOUT = "EXTERNAL_PROVIDER_TIMEOUT"
+    EXTERNAL_PROVIDER_AUTHENTICATION_FAILED = "EXTERNAL_PROVIDER_AUTHENTICATION_FAILED"
+    RESOURCE_MAPPING_FAILED = "RESOURCE_MAPPING_FAILED"
+    RESOURCE_VALIDATION_FAILED = "RESOURCE_VALIDATION_FAILED"
+
 
 class AppException(Exception):
     """Base application exception for all domain and operational errors."""
@@ -130,6 +186,612 @@ class ServiceUnavailableException(AppException):
             code=ErrorCode.SERVICE_UNAVAILABLE,
             message=message,
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            details=details,
+        )
+
+
+# Phase 11: Hospital & Organization Network Exceptions
+class OrganizationNotFoundException(AppException):
+    """Organization not found exception (HTTP 404)."""
+
+    def __init__(self, message: str = "The requested organization could not be found.", details: Any = None) -> None:
+        super().__init__(
+            code=ErrorCode.ORGANIZATION_NOT_FOUND,
+            message=message,
+            status_code=status.HTTP_404_NOT_FOUND,
+            details=details,
+        )
+
+
+class OrganizationAccessDeniedException(AppException):
+    """Organization access denied exception (HTTP 403)."""
+
+    def __init__(self, message: str = "Access to the requested organization is denied.", details: Any = None) -> None:
+        super().__init__(
+            code=ErrorCode.ORGANIZATION_ACCESS_DENIED,
+            message=message,
+            status_code=status.HTTP_403_FORBIDDEN,
+            details=details,
+        )
+
+
+class OrganizationInactiveException(AppException):
+    """Organization inactive or suspended exception (HTTP 400)."""
+
+    def __init__(self, message: str = "The organization is inactive or suspended and cannot be accessed.", details: Any = None) -> None:
+        super().__init__(
+            code=ErrorCode.ORGANIZATION_INACTIVE,
+            message=message,
+            status_code=status.HTTP_400_BAD_REQUEST,
+            details=details,
+        )
+
+
+class FacilityNotFoundException(AppException):
+    """Facility not found exception (HTTP 404)."""
+
+    def __init__(self, message: str = "The requested facility could not be found.", details: Any = None) -> None:
+        super().__init__(
+            code=ErrorCode.FACILITY_NOT_FOUND,
+            message=message,
+            status_code=status.HTTP_404_NOT_FOUND,
+            details=details,
+        )
+
+
+class FacilityAccessDeniedException(AppException):
+    """Facility access denied exception (HTTP 403)."""
+
+    def __init__(self, message: str = "Access to the requested facility is denied.", details: Any = None) -> None:
+        super().__init__(
+            code=ErrorCode.FACILITY_ACCESS_DENIED,
+            message=message,
+            status_code=status.HTTP_403_FORBIDDEN,
+            details=details,
+        )
+
+
+class FacilityInactiveException(AppException):
+    """Facility inactive or suspended exception (HTTP 400)."""
+
+    def __init__(self, message: str = "The facility is inactive or suspended and cannot be accessed.", details: Any = None) -> None:
+        super().__init__(
+            code=ErrorCode.FACILITY_INACTIVE,
+            message=message,
+            status_code=status.HTTP_400_BAD_REQUEST,
+            details=details,
+        )
+
+
+class FacilityOrganizationMismatchException(AppException):
+    """Facility does not belong to the specified organization exception (HTTP 400)."""
+
+    def __init__(self, message: str = "The facility does not belong to the specified organization.", details: Any = None) -> None:
+        super().__init__(
+            code=ErrorCode.FACILITY_ORGANIZATION_MISMATCH,
+            message=message,
+            status_code=status.HTTP_400_BAD_REQUEST,
+            details=details,
+        )
+
+
+class DepartmentNotFoundException(AppException):
+    """Department not found exception (HTTP 404)."""
+
+    def __init__(self, message: str = "The requested department could not be found.", details: Any = None) -> None:
+        super().__init__(
+            code=ErrorCode.DEPARTMENT_NOT_FOUND,
+            message=message,
+            status_code=status.HTTP_404_NOT_FOUND,
+            details=details,
+        )
+
+
+class ClinicianOrganizationAccessDeniedException(AppException):
+    """Clinician organization access denied exception (HTTP 403)."""
+
+    def __init__(self, message: str = "Clinician does not have authorized access to this organization.", details: Any = None) -> None:
+        super().__init__(
+            code=ErrorCode.CLINICIAN_ORGANIZATION_ACCESS_DENIED,
+            message=message,
+            status_code=status.HTTP_403_FORBIDDEN,
+            details=details,
+        )
+
+
+class ClinicianFacilityAccessDeniedException(AppException):
+    """Clinician facility access denied exception (HTTP 403)."""
+
+    def __init__(self, message: str = "Clinician does not have authorized access to this facility.", details: Any = None) -> None:
+        super().__init__(
+            code=ErrorCode.CLINICIAN_FACILITY_ACCESS_DENIED,
+            message=message,
+            status_code=status.HTTP_403_FORBIDDEN,
+            details=details,
+        )
+
+
+class InvalidOrganizationFilterException(AppException):
+    """Invalid organization filter exception (HTTP 400)."""
+
+    def __init__(self, message: str = "Invalid organization filter parameters provided.", details: Any = None) -> None:
+        super().__init__(
+            code=ErrorCode.INVALID_ORGANIZATION_FILTER,
+            message=message,
+            status_code=status.HTTP_400_BAD_REQUEST,
+            details=details,
+        )
+
+
+class InvalidFacilityFilterException(AppException):
+    """Invalid facility filter exception (HTTP 400)."""
+
+    def __init__(self, message: str = "Invalid facility filter parameters provided.", details: Any = None) -> None:
+        super().__init__(
+            code=ErrorCode.INVALID_FACILITY_FILTER,
+            message=message,
+            status_code=status.HTTP_400_BAD_REQUEST,
+            details=details,
+        )
+
+
+# Phase 12: Facility Discovery & Transfer Exceptions
+class FacilityDiscoveryDisabledException(AppException):
+    """Facility discovery feature disabled exception (HTTP 400)."""
+
+    def __init__(self, message: str = "Facility discovery service is currently disabled.", details: Any = None) -> None:
+        super().__init__(
+            code=ErrorCode.FACILITY_DISCOVERY_DISABLED,
+            message=message,
+            status_code=status.HTTP_400_BAD_REQUEST,
+            details=details,
+        )
+
+
+class FacilityCapabilityNotSupportedException(AppException):
+    """Facility capability requirement not supported (HTTP 400)."""
+
+    def __init__(self, message: str = "The requested facility capability is not supported.", details: Any = None) -> None:
+        super().__init__(
+            code=ErrorCode.FACILITY_CAPABILITY_NOT_SUPPORTED,
+            message=message,
+            status_code=status.HTTP_400_BAD_REQUEST,
+            details=details,
+        )
+
+
+class InvalidLatitudeException(AppException):
+    """Latitude out of range [-90, 90] (HTTP 400)."""
+
+    def __init__(self, message: str = "Latitude must be between -90 and 90 degrees.", details: Any = None) -> None:
+        super().__init__(
+            code=ErrorCode.INVALID_LATITUDE,
+            message=message,
+            status_code=status.HTTP_400_BAD_REQUEST,
+            details=details,
+        )
+
+
+class InvalidLongitudeException(AppException):
+    """Longitude out of range [-180, 180] (HTTP 400)."""
+
+    def __init__(self, message: str = "Longitude must be between -180 and 180 degrees.", details: Any = None) -> None:
+        super().__init__(
+            code=ErrorCode.INVALID_LONGITUDE,
+            message=message,
+            status_code=status.HTTP_400_BAD_REQUEST,
+            details=details,
+        )
+
+
+class InvalidRadiusException(AppException):
+    """Radius invalid or exceeds maximum configured boundary (HTTP 400)."""
+
+    def __init__(self, message: str = "Radius must be a positive number within allowable limit.", details: Any = None) -> None:
+        super().__init__(
+            code=ErrorCode.INVALID_RADIUS,
+            message=message,
+            status_code=status.HTTP_400_BAD_REQUEST,
+            details=details,
+        )
+
+
+class IncompleteLocationException(AppException):
+    """Latitude and Longitude must both be provided (HTTP 400)."""
+
+    def __init__(self, message: str = "Both latitude and longitude coordinates must be provided together.", details: Any = None) -> None:
+        super().__init__(
+            code=ErrorCode.INCOMPLETE_LOCATION,
+            message=message,
+            status_code=status.HTTP_400_BAD_REQUEST,
+            details=details,
+        )
+
+
+class PatientAccessDeniedException(AppException):
+    """Caller does not have permission to access patient clinical data (HTTP 403)."""
+
+    def __init__(self, message: str = "Access to patient data is denied.", details: Any = None) -> None:
+        super().__init__(
+            code=ErrorCode.PATIENT_ACCESS_DENIED,
+            message=message,
+            status_code=status.HTTP_403_FORBIDDEN,
+            details=details,
+        )
+
+
+class EncounterAccessDeniedException(AppException):
+    """Caller does not have permission to access encounter data (HTTP 403)."""
+
+    def __init__(self, message: str = "Access to encounter is denied.", details: Any = None) -> None:
+        super().__init__(
+            code=ErrorCode.ENCOUNTER_ACCESS_DENIED,
+            message=message,
+            status_code=status.HTTP_403_FORBIDDEN,
+            details=details,
+        )
+
+
+class TransferNotFoundException(AppException):
+    """Transfer request not found (HTTP 404)."""
+
+    def __init__(self, message: str = "Transfer request not found.", details: Any = None) -> None:
+        super().__init__(
+            code=ErrorCode.TRANSFER_NOT_FOUND,
+            message=message,
+            status_code=status.HTTP_404_NOT_FOUND,
+            details=details,
+        )
+
+
+class TransferAccessDeniedException(AppException):
+    """Access to transfer request denied (HTTP 403)."""
+
+    def __init__(self, message: str = "Access to transfer request is denied.", details: Any = None) -> None:
+        super().__init__(
+            code=ErrorCode.TRANSFER_ACCESS_DENIED,
+            message=message,
+            status_code=status.HTTP_403_FORBIDDEN,
+            details=details,
+        )
+
+
+class TransferInvalidStateException(AppException):
+    """Invalid transfer status transition attempted (HTTP 400)."""
+
+    def __init__(self, message: str = "Invalid transfer state transition.", details: Any = None) -> None:
+        super().__init__(
+            code=ErrorCode.TRANSFER_INVALID_STATE,
+            message=message,
+            status_code=status.HTTP_400_BAD_REQUEST,
+            details=details,
+        )
+
+
+class TransferNotAllowedException(AppException):
+    """Transfer not permitted under current conditions (HTTP 400)."""
+
+    def __init__(self, message: str = "Transfer operation is not allowed.", details: Any = None) -> None:
+        super().__init__(
+            code=ErrorCode.TRANSFER_NOT_ALLOWED,
+            message=message,
+            status_code=status.HTTP_400_BAD_REQUEST,
+            details=details,
+        )
+
+
+class TransferConsentRequiredException(AppException):
+    """Transfer requires patient consent to share clinical data (HTTP 403)."""
+
+    def __init__(self, message: str = "Required patient consent has not been provided for this transfer.", details: Any = None) -> None:
+        super().__init__(
+            code=ErrorCode.TRANSFER_CONSENT_REQUIRED,
+            message=message,
+            status_code=status.HTTP_403_FORBIDDEN,
+            details=details,
+        )
+
+
+class SendingFacilityInvalidException(AppException):
+    """Sending facility is invalid, inactive, or unauthorized (HTTP 400)."""
+
+    def __init__(self, message: str = "The sending facility is invalid or not operational.", details: Any = None) -> None:
+        super().__init__(
+            code=ErrorCode.SENDING_FACILITY_INVALID,
+            message=message,
+            status_code=status.HTTP_400_BAD_REQUEST,
+            details=details,
+        )
+
+
+class ReceivingFacilityInvalidException(AppException):
+    """Receiving facility is invalid, inactive, or identical to sending facility (HTTP 400)."""
+
+    def __init__(self, message: str = "The receiving facility is invalid or not operational.", details: Any = None) -> None:
+        super().__init__(
+            code=ErrorCode.RECEIVING_FACILITY_INVALID,
+            message=message,
+            status_code=status.HTTP_400_BAD_REQUEST,
+            details=details,
+        )
+
+
+class SBARAccessDeniedException(AppException):
+    """Caller not authorized to access SBAR report for transfer attachment (HTTP 403)."""
+
+    def __init__(self, message: str = "Access to SBAR report for transfer is denied.", details: Any = None) -> None:
+        super().__init__(
+            code=ErrorCode.SBAR_ACCESS_DENIED,
+            message=message,
+            status_code=status.HTTP_403_FORBIDDEN,
+            details=details,
+        )
+
+
+class ClinicalContextNotAvailableException(AppException):
+    """Requested clinical context reference not found or unavailable (HTTP 404)."""
+
+    def __init__(self, message: str = "Clinical context reference for transfer could not be found.", details: Any = None) -> None:
+        super().__init__(
+            code=ErrorCode.CLINICAL_CONTEXT_NOT_AVAILABLE,
+            message=message,
+            status_code=status.HTTP_404_NOT_FOUND,
+            details=details,
+        )
+
+
+# ============================================================================
+# Phase 13: Interoperability & Healthcare Data Exchange Exceptions
+# ============================================================================
+
+class InteroperabilityDisabledException(AppException):
+    """Interoperability feature disabled by system configuration (HTTP 503)."""
+
+    def __init__(self, message: str = "Interoperability data exchange is currently disabled by policy.", details: Any = None) -> None:
+        super().__init__(
+            code=ErrorCode.INTEROPERABILITY_DISABLED,
+            message=message,
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            details=details,
+        )
+
+
+class UnsupportedInteroperabilityFormatException(AppException):
+    """Interoperability data format not supported (HTTP 400)."""
+
+    def __init__(self, message: str = "Unsupported interoperability data exchange format.", details: Any = None) -> None:
+        super().__init__(
+            code=ErrorCode.UNSUPPORTED_INTEROPERABILITY_FORMAT,
+            message=message,
+            status_code=status.HTTP_400_BAD_REQUEST,
+            details=details,
+        )
+
+
+class UnsupportedFHIRVersionException(AppException):
+    """Requested FHIR version not supported (HTTP 400)."""
+
+    def __init__(self, message: str = "Unsupported FHIR version.", details: Any = None) -> None:
+        super().__init__(
+            code=ErrorCode.UNSUPPORTED_FHIR_VERSION,
+            message=message,
+            status_code=status.HTTP_400_BAD_REQUEST,
+            details=details,
+        )
+
+
+class UnsupportedResourceTypeException(AppException):
+    """Resource type not supported for interoperability exchange (HTTP 400)."""
+
+    def __init__(self, message: str = "Unsupported resource type for interoperability exchange.", details: Any = None) -> None:
+        super().__init__(
+            code=ErrorCode.UNSUPPORTED_RESOURCE_TYPE,
+            message=message,
+            status_code=status.HTTP_400_BAD_REQUEST,
+            details=details,
+        )
+
+
+class InvalidExternalResourceException(AppException):
+    """External resource malformed or invalid (HTTP 400)."""
+
+    def __init__(self, message: str = "Invalid external healthcare resource payload.", details: Any = None) -> None:
+        super().__init__(
+            code=ErrorCode.INVALID_EXTERNAL_RESOURCE,
+            message=message,
+            status_code=status.HTTP_400_BAD_REQUEST,
+            details=details,
+        )
+
+
+class InvalidFHIRResourceException(AppException):
+    """FHIR resource does not conform to FHIR R4 schema invariants (HTTP 400)."""
+
+    def __init__(self, message: str = "Invalid FHIR resource representation.", details: Any = None) -> None:
+        super().__init__(
+            code=ErrorCode.INVALID_FHIR_RESOURCE,
+            message=message,
+            status_code=status.HTTP_400_BAD_REQUEST,
+            details=details,
+        )
+
+
+class InvalidHL7MessageException(AppException):
+    """HL7 message malformed or unsupported (HTTP 400)."""
+
+    def __init__(self, message: str = "Invalid or malformed HL7 message.", details: Any = None) -> None:
+        super().__init__(
+            code=ErrorCode.INVALID_HL7_MESSAGE,
+            message=message,
+            status_code=status.HTTP_400_BAD_REQUEST,
+            details=details,
+        )
+
+
+class ExternalIdentityUnresolvedException(AppException):
+    """External patient identity cannot be resolved to a HealthSetu patient (HTTP 422)."""
+
+    def __init__(self, message: str = "External patient identity could not be resolved.", details: Any = None) -> None:
+        super().__init__(
+            code=ErrorCode.EXTERNAL_IDENTITY_UNRESOLVED,
+            message=message,
+            status_code=getattr(status, "HTTP_422_UNPROCESSABLE_CONTENT", 422),
+            details=details,
+        )
+
+
+class AmbiguousPatientMatchException(AppException):
+    """Multiple candidate patients found without deterministic resolution (HTTP 409)."""
+
+    def __init__(self, message: str = "Ambiguous patient match. Multiple candidates match external identifiers.", details: Any = None) -> None:
+        super().__init__(
+            code=ErrorCode.AMBIGUOUS_PATIENT_MATCH,
+            message=message,
+            status_code=status.HTTP_409_CONFLICT,
+            details=details,
+        )
+
+
+class InteroperabilityConsentRequiredException(AppException):
+    """Explicit patient consent required for external data exchange (HTTP 403)."""
+
+    def __init__(self, message: str = "Patient consent is required for interoperability data exchange.", details: Any = None) -> None:
+        super().__init__(
+            code=ErrorCode.INTEROPERABILITY_CONSENT_REQUIRED,
+            message=message,
+            status_code=status.HTTP_403_FORBIDDEN,
+            details=details,
+        )
+
+
+class ImportNotFoundException(AppException):
+    """Import record not found (HTTP 404)."""
+
+    def __init__(self, message: str = "Interoperability import record not found.", details: Any = None) -> None:
+        super().__init__(
+            code=ErrorCode.IMPORT_NOT_FOUND,
+            message=message,
+            status_code=status.HTTP_404_NOT_FOUND,
+            details=details,
+        )
+
+
+class ImportFailedException(AppException):
+    """Interoperability import processing failure (HTTP 500)."""
+
+    def __init__(self, message: str = "Interoperability import operation failed.", details: Any = None) -> None:
+        super().__init__(
+            code=ErrorCode.IMPORT_FAILED,
+            message=message,
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            details=details,
+        )
+
+
+class ImportRejectedException(AppException):
+    """Import rejected due to validation or safety constraints (HTTP 422)."""
+
+    def __init__(self, message: str = "Interoperability import rejected.", details: Any = None) -> None:
+        super().__init__(
+            code=ErrorCode.IMPORT_REJECTED,
+            message=message,
+            status_code=getattr(status, "HTTP_422_UNPROCESSABLE_CONTENT", 422),
+            details=details,
+        )
+
+
+class ExportNotFoundException(AppException):
+    """Export record not found (HTTP 404)."""
+
+    def __init__(self, message: str = "Interoperability export record not found.", details: Any = None) -> None:
+        super().__init__(
+            code=ErrorCode.EXPORT_NOT_FOUND,
+            message=message,
+            status_code=status.HTTP_404_NOT_FOUND,
+            details=details,
+        )
+
+
+class ExportFailedException(AppException):
+    """Interoperability export processing failure (HTTP 500)."""
+
+    def __init__(self, message: str = "Interoperability export operation failed.", details: Any = None) -> None:
+        super().__init__(
+            code=ErrorCode.EXPORT_FAILED,
+            message=message,
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            details=details,
+        )
+
+
+class ExportNotAuthorizedException(AppException):
+    """Caller not authorized for requested export scope (HTTP 403)."""
+
+    def __init__(self, message: str = "Interoperability export not authorized for requested scope.", details: Any = None) -> None:
+        super().__init__(
+            code=ErrorCode.EXPORT_NOT_AUTHORIZED,
+            message=message,
+            status_code=status.HTTP_403_FORBIDDEN,
+            details=details,
+        )
+
+
+class ExternalProviderUnavailableException(AppException):
+    """External interoperability service/endpoint unavailable (HTTP 503)."""
+
+    def __init__(self, message: str = "External healthcare interoperability provider is currently unavailable.", details: Any = None) -> None:
+        super().__init__(
+            code=ErrorCode.EXTERNAL_PROVIDER_UNAVAILABLE,
+            message=message,
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            details=details,
+        )
+
+
+class ExternalProviderTimeoutException(AppException):
+    """External provider request timed out (HTTP 504)."""
+
+    def __init__(self, message: str = "External healthcare interoperability provider request timed out.", details: Any = None) -> None:
+        super().__init__(
+            code=ErrorCode.EXTERNAL_PROVIDER_TIMEOUT,
+            message=message,
+            status_code=status.HTTP_504_GATEWAY_TIMEOUT,
+            details=details,
+        )
+
+
+class ExternalProviderAuthenticationFailedException(AppException):
+    """Authentication with external provider failed (HTTP 502)."""
+
+    def __init__(self, message: str = "External interoperability provider authentication failed.", details: Any = None) -> None:
+        super().__init__(
+            code=ErrorCode.EXTERNAL_PROVIDER_AUTHENTICATION_FAILED,
+            message=message,
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            details=details,
+        )
+
+
+class ResourceMappingFailedException(AppException):
+    """Resource mapping to HealthSetu domain representation failed (HTTP 422)."""
+
+    def __init__(self, message: str = "Failed to map external healthcare resource to internal model.", details: Any = None) -> None:
+        super().__init__(
+            code=ErrorCode.RESOURCE_MAPPING_FAILED,
+            message=message,
+            status_code=getattr(status, "HTTP_422_UNPROCESSABLE_CONTENT", 422),
+            details=details,
+        )
+
+
+class ResourceValidationFailedException(AppException):
+    """Resource failed validation rules (HTTP 422)."""
+
+    def __init__(self, message: str = "Healthcare resource failed validation.", details: Any = None) -> None:
+        super().__init__(
+            code=ErrorCode.RESOURCE_VALIDATION_FAILED,
+            message=message,
+            status_code=getattr(status, "HTTP_422_UNPROCESSABLE_CONTENT", 422),
             details=details,
         )
 

@@ -33,6 +33,15 @@ from app.api.deps import (
     _global_sbar_repo,
     _global_discharge_repo,
     _global_care_plan_repo,
+    _global_clinical_note_repo,
+    _global_clinical_assessment_repo,
+    _global_clinical_plan_repo,
+    _global_organization_repo,
+    _global_facility_repo,
+    _global_department_repo,
+    _global_facility_discovery_repo,
+    _global_transfer_repo,
+    _global_interoperability_repo,
     _global_authz_service,
 )
 from app.core.config import get_settings
@@ -81,6 +90,19 @@ def clean_state():
     # Phase 9
     _global_discharge_repo.clear()
     _global_care_plan_repo.clear()
+    # Phase 10
+    _global_clinical_note_repo.clear()
+    _global_clinical_assessment_repo.clear()
+    _global_clinical_plan_repo.clear()
+    # Phase 11
+    _global_organization_repo.clear()
+    _global_facility_repo.clear()
+    _global_department_repo.clear()
+    # Phase 12
+    _global_facility_discovery_repo.clear()
+    _global_transfer_repo.clear()
+    # Phase 13
+    _global_interoperability_repo.clear()
     yield
     get_settings.cache_clear()
     _global_user_repo._local_users.clear()
@@ -107,6 +129,19 @@ def clean_state():
     # Phase 9
     _global_discharge_repo.clear()
     _global_care_plan_repo.clear()
+    # Phase 10
+    _global_clinical_note_repo.clear()
+    _global_clinical_assessment_repo.clear()
+    _global_clinical_plan_repo.clear()
+    # Phase 11
+    _global_organization_repo.clear()
+    _global_facility_repo.clear()
+    _global_department_repo.clear()
+    # Phase 12
+    _global_facility_discovery_repo.clear()
+    _global_transfer_repo.clear()
+    # Phase 13
+    _global_interoperability_repo.clear()
 
 
 

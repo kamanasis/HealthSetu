@@ -247,6 +247,128 @@ class Settings(BaseSettings):
         description="Provider for discharge instruction extraction ('local', 'mock', 'licensed')",
     )
 
+    # Phase 11: Organization & Facility Network Configuration
+    ORGANIZATION_NETWORK_ENABLED: bool = Field(
+        default=True,
+        description="Flag enabling healthcare organization network operations",
+    )
+    FACILITY_NETWORK_ENABLED: bool = Field(
+        default=True,
+        description="Flag enabling healthcare facility network operations",
+    )
+    ORGANIZATION_SEARCH_ENABLED: bool = Field(
+        default=True,
+        description="Flag enabling internal organization search",
+    )
+    FACILITY_SEARCH_ENABLED: bool = Field(
+        default=True,
+        description="Flag enabling internal facility search",
+    )
+    HEALTHCARE_DIRECTORY_PROVIDER: str = Field(
+        default="none",
+        description="External healthcare directory adapter provider ('none', 'mock', 'external')",
+    )
+    HEALTHCARE_DIRECTORY_BASE_URL: str = Field(
+        default="",
+        description="Base URL for external healthcare directory provider",
+    )
+    HEALTHCARE_DIRECTORY_API_KEY: str = Field(
+        default="",
+        description="API key for external healthcare directory provider",
+    )
+    HEALTHCARE_DIRECTORY_TIMEOUT_SECONDS: int = Field(
+        default=10,
+        description="Request timeout in seconds for external healthcare directory",
+    )
+
+    # Phase 12: Facility Discovery & Transfer Configuration
+    FACILITY_DISCOVERY_ENABLED: bool = Field(
+        default=True,
+        description="Flag enabling patient-facing facility discovery",
+    )
+    FACILITY_DISCOVERY_MAX_RADIUS_KM: float = Field(
+        default=100.0,
+        description="Maximum allowed search radius in kilometers for facility discovery",
+    )
+    TRANSFER_ENABLED: bool = Field(
+        default=True,
+        description="Flag enabling patient transfer/referral workflow",
+    )
+    TRANSFER_REQUIRE_CONSENT: bool = Field(
+        default=True,
+        description="Flag requiring explicit patient consent before sharing clinical context during transfer",
+    )
+    TRANSFER_CLINICAL_CONTEXT_ENABLED: bool = Field(
+        default=True,
+        description="Flag allowing authorized minimal clinical context attachment to transfers",
+    )
+    GEOGRAPHIC_DISTANCE_PROVIDER: str = Field(
+        default="local",
+        description="Provider for geographic distance calculation ('local', 'mock', 'external')",
+    )
+    GEOGRAPHIC_PROVIDER_BASE_URL: str = Field(
+        default="",
+        description="Base URL for external geographic routing/distance provider",
+    )
+    GEOGRAPHIC_PROVIDER_API_KEY: str = Field(
+        default="",
+        description="API key for external geographic provider",
+    )
+    GEOGRAPHIC_PROVIDER_TIMEOUT_SECONDS: int = Field(
+        default=10,
+        description="Request timeout in seconds for external geographic provider",
+    )
+
+    # Interoperability & Data Exchange Configuration (Phase 13)
+    INTEROPERABILITY_ENABLED: bool = Field(
+        default=True,
+        description="Flag enabling interoperability and external healthcare data exchange",
+    )
+    INTEROPERABILITY_PROVIDER: str = Field(
+        default="none",
+        description="Active interoperability provider adapter ('none', 'mock', 'fhir_server')",
+    )
+    FHIR_ENABLED: bool = Field(
+        default=True,
+        description="Flag enabling FHIR standard data exchange",
+    )
+    FHIR_VERSION: str = Field(
+        default="R4",
+        description="Supported FHIR specification version ('R4')",
+    )
+    HL7_ENABLED: bool = Field(
+        default=False,
+        description="Flag enabling HL7 v2/v3 message exchange",
+    )
+    HL7_VERSION: str = Field(
+        default="",
+        description="Supported HL7 version (e.g. '2.5.1')",
+    )
+    INTEROPERABILITY_BASE_URL: str = Field(
+        default="",
+        description="Base URL for external healthcare interoperability provider endpoint",
+    )
+    INTEROPERABILITY_CLIENT_ID: str = Field(
+        default="",
+        description="OAuth2/API client identifier for external interoperability provider",
+    )
+    INTEROPERABILITY_CLIENT_SECRET: str = Field(
+        default="",
+        description="OAuth2/API client secret for external interoperability provider",
+    )
+    INTEROPERABILITY_API_KEY: str = Field(
+        default="",
+        description="API key for external interoperability provider",
+    )
+    INTEROPERABILITY_TIMEOUT_SECONDS: int = Field(
+        default=30,
+        description="Request timeout in seconds for interoperability operations",
+    )
+    INTEROPERABILITY_MAX_RETRIES: int = Field(
+        default=2,
+        description="Maximum retry attempts for transient external provider errors",
+    )
+
     @property
     def max_document_size_bytes(self) -> int:
         """Maximum allowed document upload size in bytes."""
