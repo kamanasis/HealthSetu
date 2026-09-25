@@ -9,9 +9,15 @@ from httpx import ASGITransport, AsyncClient
 os.environ["APP_ENV"] = "testing"
 os.environ["DATABASE_URL"] = ""
 
-from app.api.deps import _global_session_repo, _global_user_repo
+from app.api.deps import (
+    _global_audit_repo,
+    _global_consent_repo,
+    _global_permission_repo,
+    _global_session_repo,
+    _global_user_repo,
+)
 from app.core.config import get_settings
-from app.core.security import hash_password
+from app.core.security import create_access_token, hash_password
 from app.main import create_app
 from app.repositories.user_repository import UserRecord
 from app.schemas.auth import AccountStatus, UserRole
@@ -21,16 +27,22 @@ TEST_PASSWORD = "StrongP@ssw0rd123!"
 
 @pytest.fixture(autouse=True)
 def clean_state():
-    """Ensure settings cache and test repositories are fresh for each test."""
+    """Ensure settings cache and all repositories are fresh for each test."""
     get_settings.cache_clear()
+    # Phase 1/2
     _global_user_repo._local_users.clear()
     _global_session_repo._sessions_by_id.clear()
     _global_session_repo._sessions_by_hash.clear()
+    # Phase 3
+    _global_consent_repo._consents.clear()
+    _global_audit_repo._events.clear()
     yield
     get_settings.cache_clear()
     _global_user_repo._local_users.clear()
     _global_session_repo._sessions_by_id.clear()
     _global_session_repo._sessions_by_hash.clear()
+    _global_consent_repo._consents.clear()
+    _global_audit_repo._events.clear()
 
 
 @pytest.fixture
@@ -46,11 +58,25 @@ def seeded_users() -> dict[str, UserRecord]:
             role=UserRole.PATIENT,
             status=AccountStatus.ACTIVE,
         ),
+        "patient2": UserRecord(
+            id="usr-patient-002",
+            identifier="patient2@healthsetu.org",
+            password_hash=hashed_pwd,
+            role=UserRole.PATIENT,
+            status=AccountStatus.ACTIVE,
+        ),
         "doctor": UserRecord(
             id="usr-doctor-001",
             identifier="doctor@healthsetu.org",
             password_hash=hashed_pwd,
             role=UserRole.DOCTOR,
+            status=AccountStatus.ACTIVE,
+        ),
+        "admin": UserRecord(
+            id="usr-admin-001",
+            identifier="admin@healthsetu.org",
+            password_hash=hashed_pwd,
+            role=UserRole.ADMIN,
             status=AccountStatus.ACTIVE,
         ),
         "disabled": UserRecord(
@@ -80,6 +106,15 @@ def seeded_users() -> dict[str, UserRecord]:
         _global_user_repo.register_in_memory_user(user)
 
     return users
+
+
+@pytest.fixture
+def make_token():
+    """Factory fixture: create a valid access token for a given user."""
+    def _make(user_id: str, role: str) -> str:
+        token, _ = create_access_token(user_id, role)
+        return token
+    return _make
 
 
 @pytest.fixture
