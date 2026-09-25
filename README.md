@@ -1,4 +1,4 @@
-# HealthSetu — Backend (Phases 1 – 7)
+# HealthSetu — Backend (Phases 1 – 8)
 
 HealthSetu is a unified healthcare interoperability, clinical coordination, and patient safety backend platform.
 
@@ -9,6 +9,7 @@ HealthSetu is a unified healthcare interoperability, clinical coordination, and 
 - **Phase 5**: Medical Document Processing pipeline (secure object storage, OCR extraction, background processing, idempotency, PHI protection).
 - **Phase 6**: Prescription & Medication System (extraction linkage, terminology normalization, longitudinal medication record).
 - **Phase 7**: Medication Safety System (authoritative provider abstraction, DDI, allergy cross-reactivity, contraindications, duplicate therapy).
+- **Phase 8**: Clinical Triage & SBAR Communication System (deterministic protocol-driven urgency assessment, symptom intake, fact-validated SBAR summaries).
 
 ---
 
@@ -551,8 +552,15 @@ Phase 5 establishes the secure medical document intake, object storage, and back
 | **Phase 7** | Prospective new medication checking (`check-medications`) | ✅ IMPLEMENTED |
 | **Phase 7** | Patient data minimization for external providers (zero PHI leaks) | ✅ IMPLEMENTED |
 | **Phase 7** | Immutable evaluations & audit event integration | ✅ IMPLEMENTED |
+| **Phase 8** | Structured Symptom Intake & Normalization (Provenance preserved) | ✅ IMPLEMENTED |
+| **Phase 8** | Deterministic Protocol Triage Engine (`HealthSetuDeterministicTriageEngine`) | ✅ IMPLEMENTED |
+| **Phase 8** | Strict Urgency Categorization (EMERGENCY, URGENT, SAME_DAY, ROUTINE, SELF_CARE) | ✅ IMPLEMENTED |
+| **Phase 8** | Insufficient Information & Missing Vitals Handling (No guessing) | ✅ IMPLEMENTED |
+| **Phase 8** | SBAR Synthesis (Deterministic Template Fallback & Fact-Validated AI) | ✅ IMPLEMENTED |
+| **Phase 8** | Reassessment Linking & Idempotency Key Deduping | ✅ IMPLEMENTED |
+| **Phase 8** | Clinical Boundary Enforcement (Zero Diagnosis / Zero Treatment Claims) | ✅ IMPLEMENTED |
 | **Database Team** | PostgreSQL schema & migrations | 🔲 PENDING CONTRACT |
-| **Phase 8** | Triage & SBAR (Structured Clinical Communication) | ⏳ UPCOMING |
+| **Phase 9** | Care Plan & Discharge Instructions | ⏳ UPCOMING |
 
 ---
 
@@ -594,5 +602,53 @@ Patient / Clinician Review
 | `GET` | `/api/v1/patients/{id}/medication-safety/capabilities` | `medication_safety:read` | Retrieve supported capabilities for configured safety provider |
 | `GET` | `/api/v1/patients/{id}/medication-safety/evaluations/{eval_id}` | `medication_safety:read` | Retrieve full details, findings, alerts, and provenance for a specific evaluation |
 | `GET` | `/api/v1/patients/{id}/medication-safety/evaluations` | `medication_safety:read` | List historical evaluations with pagination, date, and status filtering |
+
+---
+
+## Phase 8 — Clinical Triage & SBAR Communication Architecture
+
+### Pipeline
+```
+Patient / Clinician
+   ↓
+Symptom Intake (Raw narrative preserved + Normalized clinical term)
+   ↓
+Structured Vitals (Phase 4 integration: SpO2, HR, BP, RR, Temp)
+   ↓
+Relevant Clinical Context (Phase 4 Conditions & Allergies, Phase 6 Medications)
+   ↓
+Validated Triage Rules (HealthSetu Clinical Triage Protocol v1.0.0)
+   ↓
+Deterministic Triage Assessment (EMERGENCY / URGENT / SAME_DAY / ROUTINE / SELF_CARE)
+   ↓
+Controlled Explanation & Missing Information Report
+   ↓
+SBAR Synthesis (Deterministic Template Fallback + Strict Fact-Validated AI)
+   ↓
+Clinical Review / Care Pathway
+```
+
+### Critical Clinical Triage Boundaries
+> [!IMPORTANT]
+> **Triage classifies clinical urgency. It is NOT a medical diagnosis.**
+> 1. **Zero Autonomous Diagnosis**: The system categorizes urgency and recommends care settings; it NEVER claims "You have disease X".
+> 2. **Rule Determinism Over AI**: LLMs NEVER decide or alter triage urgency classifications. All urgency decisions originate strictly from versioned deterministic rules.
+> 3. **No Guessing Missing Vitals**: Missing observations (e.g. SpO2 in dyspneic patients) trigger `INSUFFICIENT_INFORMATION` rather than assuming normal vitals.
+> 4. **Fact-Checked SBAR**: If AI is used for clinical communication phrasing, a dedicated validation layer confirms that all symptoms, medications, allergies, conditions, and urgency tiers match authoritative source facts.
+> 5. **Emergency Action Promptness**: Emergency red flags immediately return explicit, unhedged instructions (e.g., "Seek emergency medical care immediately").
+> 6. **Out of Scope**: Facility discovery belongs to Phase 12; Care plans belong to Phase 9.
+
+### Phase 8 API Endpoints
+
+| Method | Path | Auth / Scope | Description |
+|---|---|---|---|
+| `POST` | `/api/v1/patients/{id}/symptoms` | `symptom:create` | Record structured symptom intake session (raw narrative + normalized terms) |
+| `GET` | `/api/v1/patients/{id}/symptoms` | `symptom:read` | List paginated patient symptoms with filtering by source, encounter, and date |
+| `GET` | `/api/v1/patients/{id}/symptoms/{symptom_id}` | `symptom:read` | Retrieve individual symptom record with provenance and characterization |
+| `POST` | `/api/v1/patients/{id}/triage` | `triage:assess` | Conduct deterministic rule-based triage assessment with urgency categorization |
+| `GET` | `/api/v1/patients/{id}/triage` | `triage:read` | List historical triage assessments with urgency, date, and encounter filtering |
+| `GET` | `/api/v1/patients/{id}/triage/{assessment_id}` | `triage:read` | Retrieve complete triage evaluation with reasons, explanation, and missing data |
+| `POST` | `/api/v1/patients/{id}/sbar` | `sbar:create` | Generate structured SBAR summary (Situation, Background, Assessment, Recommendation) |
+| `GET` | `/api/v1/patients/{id}/sbar/{sbar_id}` | `sbar:read` | Retrieve generated SBAR record with structured sections and formatted plain text |
 
 

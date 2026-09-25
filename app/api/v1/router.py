@@ -13,6 +13,9 @@ from app.api.v1.endpoints import (
     medication_safety,
     patients,
     prescriptions,
+    sbar,
+    symptoms,
+    triage,
     vitals,
 )
 
@@ -43,5 +46,10 @@ v1_router.include_router(medications.router)
 
 # Register Phase 7 medication safety endpoints
 v1_router.include_router(medication_safety.router)
+
+# Register Phase 8 triage and SBAR endpoints
+v1_router.include_router(symptoms.router)
+v1_router.include_router(triage.router)
+v1_router.include_router(sbar.router)
 
 

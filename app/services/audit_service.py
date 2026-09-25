@@ -758,3 +758,198 @@ class AuditService(BaseService[AuditRepository]):
             metadata={"patient_id": patient_id},
         )
 
+    # -----------------------------------------------------------------------
+    # Phase 8 — Triage & SBAR Audit Helpers
+    # -----------------------------------------------------------------------
+
+    async def record_symptom_intake_created(
+        self,
+        actor_id: str,
+        patient_id: str,
+        intake_id: str,
+        symptom_count: int,
+        source: str,
+    ) -> None:
+        """Audit: symptom intake session / batch created (counts/IDs only, NO narratives)."""
+        await self.record(
+            event_type=AuditEventType.SYMPTOM_INTAKE_CREATED,
+            outcome="ALLOW",
+            actor_id=actor_id,
+            action="symptom:create",
+            resource_type="symptom_intake",
+            resource_id=intake_id,
+            metadata={
+                "patient_id": patient_id,
+                "symptom_count": symptom_count,
+                "source": source,
+            },
+        )
+
+    async def record_symptom_intake_viewed(
+        self,
+        actor_id: str,
+        patient_id: str,
+        resource_id: str,
+    ) -> None:
+        """Audit: symptoms viewed by authorized user."""
+        await self.record(
+            event_type=AuditEventType.SYMPTOM_INTAKE_VIEWED,
+            outcome="ALLOW",
+            actor_id=actor_id,
+            action="symptom:read",
+            resource_type="symptom",
+            resource_id=resource_id,
+            metadata={"patient_id": patient_id},
+        )
+
+    async def record_triage_assessment_started(
+        self,
+        actor_id: str,
+        patient_id: str,
+        assessment_id: str,
+        rule_set: str,
+        rule_set_version: str,
+    ) -> None:
+        """Audit: triage assessment initiated."""
+        await self.record(
+            event_type=AuditEventType.TRIAGE_ASSESSMENT_STARTED,
+            outcome="ALLOW",
+            actor_id=actor_id,
+            action="triage:assess",
+            resource_type="triage_assessment",
+            resource_id=assessment_id,
+            metadata={
+                "patient_id": patient_id,
+                "rule_set": rule_set,
+                "rule_set_version": rule_set_version,
+            },
+        )
+
+    async def record_triage_assessment_completed(
+        self,
+        actor_id: str,
+        patient_id: str,
+        assessment_id: str,
+        urgency: str,
+        status: str,
+        duration_ms: float,
+    ) -> None:
+        """Audit: triage assessment completed successfully."""
+        await self.record(
+            event_type=AuditEventType.TRIAGE_ASSESSMENT_COMPLETED,
+            outcome="ALLOW",
+            actor_id=actor_id,
+            action="triage:assess",
+            resource_type="triage_assessment",
+            resource_id=assessment_id,
+            metadata={
+                "patient_id": patient_id,
+                "urgency": urgency,
+                "status": status,
+                "duration_ms": duration_ms,
+            },
+        )
+
+    async def record_triage_assessment_failed(
+        self,
+        actor_id: str,
+        patient_id: str,
+        assessment_id: str,
+        error_code: str,
+    ) -> None:
+        """Audit: triage assessment failed."""
+        await self.record(
+            event_type=AuditEventType.TRIAGE_ASSESSMENT_FAILED,
+            outcome="DENY",
+            actor_id=actor_id,
+            action="triage:assess",
+            resource_type="triage_assessment",
+            resource_id=assessment_id,
+            reason_code=error_code,
+            metadata={"patient_id": patient_id},
+        )
+
+    async def record_triage_reassessment_created(
+        self,
+        actor_id: str,
+        patient_id: str,
+        new_assessment_id: str,
+        previous_assessment_id: str,
+        urgency: str,
+    ) -> None:
+        """Audit: triage reassessment created linked to previous assessment."""
+        await self.record(
+            event_type=AuditEventType.TRIAGE_REASSESSMENT_CREATED,
+            outcome="ALLOW",
+            actor_id=actor_id,
+            action="triage:assess",
+            resource_type="triage_assessment",
+            resource_id=new_assessment_id,
+            metadata={
+                "patient_id": patient_id,
+                "previous_assessment_id": previous_assessment_id,
+                "urgency": urgency,
+            },
+        )
+
+    async def record_sbar_created(
+        self,
+        actor_id: str,
+        patient_id: str,
+        sbar_id: str,
+        assessment_id: str,
+        generator_mode: str,
+    ) -> None:
+        """Audit: SBAR clinical communication summary generated."""
+        await self.record(
+            event_type=AuditEventType.SBAR_CREATED,
+            outcome="ALLOW",
+            actor_id=actor_id,
+            action="sbar:create",
+            resource_type="sbar_summary",
+            resource_id=sbar_id,
+            metadata={
+                "patient_id": patient_id,
+                "assessment_id": assessment_id,
+                "generator_mode": generator_mode,
+            },
+        )
+
+    async def record_sbar_viewed(
+        self,
+        actor_id: str,
+        patient_id: str,
+        sbar_id: str,
+    ) -> None:
+        """Audit: SBAR record viewed."""
+        await self.record(
+            event_type=AuditEventType.SBAR_VIEWED,
+            outcome="ALLOW",
+            actor_id=actor_id,
+            action="sbar:read",
+            resource_type="sbar_summary",
+            resource_id=sbar_id,
+            metadata={"patient_id": patient_id},
+        )
+
+    async def record_sbar_regenerated(
+        self,
+        actor_id: str,
+        patient_id: str,
+        new_sbar_id: str,
+        previous_sbar_id: str,
+    ) -> None:
+        """Audit: SBAR record regenerated."""
+        await self.record(
+            event_type=AuditEventType.SBAR_REGENERATED,
+            outcome="ALLOW",
+            actor_id=actor_id,
+            action="sbar:create",
+            resource_type="sbar_summary",
+            resource_id=new_sbar_id,
+            metadata={
+                "patient_id": patient_id,
+                "previous_sbar_id": previous_sbar_id,
+            },
+        )
+

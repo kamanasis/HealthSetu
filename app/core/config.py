@@ -187,6 +187,52 @@ class Settings(BaseSettings):
         description="Maximum time-to-live for cached safety evaluations",
     )
 
+    # Triage & SBAR Configuration (Phase 8)
+    TRIAGE_ENABLED: bool = Field(
+        default=True,
+        description="Flag enabling clinical triage assessment pipeline",
+    )
+    TRIAGE_RULE_SET: str = Field(
+        default="healthsetu_emergency_triage_v1",
+        description="Active clinical triage protocol identifier",
+    )
+    TRIAGE_RULE_SET_VERSION: str = Field(
+        default="1.0.0",
+        description="Version string of the active triage protocol",
+    )
+    TRIAGE_RULE_ENGINE_TIMEOUT_SECONDS: int = Field(
+        default=5,
+        description="Maximum execution timeout in seconds for triage rule evaluation",
+    )
+    SBAR_ENABLED: bool = Field(
+        default=True,
+        description="Flag enabling SBAR clinical summary generation",
+    )
+    SBAR_GENERATION_MODE: str = Field(
+        default="template",
+        description="SBAR generation method: 'template' (deterministic) or 'ai'",
+    )
+    AI_PROVIDER: str = Field(
+        default="mock",
+        description="Clinical text generator provider ('mock', 'openai', 'anthropic', 'local')",
+    )
+    AI_BASE_URL: str = Field(
+        default="",
+        description="Base URL for external AI text generation provider",
+    )
+    AI_API_KEY: str = Field(
+        default="",
+        description="API key or token for external AI provider",
+    )
+    AI_TIMEOUT_SECONDS: int = Field(
+        default=15,
+        description="Timeout in seconds for AI text generation calls",
+    )
+    AI_MAX_OUTPUT_TOKENS: int = Field(
+        default=1000,
+        description="Maximum allowed output tokens for AI text generation",
+    )
+
     @property
     def max_document_size_bytes(self) -> int:
         """Maximum allowed document upload size in bytes."""

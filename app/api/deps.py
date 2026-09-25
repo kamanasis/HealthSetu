@@ -53,6 +53,20 @@ from app.integrations.medication_safety.base import MedicationSafetyProvider
 from app.integrations.medication_safety.registry import get_medication_safety_provider
 from app.services.medication_safety_service import MedicationSafetyService
 
+# Phase 8: Triage & SBAR imports
+from app.repositories.symptom_repository import SymptomRepository
+from app.repositories.triage_repository import TriageRepository
+from app.repositories.sbar_repository import SBARRepository
+from app.integrations.triage.base import TriageRuleEngine
+from app.integrations.triage.rule_engine import HealthSetuDeterministicTriageEngine
+from app.integrations.ai.base import ClinicalTextGenerator
+from app.integrations.ai.providers.template_generator import TemplateClinicalTextGenerator
+from app.integrations.ai.providers.mock_llm import MockLLMClinicalTextGenerator
+from app.integrations.ai.validator import SBARFactValidator
+from app.services.symptom_service import SymptomService
+from app.services.triage_service import TriageService
+from app.services.sbar_service import SBARService
+
 # ---------------------------------------------------------------------------
 # HTTP Bearer scheme
 # ---------------------------------------------------------------------------
@@ -89,6 +103,18 @@ _global_medication_repo = MedicationRepository()
 _global_patient_medication_repo = PatientMedicationRepository()
 _global_medication_terminology_provider = LocalMedicationProvider()
 _global_medication_safety_repo = MedicationSafetyRepository()
+
+# ---------------------------------------------------------------------------
+# Phase 8: Global default repositories & providers
+# ---------------------------------------------------------------------------
+_global_symptom_repo = SymptomRepository()
+_global_triage_repo = TriageRepository()
+_global_sbar_repo = SBARRepository()
+_global_triage_engine = HealthSetuDeterministicTriageEngine()
+_global_template_generator = TemplateClinicalTextGenerator()
+_global_ai_generator = MockLLMClinicalTextGenerator()
+_global_sbar_validator = SBARFactValidator()
+
 _global_authz_service = AuthorizationService(
     permission_repository=_global_permission_repo,
     consent_service=ConsentService(consent_repository=_global_consent_repo),
@@ -223,6 +249,45 @@ def get_medication_safety_repository() -> MedicationSafetyRepository:
 def get_medication_safety_provider_dep() -> MedicationSafetyProvider:
     """Dependency provider for MedicationSafetyProvider."""
     return get_medication_safety_provider()
+
+
+# ---------------------------------------------------------------------------
+# Phase 8: Repository & Provider dependencies
+# ---------------------------------------------------------------------------
+
+def get_symptom_repository() -> SymptomRepository:
+    """Dependency provider for SymptomRepository."""
+    return _global_symptom_repo
+
+
+def get_triage_repository() -> TriageRepository:
+    """Dependency provider for TriageRepository."""
+    return _global_triage_repo
+
+
+def get_sbar_repository() -> SBARRepository:
+    """Dependency provider for SBARRepository."""
+    return _global_sbar_repo
+
+
+def get_triage_engine() -> TriageRuleEngine:
+    """Dependency provider for TriageRuleEngine."""
+    return _global_triage_engine
+
+
+def get_template_generator() -> ClinicalTextGenerator:
+    """Dependency provider for TemplateClinicalTextGenerator."""
+    return _global_template_generator
+
+
+def get_ai_generator() -> ClinicalTextGenerator:
+    """Dependency provider for AI ClinicalTextGenerator."""
+    return _global_ai_generator
+
+
+def get_sbar_validator() -> SBARFactValidator:
+    """Dependency provider for SBARFactValidator."""
+    return _global_sbar_validator
 
 
 # ---------------------------------------------------------------------------
@@ -401,6 +466,77 @@ def get_medication_safety_service(
         patient_repo=patient_repo,
         audit_service=audit_service,
         provider=provider,
+    )
+
+
+# ---------------------------------------------------------------------------
+# Phase 8: Triage & SBAR service providers
+# ---------------------------------------------------------------------------
+
+def get_symptom_service(
+    symptom_repo: Annotated[SymptomRepository, Depends(get_symptom_repository)],
+    audit_service: Annotated[AuditService, Depends(get_audit_service)],
+) -> SymptomService:
+    """Dependency provider for SymptomService."""
+    return SymptomService(
+        symptom_repo=symptom_repo,
+        audit_service=audit_service,
+    )
+
+
+def get_triage_service(
+    triage_repo: Annotated[TriageRepository, Depends(get_triage_repository)],
+    symptom_repo: Annotated[SymptomRepository, Depends(get_symptom_repository)],
+    audit_service: Annotated[AuditService, Depends(get_audit_service)],
+    rule_engine: Annotated[TriageRuleEngine, Depends(get_triage_engine)],
+    vitals_repo: Annotated[VitalsRepository, Depends(get_vitals_repository)],
+    patient_repo: Annotated[PatientRepository, Depends(get_patient_repository)],
+    clinical_history_repo: Annotated[ClinicalHistoryRepository, Depends(get_clinical_history_repository)],
+    allergy_repo: Annotated[AllergyRepository, Depends(get_allergy_repository)],
+    patient_medication_repo: Annotated[PatientMedicationRepository, Depends(get_patient_medication_repository)],
+) -> TriageService:
+    """Dependency provider for TriageService."""
+    return TriageService(
+        triage_repo=triage_repo,
+        symptom_repo=symptom_repo,
+        audit_service=audit_service,
+        rule_engine=rule_engine,
+        vitals_repo=vitals_repo,
+        patient_repo=patient_repo,
+        clinical_history_repo=clinical_history_repo,
+        allergy_repo=allergy_repo,
+        patient_medication_repo=patient_medication_repo,
+    )
+
+
+def get_sbar_service(
+    sbar_repo: Annotated[SBARRepository, Depends(get_sbar_repository)],
+    triage_repo: Annotated[TriageRepository, Depends(get_triage_repository)],
+    audit_service: Annotated[AuditService, Depends(get_audit_service)],
+    template_generator: Annotated[ClinicalTextGenerator, Depends(get_template_generator)],
+    ai_generator: Annotated[ClinicalTextGenerator, Depends(get_ai_generator)],
+    validator: Annotated[SBARFactValidator, Depends(get_sbar_validator)],
+    symptom_repo: Annotated[SymptomRepository, Depends(get_symptom_repository)],
+    vitals_repo: Annotated[VitalsRepository, Depends(get_vitals_repository)],
+    clinical_history_repo: Annotated[ClinicalHistoryRepository, Depends(get_clinical_history_repository)],
+    allergy_repo: Annotated[AllergyRepository, Depends(get_allergy_repository)],
+    patient_medication_repo: Annotated[PatientMedicationRepository, Depends(get_patient_medication_repository)],
+    encounter_repo: Annotated[EncounterRepository, Depends(get_encounter_repository)],
+) -> SBARService:
+    """Dependency provider for SBARService."""
+    return SBARService(
+        sbar_repo=sbar_repo,
+        triage_repo=triage_repo,
+        audit_service=audit_service,
+        template_generator=template_generator,
+        ai_generator=ai_generator,
+        validator=validator,
+        symptom_repo=symptom_repo,
+        vitals_repo=vitals_repo,
+        clinical_history_repo=clinical_history_repo,
+        allergy_repo=allergy_repo,
+        patient_medication_repo=patient_medication_repo,
+        encounter_repo=encounter_repo,
     )
 
 

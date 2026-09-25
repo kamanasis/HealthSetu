@@ -83,6 +83,14 @@ class Permission(str, Enum):
     MEDICATION_SAFETY_READ = "medication_safety:read"
     MEDICATION_SAFETY_CHECK = "medication_safety:check"
 
+    # ---- Symptoms, Triage & SBAR (Phase 8) ----
+    SYMPTOM_READ = "symptom:read"
+    SYMPTOM_CREATE = "symptom:create"
+    TRIAGE_READ = "triage:read"
+    TRIAGE_ASSESS = "triage:assess"
+    SBAR_READ = "sbar:read"
+    SBAR_CREATE = "sbar:create"
+
     # ---- Care plans ----
     CARE_PLAN_READ = "care_plan:read"
     CARE_PLAN_UPDATE = "care_plan:update"
@@ -133,6 +141,11 @@ ROLE_PERMISSIONS: dict[str, FrozenSet[Permission]] = {
         Permission.MEDICATION_UPDATE,
         Permission.MEDICATION_SAFETY_READ,
         Permission.MEDICATION_SAFETY_CHECK,
+        Permission.SYMPTOM_READ,
+        Permission.SYMPTOM_CREATE,
+        Permission.TRIAGE_READ,
+        Permission.TRIAGE_ASSESS,
+        Permission.SBAR_READ,
         Permission.CARE_PLAN_READ,
         Permission.CONSENT_CREATE,
         Permission.CONSENT_READ,
@@ -166,6 +179,12 @@ ROLE_PERMISSIONS: dict[str, FrozenSet[Permission]] = {
         Permission.MEDICATION_UPDATE,
         Permission.MEDICATION_SAFETY_READ,
         Permission.MEDICATION_SAFETY_CHECK,
+        Permission.SYMPTOM_READ,
+        Permission.SYMPTOM_CREATE,
+        Permission.TRIAGE_READ,
+        Permission.TRIAGE_ASSESS,
+        Permission.SBAR_READ,
+        Permission.SBAR_CREATE,
         Permission.CARE_PLAN_READ,
         Permission.CARE_PLAN_UPDATE,
         Permission.CONSENT_READ,
@@ -228,6 +247,13 @@ ACTION_PERMISSION_MAP: dict[tuple[str, str], Permission] = {
     # Medication Safety (Phase 7)
     ("medication_safety", "read"):        Permission.MEDICATION_SAFETY_READ,
     ("medication_safety", "check"):       Permission.MEDICATION_SAFETY_CHECK,
+    # Symptoms, Triage & SBAR (Phase 8)
+    ("symptom", "read"):                  Permission.SYMPTOM_READ,
+    ("symptom", "create"):                Permission.SYMPTOM_CREATE,
+    ("triage", "read"):                   Permission.TRIAGE_READ,
+    ("triage", "assess"):                 Permission.TRIAGE_ASSESS,
+    ("sbar", "read"):                     Permission.SBAR_READ,
+    ("sbar", "create"):                   Permission.SBAR_CREATE,
     ("care_plan", "read"):                Permission.CARE_PLAN_READ,
     ("care_plan", "update"):              Permission.CARE_PLAN_UPDATE,
     # Consent
@@ -278,6 +304,8 @@ class ConsentScope(str, Enum):
     PRESCRIPTIONS = "prescriptions"
     MEDICATIONS = "medications"
     MEDICATION_SAFETY = "medication_safety"
+    SYMPTOMS = "symptoms"
+    TRIAGE = "triage"
     CARE_PLAN = "care_plan"
     DOCUMENTS = "documents"
     DISCHARGE_SUMMARY = "discharge_summary"
