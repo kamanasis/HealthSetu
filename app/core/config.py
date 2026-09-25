@@ -157,6 +157,36 @@ class Settings(BaseSettings):
         description="Maximum retries for transient terminology provider failures",
     )
 
+    # Medication Safety Configuration (Phase 7)
+    MEDICATION_SAFETY_ENABLED: bool = Field(
+        default=True,
+        description="Flag enabling medication safety evaluation pipeline",
+    )
+    MEDICATION_SAFETY_PROVIDER: str = Field(
+        default="mock",
+        description="Medication safety provider ('mock', 'licensed_provider')",
+    )
+    MEDICATION_SAFETY_BASE_URL: str = Field(
+        default="",
+        description="Base URL for external licensed medication safety provider API",
+    )
+    MEDICATION_SAFETY_API_KEY: str = Field(
+        default="",
+        description="API key or token for external medication safety provider",
+    )
+    MEDICATION_SAFETY_TIMEOUT_SECONDS: int = Field(
+        default=15,
+        description="Maximum execution timeout in seconds for safety checks",
+    )
+    MEDICATION_SAFETY_MAX_RETRIES: int = Field(
+        default=2,
+        description="Maximum retry attempts for transient provider failures",
+    )
+    MEDICATION_SAFETY_RESULT_TTL_SECONDS: int = Field(
+        default=3600,
+        description="Maximum time-to-live for cached safety evaluations",
+    )
+
     @property
     def max_document_size_bytes(self) -> int:
         """Maximum allowed document upload size in bytes."""

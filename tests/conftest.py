@@ -27,6 +27,7 @@ from app.api.deps import (
     _global_prescription_repo,
     _global_medication_repo,
     _global_patient_medication_repo,
+    _global_medication_safety_repo,
     _global_authz_service,
 )
 from app.core.config import get_settings
@@ -66,6 +67,8 @@ def clean_state():
     _global_prescription_repo.clear()
     _global_medication_repo.clear()
     _global_patient_medication_repo.clear()
+    # Phase 7
+    _global_medication_safety_repo.clear()
     yield
     get_settings.cache_clear()
     _global_user_repo._local_users.clear()
@@ -85,6 +88,7 @@ def clean_state():
     _global_prescription_repo.clear()
     _global_medication_repo.clear()
     _global_patient_medication_repo.clear()
+    _global_medication_safety_repo.clear()
 
 
 

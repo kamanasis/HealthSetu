@@ -658,3 +658,103 @@ class AuditService(BaseService[AuditRepository]):
             metadata={"patient_id": patient_id},
         )
 
+    # -----------------------------------------------------------------------
+    # Phase 7 — Medication Safety Audit Helpers
+    # -----------------------------------------------------------------------
+
+    async def record_medication_safety_check_started(
+        self,
+        actor_id: str,
+        patient_id: str,
+        evaluation_id: str,
+        provider: str,
+        check_types: list[str],
+        medication_count: int,
+    ) -> None:
+        """Audit: medication safety check initiated.
+
+        NO PHI: medication IDs, names, or clinical details are NOT recorded.
+        Only counts, IDs, and check types are logged.
+        """
+        await self.record(
+            event_type=AuditEventType.MEDICATION_SAFETY_CHECK_STARTED,
+            outcome="ALLOW",
+            actor_id=actor_id,
+            action="medication_safety:check",
+            resource_type="medication_safety_evaluation",
+            resource_id=evaluation_id,
+            metadata={
+                "patient_id": patient_id,
+                "provider": provider,
+                "check_types": check_types,
+                "medication_count": medication_count,
+            },
+        )
+
+    async def record_medication_safety_check_completed(
+        self,
+        actor_id: str,
+        patient_id: str,
+        evaluation_id: str,
+        provider: str,
+        status: str,
+        alerts_count: int,
+        duration_ms: float,
+    ) -> None:
+        """Audit: medication safety check successfully completed."""
+        await self.record(
+            event_type=AuditEventType.MEDICATION_SAFETY_CHECK_COMPLETED,
+            outcome="ALLOW",
+            actor_id=actor_id,
+            action="medication_safety:check",
+            resource_type="medication_safety_evaluation",
+            resource_id=evaluation_id,
+            metadata={
+                "patient_id": patient_id,
+                "provider": provider,
+                "status": status,
+                "alerts_count": alerts_count,
+                "duration_ms": duration_ms,
+            },
+        )
+
+    async def record_medication_safety_check_failed(
+        self,
+        actor_id: str,
+        patient_id: str,
+        evaluation_id: str,
+        provider: str,
+        error_category: str,
+    ) -> None:
+        """Audit: medication safety check failed or provider error."""
+        await self.record(
+            event_type=AuditEventType.MEDICATION_SAFETY_CHECK_FAILED,
+            outcome="DENY",
+            actor_id=actor_id,
+            action="medication_safety:check",
+            resource_type="medication_safety_evaluation",
+            resource_id=evaluation_id,
+            metadata={
+                "patient_id": patient_id,
+                "provider": provider,
+                "error_category": error_category,
+            },
+        )
+
+    async def record_medication_safety_result_viewed(
+        self,
+        actor_id: str,
+        patient_id: str,
+        evaluation_id: str,
+    ) -> None:
+        """Audit: medication safety result viewed."""
+        await self.record(
+            event_type=AuditEventType.MEDICATION_SAFETY_RESULT_VIEWED,
+            outcome="ALLOW",
+            actor_id=actor_id,
+            action="medication_safety:read",
+            resource_type="medication_safety_evaluation",
+            resource_id=evaluation_id,
+            metadata={"patient_id": patient_id},
+        )
+

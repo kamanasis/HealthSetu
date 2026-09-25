@@ -10,6 +10,7 @@ from app.api.v1.endpoints import (
     encounters,
     health,
     medications,
+    medication_safety,
     patients,
     prescriptions,
     vitals,
@@ -39,5 +40,8 @@ v1_router.include_router(documents.router)
 # Register Phase 6 prescription and medication endpoints
 v1_router.include_router(prescriptions.router)
 v1_router.include_router(medications.router)
+
+# Register Phase 7 medication safety endpoints
+v1_router.include_router(medication_safety.router)
 
 

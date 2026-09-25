@@ -79,6 +79,10 @@ class Permission(str, Enum):
     MEDICATION_READ = "medication:read"
     MEDICATION_UPDATE = "medication:update"
 
+    # ---- Medication Safety (Phase 7) ----
+    MEDICATION_SAFETY_READ = "medication_safety:read"
+    MEDICATION_SAFETY_CHECK = "medication_safety:check"
+
     # ---- Care plans ----
     CARE_PLAN_READ = "care_plan:read"
     CARE_PLAN_UPDATE = "care_plan:update"
@@ -127,6 +131,8 @@ ROLE_PERMISSIONS: dict[str, FrozenSet[Permission]] = {
         Permission.PRESCRIPTION_READ,
         Permission.MEDICATION_READ,
         Permission.MEDICATION_UPDATE,
+        Permission.MEDICATION_SAFETY_READ,
+        Permission.MEDICATION_SAFETY_CHECK,
         Permission.CARE_PLAN_READ,
         Permission.CONSENT_CREATE,
         Permission.CONSENT_READ,
@@ -158,6 +164,8 @@ ROLE_PERMISSIONS: dict[str, FrozenSet[Permission]] = {
         Permission.PRESCRIPTION_NORMALIZE,
         Permission.MEDICATION_READ,
         Permission.MEDICATION_UPDATE,
+        Permission.MEDICATION_SAFETY_READ,
+        Permission.MEDICATION_SAFETY_CHECK,
         Permission.CARE_PLAN_READ,
         Permission.CARE_PLAN_UPDATE,
         Permission.CONSENT_READ,
@@ -217,6 +225,9 @@ ACTION_PERMISSION_MAP: dict[tuple[str, str], Permission] = {
     ("medication", "update"):             Permission.MEDICATION_UPDATE,
     ("medication", "status"):             Permission.MEDICATION_UPDATE,
     ("medication", "correct"):            Permission.MEDICATION_UPDATE,
+    # Medication Safety (Phase 7)
+    ("medication_safety", "read"):        Permission.MEDICATION_SAFETY_READ,
+    ("medication_safety", "check"):       Permission.MEDICATION_SAFETY_CHECK,
     ("care_plan", "read"):                Permission.CARE_PLAN_READ,
     ("care_plan", "update"):              Permission.CARE_PLAN_UPDATE,
     # Consent
@@ -266,6 +277,7 @@ class ConsentScope(str, Enum):
     CLINICAL_RECORDS = "clinical_records"
     PRESCRIPTIONS = "prescriptions"
     MEDICATIONS = "medications"
+    MEDICATION_SAFETY = "medication_safety"
     CARE_PLAN = "care_plan"
     DOCUMENTS = "documents"
     DISCHARGE_SUMMARY = "discharge_summary"

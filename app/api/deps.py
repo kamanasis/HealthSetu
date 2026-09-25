@@ -48,6 +48,10 @@ from app.integrations.medication.providers.rxnorm import RxNormProvider
 from app.services.medication_normalization_service import MedicationNormalizationService
 from app.services.prescription_service import PrescriptionService
 from app.services.medication_service import MedicationService
+from app.repositories.medication_safety_repository import MedicationSafetyRepository
+from app.integrations.medication_safety.base import MedicationSafetyProvider
+from app.integrations.medication_safety.registry import get_medication_safety_provider
+from app.services.medication_safety_service import MedicationSafetyService
 
 # ---------------------------------------------------------------------------
 # HTTP Bearer scheme
@@ -84,6 +88,7 @@ _global_prescription_repo = PrescriptionRepository()
 _global_medication_repo = MedicationRepository()
 _global_patient_medication_repo = PatientMedicationRepository()
 _global_medication_terminology_provider = LocalMedicationProvider()
+_global_medication_safety_repo = MedicationSafetyRepository()
 _global_authz_service = AuthorizationService(
     permission_repository=_global_permission_repo,
     consent_service=ConsentService(consent_repository=_global_consent_repo),
@@ -208,6 +213,16 @@ def get_medication_terminology_provider() -> MedicationTerminologyProvider:
             max_retries=settings.MEDICATION_NORMALIZATION_MAX_RETRIES,
         )
     return _global_medication_terminology_provider
+
+
+def get_medication_safety_repository() -> MedicationSafetyRepository:
+    """Dependency provider for MedicationSafetyRepository."""
+    return _global_medication_safety_repo
+
+
+def get_medication_safety_provider_dep() -> MedicationSafetyProvider:
+    """Dependency provider for MedicationSafetyProvider."""
+    return get_medication_safety_provider()
 
 
 # ---------------------------------------------------------------------------
@@ -359,6 +374,33 @@ def get_medication_service(
         medication_repo=medication_repo,
         provider=provider,
         audit_service=audit_service,
+    )
+
+
+# ---------------------------------------------------------------------------
+# Phase 7: Medication Safety service provider
+# ---------------------------------------------------------------------------
+
+def get_medication_safety_service(
+    safety_repo: Annotated[MedicationSafetyRepository, Depends(get_medication_safety_repository)],
+    patient_medication_repo: Annotated[PatientMedicationRepository, Depends(get_patient_medication_repository)],
+    medication_repo: Annotated[MedicationRepository, Depends(get_medication_repository)],
+    allergy_repo: Annotated[AllergyRepository, Depends(get_allergy_repository)],
+    clinical_history_repo: Annotated[ClinicalHistoryRepository, Depends(get_clinical_history_repository)],
+    patient_repo: Annotated[PatientRepository, Depends(get_patient_repository)],
+    audit_service: Annotated[AuditService, Depends(get_audit_service)],
+    provider: Annotated[MedicationSafetyProvider, Depends(get_medication_safety_provider_dep)],
+) -> MedicationSafetyService:
+    """Dependency provider for MedicationSafetyService."""
+    return MedicationSafetyService(
+        safety_repo=safety_repo,
+        patient_medication_repo=patient_medication_repo,
+        medication_repo=medication_repo,
+        allergy_repo=allergy_repo,
+        clinical_history_repo=clinical_history_repo,
+        patient_repo=patient_repo,
+        audit_service=audit_service,
+        provider=provider,
     )
 
 

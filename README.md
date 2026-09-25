@@ -1,4 +1,4 @@
-# HealthSetu — Backend (Phases 1 – 5)
+# HealthSetu — Backend (Phases 1 – 7)
 
 HealthSetu is a unified healthcare interoperability, clinical coordination, and patient safety backend platform.
 
@@ -7,6 +7,8 @@ HealthSetu is a unified healthcare interoperability, clinical coordination, and 
 - **Phase 3**: Authorization, Access Control & Consent engine (RBAC, ownership, consent validation).
 - **Phase 4**: Patient Clinical Record foundation (demographics, history, allergies, vitals, encounters, clinical summary).
 - **Phase 5**: Medical Document Processing pipeline (secure object storage, OCR extraction, background processing, idempotency, PHI protection).
+- **Phase 6**: Prescription & Medication System (extraction linkage, terminology normalization, longitudinal medication record).
+- **Phase 7**: Medication Safety System (authoritative provider abstraction, DDI, allergy cross-reactivity, contraindications, duplicate therapy).
 
 ---
 
@@ -538,53 +540,59 @@ Phase 5 establishes the secure medical document intake, object storage, and back
 | **Phase 6** | Provenance chain tracking across documents & prescriptions | ✅ IMPLEMENTED |
 | **Phase 6** | Human review & correction workflow with audit history | ✅ IMPLEMENTED |
 | **Phase 6** | Data-level duplicate detection without clinical claims | ✅ IMPLEMENTED |
+| **Phase 7** | Medication safety provider abstraction (`MedicationSafetyProvider`) | ✅ IMPLEMENTED |
+| **Phase 7** | Deterministic mock safety provider (`MockMedicationSafetyProvider`) | ✅ IMPLEMENTED |
+| **Phase 7** | Licensed provider adapter stub with credential validation | ✅ IMPLEMENTED |
+| **Phase 7** | Drug-Drug Interaction (DDI) checking & normalization | ✅ IMPLEMENTED |
+| **Phase 7** | Drug-Allergy conflict evaluation (Phase 4 allergy linkage) | ✅ IMPLEMENTED |
+| **Phase 7** | Drug-Disease interaction evaluation (Phase 4 conditions) | ✅ IMPLEMENTED |
+| **Phase 7** | Contraindication & Duplicate Therapy detection | ✅ IMPLEMENTED |
+| **Phase 7** | Provider failure safety (UNKNOWN/ERROR, never false CLEAR) | ✅ IMPLEMENTED |
+| **Phase 7** | Prospective new medication checking (`check-medications`) | ✅ IMPLEMENTED |
+| **Phase 7** | Patient data minimization for external providers (zero PHI leaks) | ✅ IMPLEMENTED |
+| **Phase 7** | Immutable evaluations & audit event integration | ✅ IMPLEMENTED |
 | **Database Team** | PostgreSQL schema & migrations | 🔲 PENDING CONTRACT |
-| **Phase 7** | Clinical Medication Safety (Interactions, Allergies, Contraindications) | ⏳ UPCOMING |
+| **Phase 8** | Triage & SBAR (Structured Clinical Communication) | ⏳ UPCOMING |
 
 ---
 
-## Phase 6 — Prescription & Medication System Architecture
+## Phase 7 — Medication Safety System Architecture
 
 ### Pipeline
 ```
-Medical Document (Phase 5)
-      ↓
-Document Extraction (Phase 5)
-      ↓
-Prescription Extraction Mapper
-      ↓
-Prescription Entity + Prescription Items
-      ↓
-Raw Medication Information Preservation
-      ↓
-Medication Terminology Normalization (RxNorm / Local Mock)
-      ↓
-Patient Medication Record (Longitudinal History & Provenance)
+Patient
+   ↓
+Current Medication Context (Phase 6 Active Medications)
+   ↓
+Normalized Medication Identifiers (RxNorm / Canonical Codes)
+   ↓
+Medication Safety Service
+   ↓
+Licensed / Authoritative Safety Provider (FDB / DrugBank / Synthetic Mock)
+   ↓
+Safety Evidence (DDI, Allergy Cross-Reactivity, Contraindications)
+   ↓
+Normalized Safety Result (CRITICAL, MAJOR, MODERATE, MINOR, INFO)
+   ↓
+Patient / Clinician Review
 ```
 
-### Critical Clinical Safety Boundary
+### Critical Clinical Safety Boundaries
 > [!IMPORTANT]
-> **Medication normalization does NOT constitute medication safety validation.**
-> Normalization maps raw medication names to canonical concepts (e.g. RxCUI). It does **not** evaluate:
-> - Drug-drug interactions
-> - Drug-allergy conflicts
-> - Contraindications
-> - Clinical dosing appropriateness or safety
-> - Duplicate therapy clinical decisions
-> Those safety evaluations belong to **Phase 7 — Medication Safety**.
+> **Safety results are clinical decision-support evidence, NOT autonomous clinical decisions.**
+> 1. **Zero Autonomous Clinical Action**: Phase 7 NEVER automatically cancels prescriptions, changes dosages, stops medications, or generates allergy records.
+> 2. **Provider Failure Safety**: If the external safety provider times out or fails, the system returns `UNKNOWN` or `ERROR`. It **NEVER** yields a false `CLEAR` status.
+> 3. **No LLM Clinical Authority**: Large language models must NEVER independently determine clinical medication safety. Authoritative evidence must originate from licensed clinical databases.
+> 4. **RxNorm & openFDA Boundary**: Neither RxNorm nor openFDA alone constitute a complete medication safety or interaction checking engine.
 
-### Phase 6 API Endpoints
+### Phase 7 API Endpoints
 
 | Method | Path | Auth / Scope | Description |
 |---|---|---|---|
-| `POST` | `/api/v1/patients/{id}/prescriptions` | `PRESCRIPTION_CREATE` | Create prescription with items (optionally sourced from Phase 5 extraction) |
-| `GET` | `/api/v1/patients/{id}/prescriptions` | `PRESCRIPTION_READ` | List patient prescriptions with pagination |
-| `GET` | `/api/v1/patients/{id}/prescriptions/{rx_id}` | `PRESCRIPTION_READ` | Retrieve prescription metadata, items, and normalized concepts |
-| `POST` | `/api/v1/patients/{id}/prescriptions/{rx_id}/normalize` | `PRESCRIPTION_NORMALIZE` | Trigger terminology normalization across prescription items |
-| `GET` | `/api/v1/patients/{id}/prescriptions/{rx_id}/items/{item_id}` | `PRESCRIPTION_READ` | Retrieve details for a single prescription item |
-| `GET` | `/api/v1/patients/{id}/medications` | `MEDICATION_READ` | List patient medications with pagination, status, and source filters |
-| `GET` | `/api/v1/patients/{id}/medications/{med_id}` | `MEDICATION_READ` | Retrieve patient medication record with full provenance chain |
-| `PATCH` | `/api/v1/patients/{id}/medications/{med_id}/status` | `MEDICATION_UPDATE` | Update status (PRESCRIBED → ACTIVE / INACTIVE / HISTORICAL) |
-| `PATCH` | `/api/v1/patients/{id}/medications/{med_id}/correct` | `MEDICATION_UPDATE` | Correct raw extracted data, preserving original values and re-normalizing |
+| `POST` | `/api/v1/patients/{id}/medication-safety/check` | `medication_safety:check` | Evaluate patient active/selected medications for interactions, allergies, and contraindications |
+| `POST` | `/api/v1/patients/{id}/medication-safety/check-medications` | `medication_safety:check` | Evaluate prospective new medications against current patient medications and allergies |
+| `GET` | `/api/v1/patients/{id}/medication-safety/capabilities` | `medication_safety:read` | Retrieve supported capabilities for configured safety provider |
+| `GET` | `/api/v1/patients/{id}/medication-safety/evaluations/{eval_id}` | `medication_safety:read` | Retrieve full details, findings, alerts, and provenance for a specific evaluation |
+| `GET` | `/api/v1/patients/{id}/medication-safety/evaluations` | `medication_safety:read` | List historical evaluations with pagination, date, and status filtering |
 
 
