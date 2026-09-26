@@ -14,6 +14,8 @@
   <a href="#-quick-start"><b>Quick Start</b></a> •
   <a href="#-highlights-at-a-glance"><b>Highlights</b></a> •
   <a href="#-the-three-sovereign-portals"><b>Portals</b></a> •
+  <a href="#-user-workflows-role-specific-journeys"><b>User Workflows</b></a> •
+  <a href="#-connected-workflows-cross-role-ecosystem-interoperability"><b>Connected Workflows</b></a> •
   <a href="#-system-architecture"><b>Architecture</b></a> •
   <a href="#-tech-stack"><b>Tech Stack</b></a> •
   <a href="#-verification--integrity-suite"><b>Test Results</b></a>
@@ -118,6 +120,220 @@ HealthSetu provides three tailored, role-segregated workspaces built for the Ind
     </tr>
   </tbody>
 </table>
+
+---
+
+## 🔄 User Workflows (Role-Specific Journeys)
+
+HealthSetu structures every user interaction around cryptographic sovereignty, clinical safety, and real-time responsiveness. Below are the definitive workflows for each actor in the system:
+
+### 1. Patient User Journey: Sovereign Health Vault Management
+
+```mermaid
+graph TD
+    A[Patient Lands on Portal] --> B{Has Sovereign ID?}
+    B -->|No| C[Mint New Unique ID: HS-PAT-XXXX]
+    B -->|Yes| D[Log In via ID / Email & Password]
+    C --> D
+    D --> E[Sovereign Health Vault Dashboard]
+    E --> F[Upload Prescription Image / PDF]
+    F --> G[Gemini Multimodal OCR Extraction]
+    G --> H[Interactive Field Verification & Dosage Check]
+    H --> I[Record Stored in Longitudinal Timeline]
+    I --> J[Audio Daily Care Plan Synthesized]
+    E --> K[Grant Time-Bound Consent to Clinician]
+```
+
+1. **Sovereign Onboarding & Identity Generation**:
+   - New patients navigate to the **Patient Portal** and select **"Create Profile & Mint ID"**.
+   - The system deterministically issues a cryptographic **Patient Unique ID** (e.g., `HS-PAT-8921`) scoped to their demographics (Age, Gender, Blood Group, Emergency Contact).
+   - No mock data or pre-loaded dummy prescriptions are seeded; the patient profile initializes clean.
+
+2. **Prescription Ingestion & Multimodal OCR**:
+   - The patient clicks **"Upload New Prescription"** and selects an image (`.jpg`, `.png`) or PDF of a doctor's prescription.
+   - The dual-engine extraction pipeline triggers: **Google Gemini 2.5 Flash / Pro Multimodal Vision** processes handwriting, extracting drug name, strength (e.g., `40 mg`), frequency (`OD`, `BD`, `TDS`), duration (`30 Days`), and clinical instructions.
+   - If offline or Gemini API key is omitted, an algorithmic deterministic fallback parser extracts clinical entities.
+
+3. **Field Verification & Trust Attestation**:
+   - An interactive review modal presents the extracted medications in structured fields.
+   - The patient verifies or adjusts dosages and clicks **"Confirm & Save to Record"**.
+   - The record transitions to `patient_verified` trust state and is immediately pinned to the patient's **Longitudinal Timeline**.
+
+4. **Vernacular Audio Daily Care Plan**:
+   - Patients click **"Daily Care Plan (Audio)"** to listen to synthesized morning, afternoon, and night regimen instructions in vernacular languages.
+   - Prevents medication non-compliance by clearly dictating food-related instructions (e.g., *"Take Telmisartan before breakfast with water"*).
+
+5. **Consent & Access Ledger**:
+   - The patient grants granular, time-limited access (e.g., 12 hours) to specific registered clinicians (`HS-DOC-XXXX`) or hospital nodes.
+   - All access grants are cryptographically logged and revocable in one click.
+
+---
+
+### 2. Doctor / Clinician User Journey: Clinical Decision Support & Prescribing
+
+```mermaid
+graph TD
+    A[Doctor Logs In: HS-DOC-XXXX] --> B[Doctor Clinical Workspace]
+    B --> C[Enter Patient Unique ID: HS-PAT-XXXX]
+    C --> D[Retrieve Multi-Facility Longitudinal Record]
+    D --> E[Review Current Meds, Allergies & Timeline]
+    E --> F[Digital Prescription Builder]
+    F --> G[Input Drug Name & Dosage]
+    G --> H{Algorithmic Safety Audit}
+    H -->|DDI or Allergen Risk Found| I[High-Severity Safety Alert Triggered]
+    H -->|Safe| J[Clearance Granted]
+    I --> K[Doctor Modifies Drug or Overrides with Note]
+    K --> L[Finalize Prescription]
+    J --> L
+    L --> M[Record Auto-Synced to Patient Vault & Timeline]
+```
+
+1. **Clinician Clearance Authentication**:
+   - Verified clinicians authenticate using their **Doctor Clearance ID** (e.g., `HS-DOC-2045`) and password.
+   - If an unauthenticated user or patient attempts to enter, HealthSetu's Role-Based Access Control (RBAC) intercepts and blocks access.
+
+2. **Cross-Facility Patient Lookup**:
+   - The clinician inputs the patient's **Unique ID** (e.g., `HS-PAT-8921`) in the patient lookup bar.
+   - The system aggregates historical prescriptions, current active medications, documented allergies, and previous hospital encounters across all connected facilities.
+
+3. **Active Safety Audit & Contraindication Engine**:
+   - While prescribing a new medication (e.g., *Warfarin* for a patient already taking *Aspirin*, or *Amoxicillin* for a patient with a documented *Penicillin* allergy), the **Safety Engine** runs continuous real-time checks:
+     - **Drug-Drug Interaction (DDI)**: Detects severe pharmacokinetic conflicts and hemorrhage/toxicity risks.
+     - **Allergy Cross-Reactivity**: Detects beta-lactam and NSAID sensitivities.
+     - **Duplicate Therapy**: Flags duplicate pharmacological classes.
+   - Clear amber/red clinical alert banners appear with actionable pharmacological rationales.
+
+4. **Finalization & Automatic Patient Record Sync**:
+   - The doctor reviews alerts, adjusts the regimen, and clicks **"Finalize & Issue Prescription"**.
+   - The medication is cryptographically committed to the patient's vault and immediately becomes visible on the patient's device without page reload.
+
+---
+
+### 3. Hospital Administrator User Journey: Bed Grid & Emergency Triage
+
+```mermaid
+graph TD
+    A[Hospital Admin Signs In: HS-HOSP-XXXX] --> B[Hospital Capacity Management Portal]
+    B --> C[View Live Bed Telemetry across Apollo, Max, Fortis, etc.]
+    C --> D[Select Ward: ICU, Emergency, General]
+    D --> E[Update Bed Status: Available, Occupied, Cleaning]
+    E --> F[Instant Telemetry Sync across Emergency Grid]
+    F --> G[Triage Dispatch Routes Inbound Ambulances to Available Beds]
+```
+
+1. **Facility Authority Authentication**:
+   - Hospital authorities log in with their **Hospital Organization ID** (e.g., `HS-HOSP-4491`).
+   - Grants exclusive administrative clearance to hospital-wide capacity controls.
+
+2. **Live Bed Telemetry & Ward Monitoring**:
+   - Administrators view real-time occupancy meters across:
+     - **ICU Beds**: Critical care capacity and ventilator availability.
+     - **Emergency Beds**: Resuscitation and acute trauma triage units.
+     - **General Wards**: Inpatient beds with automated turnover tracking.
+
+3. **Dynamic Capacity Adjustments**:
+   - Staff toggle bed counts between *Occupied*, *Available*, and *Under Cleaning/Sanitization*.
+   - Capacity changes immediately update the public **Emergency Hospital Search** interface, preventing ambulances from arriving at saturated facilities.
+
+4. **Inter-Hospital Triage Routing**:
+   - If ICU occupancy reaches 95%+, the system visualizes green-flagged partner hospitals with available capacity for immediate patient transfer.
+
+---
+
+## 🌐 Connected Workflows (Cross-Role Ecosystem Interoperability)
+
+HealthSetu's true power lies in how these three distinct roles seamlessly interact in real time across the care continuum.
+
+### Connected Flow A: The Outpatient Consultation & Medication Lifecycle
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor Patient as 🧑‍🦱 Patient (HS-PAT)
+    participant Platform as 🌐 HealthSetu Platform
+    actor Doctor as 👨‍⚕️ Clinician (HS-DOC)
+    participant Safety as 🛡️ Safety & DDI Engine
+    actor Hospital as 🏥 Hospital Node
+
+    Patient->>Platform: Uploads Paper Prescription from Clinic Visit
+    Platform->>Platform: Gemini Multimodal OCR extracts Meds & Dosages
+    Patient->>Platform: Verifies and saves to Sovereign Vault
+    Note over Patient,Platform: Record is active in Patient Vault across all devices
+
+    Patient->>Platform: Grants 12h Access Consent to Dr. Nair (HS-DOC-2045)
+    Doctor->>Platform: Enters Patient ID (HS-PAT-8921)
+    Platform-->>Doctor: Streams Longitudinal Timeline & Active Meds
+
+    Doctor->>Platform: Drafts new Rx (Clopidogrel + Atorvastatin)
+    Platform->>Safety: Runs DDI & Allergy Interlock
+    Safety-->>Doctor: 🟢 No severe contraindications detected
+    Doctor->>Platform: Finalizes Prescription
+
+    Platform->>Patient: Syncs New Prescription to Patient Vault
+    Platform->>Patient: Generates Vernacular Daily Audio Care Plan
+    Platform->>Hospital: Updates ABDM Encounter Record
+```
+
+**Lifecycle Steps**:
+1. **Prescription Digitization**: Patient uploads physical prescription; OCR extracts drugs into structured data.
+2. **Consent-Gated Lookup**: Patient authorizes Doctor; Doctor pulls multi-hospital history instantly.
+3. **Safety-Guarded Decision**: Safety engine checks active medications against past allergies before issuing new prescriptions.
+4. **Instant Synchronous Handoff**: Prescription updates the patient's device and updates the hospital's electronic health registry.
+
+---
+
+### Connected Flow B: Emergency Triage, Bed Allocation & SBAR Transfer
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor Citizen as 🚨 Patient / Attendant
+    participant Grid as 🏥 Live Hospital Grid
+    actor HospAdmin as 🏢 Hospital Operations
+    actor EDDoctor as 🩺 Emergency Clinician
+
+    HospAdmin->>Grid: Updates ICU Bed Status (e.g., 2 Beds Freed at Max Healthcare)
+    Citizen->>Grid: Searches Emergency Care (Filter: ICU + Distance < 10km)
+    Grid-->>Citizen: Ranks Max Healthcare (2 ICU Beds Available • Helpline: 011-26598700)
+    Citizen->>Grid: Triggers Emergency Route & Inbound Notification
+    Grid->>EDDoctor: Transmits Patient ID & SBAR Pre-Arrival Brief
+    EDDoctor->>Grid: Pre-allocates Emergency Resuscitation Bed
+    Note over Citizen,EDDoctor: Inbound ambulance arrives directly at pre-allocated ICU bed
+```
+
+**Lifecycle Steps**:
+1. **Real-Time Telemetry**: Hospital staff mark beds as sanitized and ready.
+2. **Geo-Emergency Discovery**: Patient attendants locate the closest capable facility with live open beds.
+3. **Pre-Arrival Handoff**: Emergency clinicians receive structured SBAR (Situation, Background, Assessment, Recommendation) summaries before the patient arrives.
+
+---
+
+### Connected Flow C: Cross-Device Patient Record Synchronization
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor LaptopA as 💻 Laptop A (Home)
+    participant Cloud as ☁️ HealthSetu Cloud Vault
+    actor LaptopB as 📱 Laptop B / Mobile (Clinic)
+
+    LaptopA->>Cloud: Logs in with HS-PAT-8921
+    LaptopA->>Cloud: Uploads new prescription (Metformin 500mg)
+    Cloud->>Cloud: Persists to Vault under HS-PAT-8921
+    
+    Note over Cloud: Persistent Storage (Zero Dummy Data)
+
+    LaptopB->>Cloud: Opens HealthSetu on fresh browser
+    Note over LaptopB: Unauthenticated: Renders Portal Login View
+    LaptopB->>Cloud: Logs in with HS-PAT-8921 & Password
+    Cloud-->>LaptopB: Returns exact records uploaded on Laptop A
+    Note over LaptopB: Zero dummy data: Only user's genuine synchronized records
+```
+
+**Lifecycle Steps**:
+1. **Device Independence**: Data uploaded on one computer is encrypted and stored against the patient's Sovereign Unique ID.
+2. **Unauthenticated Security Gate**: Any new computer opening the site receives an interactive login interface—never dummy mock data.
+3. **Seamless State Hydration**: Upon logging in with their Unique ID, the user's authentic records instantly populate across all tabs and views.
 
 ---
 
