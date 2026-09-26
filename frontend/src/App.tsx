@@ -14,11 +14,25 @@ import { PatientPortal } from './components/patient/PatientPortal';
 import { DoctorWorkspace } from './components/doctor/DoctorWorkspace';
 import { HospitalPortal } from './components/hospital/HospitalPortal';
 import { ErrorBoundary } from './components/common/ErrorBoundary';
+import { AuthModal } from './components/auth/AuthModal';
+import { authStore, type UserProfile } from './services/authStore';
 import type { Role } from './types';
 
 export function App() {
   const [currentRole, setCurrentRole] = useState<Role>('landing');
+  const [currentUser, setCurrentUser] = useState<UserProfile | null>(() => authStore.getActiveUser());
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState<boolean>(false);
+  const [authModalRole, setAuthModalRole] = useState<Role>('patient');
   const lenisRef = useRef<Lenis | null>(null);
+
+  // Sync auth state changes across windows/components
+  useEffect(() => {
+    const handleAuthChange = (e: any) => {
+      setCurrentUser(e.detail || null);
+    };
+    window.addEventListener('healthsetu_auth_change', handleAuthChange);
+    return () => window.removeEventListener('healthsetu_auth_change', handleAuthChange);
+  }, []);
 
   // Initialize Lenis smooth momentum scrolling (inspired by MINEGUARD architecture)
   useEffect(() => {
@@ -110,6 +124,22 @@ export function App() {
     }
   };
 
+  const handleOpenAuth = (preferredRole?: Role) => {
+    setAuthModalRole(preferredRole || (currentRole === 'landing' ? 'patient' : currentRole));
+    setIsAuthModalOpen(true);
+  };
+
+  const handleLoginSuccess = (user: UserProfile) => {
+    setCurrentUser(user);
+    setCurrentRole(user.role);
+  };
+
+  const handleLogout = () => {
+    authStore.logout();
+    setCurrentUser(null);
+    setCurrentRole('landing');
+  };
+
   return (
     <div className="min-h-screen bg-[#FAF8F3] text-[#1C2B3A] font-sans antialiased flex flex-col selection:bg-[#4A90C4]/20 selection:text-[#1C2B3A] relative">
 
@@ -118,6 +148,9 @@ export function App() {
         currentRole={currentRole}
         setCurrentRole={setCurrentRole}
         onEmergencyClick={scrollToEmergency}
+        currentUser={currentUser}
+        onOpenAuth={handleOpenAuth}
+        onLogout={handleLogout}
       />
 
       {/* Main Content Area */}
@@ -125,7 +158,11 @@ export function App() {
         <ErrorBoundary fallbackTitle="Portal Interface" onReset={() => setCurrentRole('landing')}>
           {currentRole === 'landing' && (
             <>
-              <Hero onSelectRole={setCurrentRole} onEmergencyClick={scrollToEmergency} />
+              <Hero 
+                onSelectRole={setCurrentRole} 
+                onEmergencyClick={scrollToEmergency} 
+                onOpenAuth={handleOpenAuth}
+              />
               <TrustStrip />
               <RoleSection onSelectRole={setCurrentRole} />
               <HowItWorks />
@@ -136,18 +173,33 @@ export function App() {
           )}
 
           {currentRole === 'patient' && (
-            <PatientPortal onEmergencyClick={scrollToEmergency} />
+            <PatientPortal 
+              onEmergencyClick={scrollToEmergency} 
+              currentUser={currentUser}
+            />
           )}
 
           {currentRole === 'doctor' && (
-            <DoctorWorkspace />
+            <DoctorWorkspace 
+              currentUser={currentUser}
+            />
           )}
 
           {currentRole === 'hospital' && (
-            <HospitalPortal />
+            <HospitalPortal 
+              currentUser={currentUser}
+            />
           )}
         </ErrorBoundary>
       </main>
+
+      {/* Unified Sovereign Unique ID & Authentication Modal */}
+      <AuthModal
+        isOpen={isAuthModalOpen}
+        onClose={() => setIsAuthModalOpen(false)}
+        defaultRole={authModalRole}
+        onLoginSuccess={handleLoginSuccess}
+      />
 
       {/* Global Footer */}
       <Footer onSelectRole={setCurrentRole} />

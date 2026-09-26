@@ -92,3 +92,17 @@ class LogoutResponseData(BaseModel):
     """Response payload for logout operation."""
 
     message: str = Field(default="Logged out successfully.")
+
+
+class RegisterRequest(BaseModel):
+    """Schema for registering a new HealthSetu identity with a unique ID."""
+
+    model_config = ConfigDict(extra="ignore")
+
+    name: str = Field(..., min_length=2, max_length=120, description="Full name or organization name")
+    role: UserRole = Field(default=UserRole.PATIENT, description="Profession or account role")
+    identifier: str = Field(..., min_length=3, max_length=255, description="Email, phone or unique HealthSetu ID")
+    password: str = Field(default="StrongP@ssw0rd123!", min_length=8, description="Password credential")
+    unique_id: str | None = Field(default=None, description="Pre-generated or custom sovereign unique ID")
+    details: dict | None = Field(default=None, description="Role-specific profile details")
+

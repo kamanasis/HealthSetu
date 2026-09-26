@@ -7,9 +7,10 @@ import type { Role } from '../../types';
 interface HeroProps {
   onSelectRole: (role: Role) => void;
   onEmergencyClick?: () => void;
+  onOpenAuth?: (role?: Role) => void;
 }
 
-export const Hero: React.FC<HeroProps> = ({ onSelectRole, onEmergencyClick }) => {
+export const Hero: React.FC<HeroProps> = ({ onSelectRole, onEmergencyClick, onOpenAuth }) => {
   const [accessGranted, setAccessGranted] = useState<boolean>(true);
 
   const handleEmergencyTrigger = () => {
@@ -50,10 +51,10 @@ export const Hero: React.FC<HeroProps> = ({ onSelectRole, onEmergencyClick }) =>
           </SectionReveal>
 
           <SectionReveal delay={0.4} yOffset={24}>
-            <div className="pt-2 flex flex-wrap items-center gap-4">
+            <div className="pt-2 flex flex-wrap items-center gap-3">
               <button
                 onClick={() => onSelectRole('patient')}
-                className="bg-[#4A90C4] text-white font-semibold text-xs px-6 py-3 rounded-sm hover:bg-[#3A7DB0] transition-colors flex items-center gap-2 group focus-visible:ring-1 focus-visible:ring-[#4A90C4]"
+                className="bg-[#4A90C4] text-white font-semibold text-xs px-5 py-3 rounded-sm hover:bg-[#3A7DB0] transition-colors flex items-center gap-2 group focus-visible:ring-1 focus-visible:ring-[#4A90C4]"
               >
                 <span>Enter Patient Portal</span>
                 <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
@@ -61,10 +62,17 @@ export const Hero: React.FC<HeroProps> = ({ onSelectRole, onEmergencyClick }) =>
 
               <button
                 onClick={() => onSelectRole('doctor')}
-                className="border border-[#DDD9D1] bg-white text-[#1C2B3A] font-semibold text-xs px-6 py-3 rounded-sm hover:border-[#1C2B3A] hover:bg-[#FAF8F3] transition-colors flex items-center gap-2 focus-visible:ring-1 focus-visible:ring-[#1C2B3A]"
+                className="border border-[#DDD9D1] bg-white text-[#1C2B3A] font-semibold text-xs px-5 py-3 rounded-sm hover:border-[#1C2B3A] hover:bg-[#FAF8F3] transition-colors flex items-center gap-2 focus-visible:ring-1 focus-visible:ring-[#1C2B3A]"
               >
                 <Stethoscope className="w-3.5 h-3.5 text-[#3D8B6E]" />
-                <span>Doctor Clinical Workspace</span>
+                <span>Doctor Workspace</span>
+              </button>
+
+              <button
+                onClick={() => onOpenAuth ? onOpenAuth('patient') : onSelectRole('patient')}
+                className="border border-[#1C2B3A] bg-[#1C2B3A] text-white font-semibold text-xs px-4 py-3 rounded-sm hover:bg-[#2C3B4A] transition-colors flex items-center gap-2 shadow-2xs"
+              >
+                <span>Log In / Create Unique ID</span>
               </button>
             </div>
           </SectionReveal>

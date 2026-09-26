@@ -116,6 +116,13 @@ def seed_demo_data(force: bool = False) -> None:
     for u in users:
         _global_user_repo.register_in_memory_user(u)
 
+    # Register Unique ID aliases so users can authenticate using their HealthSetu Unique IDs directly
+    _global_user_repo._local_users["hs-pat-8921"] = users[0]
+    _global_user_repo._local_users["doc-aiims-104"] = users[1]
+    _global_user_repo._local_users["hosp-apollo-01"] = users[2]
+    _global_user_repo._local_users["hosp-1"] = users[2]
+    _global_user_repo._local_users["hospital@healthsetu.org"] = users[2]
+
     # -------------------------------------------------------------------------
     # 2. Patient Profiles (Phase 4)
     # Primary patient: Rohan Sharma (HS-PAT-8921)

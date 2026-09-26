@@ -27,13 +27,34 @@ import { PrescriptionUploadModal } from './PrescriptionUploadModal';
 import { CarePlanView } from './CarePlanView';
 import { apiClient } from '../../services/api';
 
+import type { UserProfile } from '../../services/authStore';
+
 interface PatientPortalProps {
   onEmergencyClick: () => void;
+  currentUser?: UserProfile | null;
 }
 
-export const PatientPortal: React.FC<PatientPortalProps> = ({ onEmergencyClick }) => {
+export const PatientPortal: React.FC<PatientPortalProps> = ({ onEmergencyClick, currentUser }) => {
   const [activeTab, setActiveTab] = useState<'overview' | 'careplan' | 'timeline' | 'consent' | 'allergies'>('overview');
   const [patient, setPatient] = useState(INITIAL_PATIENT);
+
+  // Sync patient profile when currentUser changes
+  useEffect(() => {
+    if (currentUser && currentUser.role === 'patient') {
+      setPatient(prev => ({
+        ...prev,
+        id: currentUser.id,
+        name: currentUser.name,
+        age: currentUser.patientDetails?.age ?? prev.age,
+        gender: currentUser.patientDetails?.gender ?? prev.gender,
+        bloodGroup: currentUser.patientDetails?.bloodGroup ?? prev.bloodGroup,
+        city: currentUser.patientDetails?.city ?? prev.city,
+        phone: currentUser.phone ?? prev.phone,
+        emergencyContact: currentUser.patientDetails?.emergencyContact ?? prev.emergencyContact,
+      }));
+    }
+  }, [currentUser]);
+
   const [medications, setMedications] = useState<Medication[]>(INITIAL_MEDICATIONS || []);
   const [allergies, setAllergies] = useState<Allergy[]>(INITIAL_ALLERGIES || []);
   const [timeline, setTimeline] = useState<TimelineEvent[]>(INITIAL_TIMELINE || []);

@@ -340,6 +340,44 @@ class HealthSetuApiClient {
     return { error: res.error };
   }
 
+  async register(
+    data: {
+      name: string;
+      role: 'PATIENT' | 'DOCTOR' | 'ADMIN';
+      identifier: string;
+      password?: string;
+      unique_id?: string;
+      details?: Record<string, any>;
+    }
+  ): Promise<{ tokens?: AuthTokens; user?: BackendUserSummary; error?: string }> {
+    const res = await this.request<{
+      access_token: string;
+      refresh_token: string;
+      token_type: string;
+      expires_in: number;
+      user: BackendUserSummary;
+    }>('/auth/register', {
+      method: 'POST',
+      body: JSON.stringify({
+        name: data.name,
+        role: data.role,
+        identifier: data.identifier,
+        password: data.password || 'StrongP@ssw0rd123!',
+        unique_id: data.unique_id,
+        details: data.details,
+      }),
+    });
+
+    if (res.data) {
+      this.setToken(res.data.access_token, res.data.user?.role);
+      return {
+        tokens: res.data,
+        user: res.data.user,
+      };
+    }
+    return { error: res.error };
+  }
+
   async logout(): Promise<void> {
     if (this.token) {
       await this.request('/auth/logout', {

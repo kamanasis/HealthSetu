@@ -53,7 +53,13 @@ const DEFAULT_FACILITIES_BEDS: Record<string, { icu: any; emergency: any; genera
   },
 };
 
-export const HospitalPortal: React.FC = () => {
+import type { UserProfile } from '../../services/authStore';
+
+interface HospitalPortalProps {
+  currentUser?: UserProfile | null;
+}
+
+export const HospitalPortal: React.FC<HospitalPortalProps> = ({ currentUser }) => {
   const [facilities, setFacilities] = useState<any[]>([]);
   const [activeFacilityId, setActiveFacilityId] = useState<string>('hosp-1');
   const [bedStates, setBedStates] = useState(DEFAULT_FACILITIES_BEDS);
@@ -153,9 +159,11 @@ export const HospitalPortal: React.FC = () => {
           </div>
           <div>
             <div className="flex flex-wrap items-center gap-3">
-              <h1 className="font-serif text-2xl text-[#1C2B3A]">{activeFacility.name}</h1>
+              <h1 className="font-serif text-2xl text-[#1C2B3A]">
+                {currentUser && currentUser.role === 'hospital' ? currentUser.name : activeFacility.name}
+              </h1>
               <span className="text-xs font-mono font-medium px-2 py-0.5 rounded-sm bg-[#FAF8F3] text-[#5B3D8A] border border-[#DDD9D1]">
-                {activeFacility.facility_code || 'DEL-HOSP-012'} · NABH Accredited
+                {currentUser && currentUser.role === 'hospital' ? `${currentUser.id} · NABH Accredited` : (activeFacility.facility_code || 'HOSP-APOLLO-01') + ' · NABH Accredited'}
               </span>
             </div>
             <div className="flex flex-wrap items-center gap-3 text-xs text-[#6B7A8D] mt-1">

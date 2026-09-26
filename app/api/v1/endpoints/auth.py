@@ -1,15 +1,21 @@
 """Authentication API endpoints for HealthSetu Phase 2."""
 
+from datetime import datetime, timezone
+import random
 from typing import Annotated
 from fastapi import APIRouter, Depends, Request, status
 
 from app.api.deps import get_auth_service, get_current_user
 from app.core.logging import request_id_ctx_var
+from app.core.security import hash_password
+from app.repositories.user_repository import UserRecord
 from app.schemas.auth import (
+    AccountStatus,
     LoginRequest,
     LogoutRequest,
     LogoutResponseData,
     RefreshTokenRequest,
+    RegisterRequest,
     TokenResponseData,
 )
 from app.schemas.response import StandardErrorResponse, StandardSuccessResponse
@@ -56,6 +62,51 @@ async def login(
     )
     req_id = _extract_request_id(request)
     return StandardSuccessResponse(data=token_data, request_id=req_id)
+
+
+@router.post(
+    "/register",
+    response_model=StandardSuccessResponse[TokenResponseData],
+    status_code=status.HTTP_201_CREATED,
+    summary="Register user profile and mint unique HealthSetu ID",
+    description="Registers a new Patient, Doctor, or Hospital Org identity, issuing a sovereign HealthSetu unique ID and session tokens.",
+)
+async def register(
+    request: Request,
+    payload: RegisterRequest,
+    auth_service: Annotated[AuthService, Depends(get_auth_service)],
+) -> StandardSuccessResponse[TokenResponseData]:
+    """Register identity, store in repository with unique ID, and return active tokens."""
+    prefix_map = {
+        "PATIENT": "HS-PAT",
+        "DOCTOR": "HS-DOC",
+        "ADMIN": "HS-HOSP",
+    }
+    role_key = payload.role.value if hasattr(payload.role, "value") else str(payload.role)
+    unique_id = payload.unique_id or f"{prefix_map.get(role_key, 'HS-ID')}-{random.randint(1000, 9999)}"
+
+    # Create user record
+    user_record = UserRecord(
+        id=unique_id,
+        identifier=payload.identifier,
+        password_hash=hash_password(payload.password),
+        role=payload.role,
+        status=AccountStatus.ACTIVE,
+        created_at=datetime.now(timezone.utc),
+        updated_at=datetime.now(timezone.utc),
+    )
+    auth_service.user_repo.register_in_memory_user(user_record)
+    # Also register the unique ID as a valid login alias
+    auth_service.user_repo._local_users[unique_id.lower()] = user_record
+
+    # Authenticate and issue token
+    token_data = await auth_service.authenticate(
+        identifier=payload.identifier,
+        password=payload.password,
+    )
+    req_id = _extract_request_id(request)
+    return StandardSuccessResponse(data=token_data, request_id=req_id)
+
 
 
 @router.post(

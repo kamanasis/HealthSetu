@@ -18,11 +18,14 @@ import type { Medication, SafetyAlert } from '../../types';
 import { TrustBadge } from '../common/Badge';
 import { apiClient } from '../../services/api';
 
+import type { UserProfile } from '../../services/authStore';
+
 interface DoctorWorkspaceProps {
   onPrescriptionFinalized?: (med: Medication) => void;
+  currentUser?: UserProfile | null;
 }
 
-export const DoctorWorkspace: React.FC<DoctorWorkspaceProps> = ({ onPrescriptionFinalized }) => {
+export const DoctorWorkspace: React.FC<DoctorWorkspaceProps> = ({ onPrescriptionFinalized, currentUser }) => {
   const [patientIdInput, setPatientIdInput] = useState<string>('HS-PAT-8921');
   const [activePatient, setActivePatient] = useState<typeof INITIAL_PATIENT | null>(INITIAL_PATIENT);
   const [activeTab, setActiveTab] = useState<'review' | 'prescribe'>('review');
@@ -193,13 +196,19 @@ export const DoctorWorkspace: React.FC<DoctorWorkspaceProps> = ({ onPrescription
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <h1 className="font-serif text-lg text-[#1C2B3A]">Dr. Priya Nair, MD</h1>
+              <h1 className="font-serif text-lg text-[#1C2B3A]">
+                {currentUser && currentUser.role === 'doctor' ? currentUser.name : 'Dr. Priya Nair, MD'}
+              </h1>
               <span className="text-[10px] font-mono font-semibold px-2 py-0.5 rounded-sm bg-[#EBF5EC] text-[#2D5A40] border border-[#D3EAD7]">
-                MCI-48291 · Verified Clinician
+                {currentUser && currentUser.role === 'doctor'
+                  ? `${currentUser.id} · ${currentUser.doctorDetails?.councilReg || 'Verified Clinician'}`
+                  : 'DOC-AIIMS-104 · MCI-48291 · Verified Clinician'}
               </span>
             </div>
             <p className="text-[11px] text-[#6B7A8D]">
-              Senior Consultant Cardiologist · All India Institute of Medical Sciences (AIIMS), New Delhi
+              {currentUser && currentUser.role === 'doctor'
+                ? `${currentUser.doctorDetails?.specialization || 'Clinical Specialist'} · ${currentUser.doctorDetails?.hospital || 'Consulting Clinic'}`
+                : 'Senior Consultant Cardiologist · All India Institute of Medical Sciences (AIIMS), New Delhi'}
             </p>
           </div>
         </div>
