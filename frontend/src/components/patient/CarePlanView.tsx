@@ -4,9 +4,10 @@ import type { Medication } from '../../types';
 
 interface CarePlanViewProps {
   medications: Medication[];
+  patientName?: string;
 }
 
-export const CarePlanView: React.FC<CarePlanViewProps> = ({ medications }) => {
+export const CarePlanView: React.FC<CarePlanViewProps> = ({ medications, patientName }) => {
   const [language, setLanguage] = useState<'en' | 'hi'>('en');
   const [completedTasks, setCompletedTasks] = useState<Record<string, boolean>>({});
   const [isSpeaking, setIsSpeaking] = useState<boolean>(false);
@@ -27,9 +28,23 @@ export const CarePlanView: React.FC<CarePlanViewProps> = ({ medications }) => {
       return;
     }
 
-    const script = language === 'hi'
-      ? `नमस्ते रोहन शर्मा। आपकी आज की दवाएं हैं: सुबह नाश्ते से पहले टेल्मिसार्टन 40 मिलीग्राम। दोपहर में भोजन के साथ मेटफॉर्मिन 500 मिलीग्राम। रात को भोजन के बाद एटोरवास्टेटिन 20 मिलीग्राम। कृपया नियमित समय पर दवा लें।`
-      : `Hello Rohan Sharma. Here is your daily care schedule: In the morning, take Telmisartan 40 milligrams before breakfast with a glass of water. In the morning and evening, take Metformin 500 milligrams with food. At bedtime, take Atorvastatin 20 milligrams after dinner. Stay well hydrated.`;
+    const name = patientName || 'Patient';
+    let script = '';
+    if (language === 'hi') {
+      if (medications.length === 0) {
+        script = `नमस्ते ${name}। आपकी आज की कोई दैनिक दवाएं निर्धारित नहीं हैं।`;
+      } else {
+        const medList = medications.map(m => `${m.name} ${m.strength || ''}`).join(', ');
+        script = `नमस्ते ${name}। आपकी आज की निर्धारित दवाएं हैं: ${medList}। कृपया समय पर अपनी दवाएं लें और पर्याप्त पानी पिएं।`;
+      }
+    } else {
+      if (medications.length === 0) {
+        script = `Hello ${name}. You currently have no active daily medications scheduled on your care plan.`;
+      } else {
+        const medList = medications.map(m => `${m.name} ${m.strength || ''} (${m.frequency || 'as prescribed'})`).join('. ');
+        script = `Hello ${name}. Here is your active daily care schedule: ${medList}. Please follow your clinician's instructions and stay well hydrated.`;
+      }
+    }
 
     const utterance = new SpeechSynthesisUtterance(script);
     utterance.lang = language === 'hi' ? 'hi-IN' : 'en-IN';

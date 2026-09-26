@@ -204,23 +204,10 @@ export const authStore = {
       );
     }
 
-    if (!matched && preferredRole) {
-      // Fallback demo matching for chosen role
-      matched = DEMO_PROFILES[preferredRole];
-    }
-
     if (!matched) {
-      // Create ad-hoc identity with given ID
-      const role = preferredRole || (cleanId.startsWith('hs-doc') || cleanId.startsWith('doc') ? 'doctor' : cleanId.startsWith('hs-hosp') || cleanId.startsWith('hosp') ? 'hospital' : 'patient');
-      matched = {
-        id: identifier.toUpperCase().startsWith('HS-') || identifier.toUpperCase().startsWith('DOC-') || identifier.toUpperCase().startsWith('HOSP-')
-          ? identifier.toUpperCase()
-          : generateUniqueId(role),
-        name: identifier.includes('@') ? identifier.split('@')[0] : identifier,
-        role,
-        email: identifier.includes('@') ? identifier : `${cleanId.replace(/\s+/g, '')}@healthsetu.org`,
-        avatarInitials: identifier.slice(0, 2).toUpperCase(),
-        issuedAt: 'Today',
+      return { 
+        user: null as any, 
+        error: `No existing profile found for "${identifier}". Please check your Unique ID or click "Create Profile & Mint ID" to register.` 
       };
     }
 

@@ -44,12 +44,12 @@ export const PatientPortal: React.FC<PatientPortalProps> = ({ onEmergencyClick, 
       return {
         id: currentUser.id,
         name: currentUser.name,
-        age: currentUser.patientDetails?.age ?? 30,
-        gender: currentUser.patientDetails?.gender ?? 'Other',
-        bloodGroup: currentUser.patientDetails?.bloodGroup ?? 'Not Specified',
-        city: currentUser.patientDetails?.city ?? 'Not Specified',
+        age: currentUser.patientDetails?.age ?? '',
+        gender: currentUser.patientDetails?.gender ?? '',
+        bloodGroup: currentUser.patientDetails?.bloodGroup ?? '',
+        city: currentUser.patientDetails?.city ?? '',
         phone: currentUser.phone ?? '',
-        emergencyContact: currentUser.patientDetails?.emergencyContact ?? 'Not Specified',
+        emergencyContact: currentUser.patientDetails?.emergencyContact ?? '',
       };
     }
     return INITIAL_PATIENT;
@@ -354,7 +354,7 @@ export const PatientPortal: React.FC<PatientPortalProps> = ({ onEmergencyClick, 
       <div className="bg-white rounded-sm border border-[#DDD9D1] p-6 flex flex-col md:flex-row md:items-center justify-between gap-6">
         <div className="flex items-center gap-4">
           <div className="w-12 h-12 rounded-sm bg-[#FAF8F3] border border-[#DDD9D1] flex items-center justify-center text-[#1C2B3A] font-bold text-base font-mono">
-            RS
+            {patient.name.split(' ').filter(Boolean).map(n => n[0]).join('').slice(0, 2).toUpperCase() || 'HS'}
           </div>
           <div>
             <div className="flex items-center gap-3">
@@ -369,11 +369,11 @@ export const PatientPortal: React.FC<PatientPortalProps> = ({ onEmergencyClick, 
               )}
             </div>
             <div className="flex flex-wrap items-center gap-3 text-xs text-[#6B7A8D] mt-1 font-sans">
-              <span>{patient.age} Years, {patient.gender}</span>
+              <span>{patient.age ? `${patient.age} Years` : 'Age Unspecified'}{patient.gender ? `, ${patient.gender}` : ''}</span>
               <span>·</span>
-              <span>Blood Group: <strong className="text-[#1C2B3A] font-semibold">{patient.bloodGroup}</strong></span>
+              <span>Blood Group: <strong className="text-[#1C2B3A] font-semibold">{patient.bloodGroup || 'Not Specified'}</strong></span>
               <span>·</span>
-              <span>{patient.city}</span>
+              <span>{patient.city || 'Location Unspecified'}</span>
             </div>
           </div>
         </div>
@@ -542,7 +542,7 @@ export const PatientPortal: React.FC<PatientPortalProps> = ({ onEmergencyClick, 
 
       {/* Tab Content 2: Care Plan */}
       {activeTab === 'careplan' && (
-        <CarePlanView medications={medications} />
+        <CarePlanView medications={medications} patientName={patient.name} />
       )}
 
       {/* Tab Content 3: Longitudinal Medical Timeline */}

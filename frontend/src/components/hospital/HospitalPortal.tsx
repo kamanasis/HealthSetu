@@ -167,9 +167,17 @@ export const HospitalPortal: React.FC<HospitalPortalProps> = ({ currentUser }) =
               </span>
             </div>
             <div className="flex flex-wrap items-center gap-3 text-xs text-[#6B7A8D] mt-1">
-              <span>{activeFacility.address_line1}{activeFacility.address_city ? `, ${activeFacility.address_city}` : ''}</span>
+              <span>
+                {currentUser && currentUser.role === 'hospital'
+                  ? `${currentUser.hospitalDetails?.facilityType || 'Healthcare Facility'} · ${currentUser.hospitalDetails?.city || 'Location Unspecified'}`
+                  : `${activeFacility.address_line1}${activeFacility.address_city ? `, ${activeFacility.address_city}` : ''}`}
+              </span>
               <span>·</span>
-              <span>Emergency Desk: <strong className="text-[#1C2B3A]">{activeFacility.phone || '+91 11 2692 5858'}</strong></span>
+              <span>Emergency Desk: <strong className="text-[#1C2B3A]">
+                {currentUser && currentUser.role === 'hospital'
+                  ? (currentUser.hospitalDetails?.helpline || currentUser.phone || '24x7 Emergency Desk')
+                  : (activeFacility.phone || '+91 11 2692 5858')}
+              </strong></span>
               <span>·</span>
               <FreshnessBadge state="current" lastUpdated={lastUpdated} />
             </div>

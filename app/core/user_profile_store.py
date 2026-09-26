@@ -148,15 +148,16 @@ def save_user_profile(profile: dict[str, Any]) -> dict[str, Any]:
     if profile.get("role") == "patient":
         pid = profile["id"].upper()
         if not get_patient_record(pid):
+            pdetails = profile.get("patientDetails") or {}
             init_record = {
                 "patient_id": pid,
                 "name": profile.get("name", "Registered Patient"),
-                "age": profile.get("patientDetails", {}).get("age", 30),
-                "gender": profile.get("patientDetails", {}).get("gender", "Other"),
-                "bloodGroup": profile.get("patientDetails", {}).get("bloodGroup", "Not Specified"),
-                "city": profile.get("patientDetails", {}).get("city", "Not Specified"),
+                "age": pdetails.get("age"),
+                "gender": pdetails.get("gender") or "Unspecified",
+                "bloodGroup": pdetails.get("bloodGroup") or "Not Specified",
+                "city": pdetails.get("city") or "Not Specified",
                 "phone": profile.get("phone", ""),
-                "emergencyContact": profile.get("patientDetails", {}).get("emergencyContact", ""),
+                "emergencyContact": pdetails.get("emergencyContact", ""),
                 "medications": [],
                 "allergies": [],
                 "timeline": [
@@ -166,7 +167,7 @@ def save_user_profile(profile: dict[str, Any]) -> dict[str, Any]:
                         "title": "HealthSetu Sovereign ID Minted",
                         "category": "milestone",
                         "provider": "HealthSetu Digital Health Grid",
-                        "facility": profile.get("patientDetails", {}).get("city", "Verified Health Node"),
+                        "facility": pdetails.get("city") or "Verified Health Node",
                         "description": f"Sovereign unique credential issued for {profile.get('name')}. Unique ID: {pid}.",
                         "trustState": "verified",
                     }

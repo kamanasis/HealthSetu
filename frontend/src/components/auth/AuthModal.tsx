@@ -39,7 +39,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
 
   // Login form state
   const [loginIdentifier, setLoginIdentifier] = useState<string>('');
-  const [loginPassword, setLoginPassword] = useState<string>('StrongP@ssw0rd123!');
+  const [loginPassword, setLoginPassword] = useState<string>('');
   const [loginError, setLoginError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(false);
 
@@ -50,27 +50,27 @@ export const AuthModal: React.FC<AuthModalProps> = ({
   const [regName, setRegName] = useState<string>('');
   const [regEmail, setRegEmail] = useState<string>('');
   const [regPhone, setRegPhone] = useState<string>('');
-  const [regPassword, setRegPassword] = useState<string>('StrongP@ssw0rd123!');
+  const [regPassword, setRegPassword] = useState<string>('');
 
   // Patient specific fields
-  const [patientAge, setPatientAge] = useState<number>(38);
-  const [patientGender, setPatientGender] = useState<string>('Male');
-  const [patientBlood, setPatientBlood] = useState<string>('O Positive');
-  const [patientCity, setPatientCity] = useState<string>('New Delhi');
-  const [patientEmergency, setPatientEmergency] = useState<string>('Sunita Sharma (Spouse) · +91 98104 22911');
+  const [patientAge, setPatientAge] = useState<string>('');
+  const [patientGender, setPatientGender] = useState<string>('');
+  const [patientBlood, setPatientBlood] = useState<string>('');
+  const [patientCity, setPatientCity] = useState<string>('');
+  const [patientEmergency, setPatientEmergency] = useState<string>('');
 
   // Doctor specific fields
-  const [docDegree, setDocDegree] = useState<string>('MD, MBBS');
-  const [docSpecialization, setDocSpecialization] = useState<string>('Cardiologist');
-  const [docHospital, setDocHospital] = useState<string>('AIIMS, New Delhi');
-  const [docRegNo, setDocRegNo] = useState<string>('MCI-58291');
+  const [docDegree, setDocDegree] = useState<string>('');
+  const [docSpecialization, setDocSpecialization] = useState<string>('');
+  const [docHospital, setDocHospital] = useState<string>('');
+  const [docRegNo, setDocRegNo] = useState<string>('');
 
   // Hospital specific fields
-  const [hospType, setHospType] = useState<string>('Super Speciality Hospital');
-  const [hospCity, setHospCity] = useState<string>('New Delhi');
-  const [hospTotalBeds, setHospTotalBeds] = useState<number>(200);
-  const [hospIcuBeds, setHospIcuBeds] = useState<number>(35);
-  const [hospHelpline, setHospHelpline] = useState<string>('+91 11 2692 5858');
+  const [hospType, setHospType] = useState<string>('');
+  const [hospCity, setHospCity] = useState<string>('');
+  const [hospTotalBeds, setHospTotalBeds] = useState<string>('');
+  const [hospIcuBeds, setHospIcuBeds] = useState<string>('');
+  const [hospHelpline, setHospHelpline] = useState<string>('');
 
   // Generate preview unique ID when role or modal opens
   useEffect(() => {
@@ -113,12 +113,16 @@ export const AuthModal: React.FC<AuthModalProps> = ({
 
   const handleLoginSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const idToUse = loginIdentifier.trim() || DEMO_PROFILES[selectedRole].id;
+    const cleanId = loginIdentifier.trim();
+    if (!cleanId) {
+      setLoginError('Please enter your HealthSetu Unique ID or registered email.');
+      return;
+    }
     setIsLoading(true);
     setLoginError(null);
 
     try {
-      const res = await authStore.login(idToUse, loginPassword, selectedRole);
+      const res = await authStore.login(cleanId, loginPassword, selectedRole);
       setIsLoading(false);
       if (res.user) {
         onLoginSuccess(res.user);
@@ -128,7 +132,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
       }
     } catch {
       setIsLoading(false);
-      setLoginError('Authentication failed.');
+      setLoginError('Authentication failed. Please check network connection.');
     }
   };
 
@@ -147,27 +151,27 @@ export const AuthModal: React.FC<AuthModalProps> = ({
         name: regName.trim(),
         role: selectedRole,
         email: regEmail.trim() || `${previewId.toLowerCase()}@healthsetu.org`,
-        phone: regPhone.trim(),
-        password: regPassword,
+        phone: regPhone.trim() || undefined,
+        password: regPassword || undefined,
         patientDetails: selectedRole === 'patient' ? {
-          age: patientAge,
-          gender: patientGender,
-          bloodGroup: patientBlood,
-          city: patientCity,
-          emergencyContact: patientEmergency,
-        } : undefined,
+          age: patientAge ? Number(patientAge) : undefined,
+          gender: patientGender || 'Unspecified',
+          bloodGroup: patientBlood.trim() || 'Not Specified',
+          city: patientCity.trim() || 'Not Specified',
+          emergencyContact: patientEmergency.trim() || 'None',
+        } as any : undefined,
         doctorDetails: selectedRole === 'doctor' ? {
-          degree: docDegree,
-          specialization: docSpecialization,
-          hospital: docHospital,
-          councilReg: docRegNo,
+          degree: docDegree.trim() || 'Clinician',
+          specialization: docSpecialization.trim() || 'General Practitioner',
+          hospital: docHospital.trim() || 'Registered Medical Facility',
+          councilReg: docRegNo.trim() || 'Pending Verification',
         } : undefined,
         hospitalDetails: selectedRole === 'hospital' ? {
-          facilityType: hospType,
-          city: hospCity,
-          totalBeds: hospTotalBeds,
-          icuBeds: hospIcuBeds,
-          helpline: hospHelpline,
+          facilityType: hospType.trim() || 'Healthcare Facility',
+          city: hospCity.trim() || 'Not Specified',
+          totalBeds: hospTotalBeds ? Number(hospTotalBeds) : 0,
+          icuBeds: hospIcuBeds ? Number(hospIcuBeds) : 0,
+          helpline: hospHelpline.trim() || 'Not Specified',
         } : undefined,
       });
 
@@ -484,6 +488,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                       type="password"
                       value={loginPassword}
                       onChange={(e) => setLoginPassword(e.target.value)}
+                      placeholder="Enter your password"
                       className="w-full bg-[#FAF8F3] border border-[#DDD9D1] rounded-sm px-3 py-2 text-xs text-[#1C2B3A] focus:border-[#4A90C4] outline-none"
                     />
                   </div>
@@ -556,6 +561,30 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                     </div>
                   </div>
 
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="space-y-1">
+                      <label className="text-[11px] font-semibold text-[#6B7A8D]">Mobile / Contact Phone</label>
+                      <input
+                        type="tel"
+                        value={regPhone}
+                        onChange={(e) => setRegPhone(e.target.value)}
+                        placeholder="e.g. +91 98765 43210"
+                        className="w-full bg-[#FAF8F3] border border-[#DDD9D1] rounded-sm px-2.5 py-1.5 text-xs text-[#1C2B3A] focus:border-[#4A90C4] outline-none"
+                      />
+                    </div>
+
+                    <div className="space-y-1">
+                      <label className="text-[11px] font-semibold text-[#6B7A8D]">Set Password</label>
+                      <input
+                        type="password"
+                        value={regPassword}
+                        onChange={(e) => setRegPassword(e.target.value)}
+                        placeholder="Create a password"
+                        className="w-full bg-[#FAF8F3] border border-[#DDD9D1] rounded-sm px-2.5 py-1.5 text-xs text-[#1C2B3A] focus:border-[#4A90C4] outline-none"
+                      />
+                    </div>
+                  </div>
+
                   {/* Patient Specific Fields */}
                   {selectedRole === 'patient' && (
                     <div className="space-y-3 pt-1 border-t border-[#DDD9D1]">
@@ -568,7 +597,8 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                           <input
                             type="number"
                             value={patientAge}
-                            onChange={(e) => setPatientAge(Number(e.target.value))}
+                            onChange={(e) => setPatientAge(e.target.value)}
+                            placeholder="e.g. 42"
                             className="w-full bg-[#FAF8F3] border border-[#DDD9D1] rounded-sm px-2 py-1 text-xs"
                           />
                         </div>
@@ -579,6 +609,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                             onChange={(e) => setPatientGender(e.target.value)}
                             className="w-full bg-[#FAF8F3] border border-[#DDD9D1] rounded-sm px-2 py-1 text-xs"
                           >
+                            <option value="">Select...</option>
                             <option value="Male">Male</option>
                             <option value="Female">Female</option>
                             <option value="Other">Other</option>
@@ -590,6 +621,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                             type="text"
                             value={patientBlood}
                             onChange={(e) => setPatientBlood(e.target.value)}
+                            placeholder="e.g. O+, B+, A+"
                             className="w-full bg-[#FAF8F3] border border-[#DDD9D1] rounded-sm px-2 py-1 text-xs"
                           />
                         </div>
@@ -602,6 +634,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                             type="text"
                             value={patientCity}
                             onChange={(e) => setPatientCity(e.target.value)}
+                            placeholder="e.g. New Delhi, Mumbai"
                             className="w-full bg-[#FAF8F3] border border-[#DDD9D1] rounded-sm px-2 py-1 text-xs"
                           />
                         </div>
@@ -611,6 +644,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                             type="text"
                             value={patientEmergency}
                             onChange={(e) => setPatientEmergency(e.target.value)}
+                            placeholder="e.g. Subir Sen (Brother) · +91 98765 43210"
                             className="w-full bg-[#FAF8F3] border border-[#DDD9D1] rounded-sm px-2 py-1 text-xs"
                           />
                         </div>
@@ -682,6 +716,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                             type="text"
                             value={hospType}
                             onChange={(e) => setHospType(e.target.value)}
+                            placeholder="e.g. Super Speciality Hospital"
                             className="w-full bg-[#FAF8F3] border border-[#DDD9D1] rounded-sm px-2 py-1 text-xs"
                           />
                         </div>
@@ -691,6 +726,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                             type="text"
                             value={hospCity}
                             onChange={(e) => setHospCity(e.target.value)}
+                            placeholder="e.g. New Delhi, Bengaluru"
                             className="w-full bg-[#FAF8F3] border border-[#DDD9D1] rounded-sm px-2 py-1 text-xs"
                           />
                         </div>
@@ -699,7 +735,8 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                           <input
                             type="number"
                             value={hospTotalBeds}
-                            onChange={(e) => setHospTotalBeds(Number(e.target.value))}
+                            onChange={(e) => setHospTotalBeds(e.target.value)}
+                            placeholder="e.g. 200"
                             className="w-full bg-[#FAF8F3] border border-[#DDD9D1] rounded-sm px-2 py-1 text-xs"
                           />
                         </div>
@@ -709,6 +746,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                             type="text"
                             value={hospHelpline}
                             onChange={(e) => setHospHelpline(e.target.value)}
+                            placeholder="e.g. +91 11 2692 5858"
                             className="w-full bg-[#FAF8F3] border border-[#DDD9D1] rounded-sm px-2 py-1 text-xs font-mono"
                           />
                         </div>

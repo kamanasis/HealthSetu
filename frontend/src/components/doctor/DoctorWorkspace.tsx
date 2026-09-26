@@ -27,21 +27,21 @@ interface DoctorWorkspaceProps {
 }
 
 export const DoctorWorkspace: React.FC<DoctorWorkspaceProps> = ({ onPrescriptionFinalized, currentUser }) => {
-  const [patientIdInput, setPatientIdInput] = useState<string>('HS-PAT-8921');
-  const [activePatient, setActivePatient] = useState<typeof INITIAL_PATIENT | null>(INITIAL_PATIENT);
-  const [patientMedications, setPatientMedications] = useState<Medication[]>(INITIAL_MEDICATIONS || []);
-  const [patientAllergies, setPatientAllergies] = useState<Allergy[]>(INITIAL_ALLERGIES || []);
-  const [patientTimeline, setPatientTimeline] = useState<TimelineEvent[]>(INITIAL_TIMELINE || []);
+  const [patientIdInput, setPatientIdInput] = useState<string>('');
+  const [activePatient, setActivePatient] = useState<typeof INITIAL_PATIENT | null>(null);
+  const [patientMedications, setPatientMedications] = useState<Medication[]>([]);
+  const [patientAllergies, setPatientAllergies] = useState<Allergy[]>([]);
+  const [patientTimeline, setPatientTimeline] = useState<TimelineEvent[]>([]);
   const [activeTab, setActiveTab] = useState<'review' | 'prescribe'>('review');
   const [isSearching, setIsSearching] = useState<boolean>(false);
   const [isSafetyChecking, setIsSafetyChecking] = useState<boolean>(false);
 
   // Prescription builder state
   const [prescribedDrug, setPrescribedDrug] = useState<string>('');
-  const [strength, setStrength] = useState<string>('40 mg');
-  const [frequency, setFrequency] = useState<string>('Once daily (OD)');
-  const [duration, setDuration] = useState<string>('30 Days');
-  const [instructions, setInstructions] = useState<string>('Take morning after breakfast');
+  const [strength, setStrength] = useState<string>('');
+  const [frequency, setFrequency] = useState<string>('Once daily (OD) - Morning');
+  const [duration, setDuration] = useState<string>('');
+  const [instructions, setInstructions] = useState<string>('');
   const [clinicalNotes, setClinicalNotes] = useState<string>('');
   const [detectedAlerts, setDetectedAlerts] = useState<SafetyAlert[]>([]);
   const [prescriptionSuccess, setPrescriptionSuccess] = useState<boolean>(false);
@@ -274,7 +274,7 @@ export const DoctorWorkspace: React.FC<DoctorWorkspaceProps> = ({ onPrescription
           <div className="bg-[#FAF8F3] border border-[#DDD9D1] rounded-sm p-4 flex flex-col md:flex-row md:items-center justify-between gap-4">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-sm bg-white border border-[#DDD9D1] flex items-center justify-center font-bold text-xs font-mono text-[#2B5F8A]">
-                RS
+                {activePatient.name.split(' ').filter(Boolean).map(n => n[0]).join('').slice(0, 2).toUpperCase() || 'PT'}
               </div>
               <div>
                 <div className="flex items-center gap-2">
@@ -284,11 +284,13 @@ export const DoctorWorkspace: React.FC<DoctorWorkspaceProps> = ({ onPrescription
                   </span>
                 </div>
                 <div className="flex items-center gap-3 text-xs text-[#6B7A8D] mt-0.5">
-                  <span>{activePatient.age} yrs · {activePatient.gender}</span>
+                  <span>{activePatient.age ? `${activePatient.age} yrs` : 'Age Unspecified'}{activePatient.gender ? ` · ${activePatient.gender}` : ''}</span>
                   <span>·</span>
-                  <span>Blood Group: <strong className="text-[#1C2B3A]">{activePatient.bloodGroup}</strong></span>
+                  <span>Blood Group: <strong className="text-[#1C2B3A]">{activePatient.bloodGroup || 'Not Specified'}</strong></span>
                   <span>·</span>
-                  <span>Allergies: <strong className="text-[#D94F7A]">Penicillin, NSAIDs</strong></span>
+                  <span>Allergies: <strong className={patientAllergies.length > 0 ? "text-[#D94F7A]" : "text-[#2D5A40]"}>
+                    {patientAllergies.length > 0 ? patientAllergies.map(a => a.allergen || a.substance).join(', ') : 'None documented'}
+                  </strong></span>
                 </div>
               </div>
             </div>
@@ -499,7 +501,7 @@ export const DoctorWorkspace: React.FC<DoctorWorkspaceProps> = ({ onPrescription
               {prescriptionSuccess && (
                 <div className="p-3.5 rounded-sm bg-[#EBF5EC] border border-[#D3EAD7] text-[#2D5A40] text-xs font-semibold flex items-center gap-2">
                   <CheckCircle2 className="w-4 h-4 text-[#3D8B6E]" />
-                  <span>Prescription signed by Dr. Priya Nair. Patient record and care plan synchronized!</span>
+                  <span>Prescription signed by {currentUser && currentUser.role === 'doctor' ? currentUser.name : 'Treating Clinician'}. Patient record and care plan synchronized!</span>
                 </div>
               )}
 
@@ -595,6 +597,7 @@ export const DoctorWorkspace: React.FC<DoctorWorkspaceProps> = ({ onPrescription
                       type="text"
                       value={strength}
                       onChange={(e) => setStrength(e.target.value)}
+                      placeholder="e.g. 40 mg or 500 mg"
                       className="w-full bg-[#FAF8F3] border border-[#DDD9D1] rounded-sm px-2.5 py-1.5 text-xs text-[#1C2B3A] focus:border-[#3D8B6E] outline-none font-medium"
                     />
                   </div>
@@ -620,6 +623,7 @@ export const DoctorWorkspace: React.FC<DoctorWorkspaceProps> = ({ onPrescription
                       type="text"
                       value={duration}
                       onChange={(e) => setDuration(e.target.value)}
+                      placeholder="e.g. 30 Days or 5 Days"
                       className="w-full bg-[#FAF8F3] border border-[#DDD9D1] rounded-sm px-2.5 py-1.5 text-xs text-[#1C2B3A] focus:border-[#3D8B6E] outline-none font-medium"
                     />
                   </div>
