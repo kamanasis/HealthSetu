@@ -1,0 +1,33 @@
+# Version control
+.git
+.gitignore
+
+# Virtual environment (CRITICAL: prevents copying Windows binaries into Linux Docker)
+.venv
+venv
+ENV
+env
+
+# Bytecode & caches
+__pycache__
+*.pyc
+*.pyo
+*.pyd
+.pytest_cache
+.coverage
+htmlcov
+
+# Local large data & dumps
+storage
+database_handoff
+files.zip
+*.zip
+*.sql.gz
+
+# Frontend (separate deployment)
+frontend
+node_modules
+
+# Environment files
+.env
+.env.*
