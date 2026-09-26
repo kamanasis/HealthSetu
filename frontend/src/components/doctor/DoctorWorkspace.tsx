@@ -12,9 +12,10 @@ import {
   INITIAL_PATIENT, 
   INITIAL_MEDICATIONS, 
   INITIAL_ALLERGIES, 
+  INITIAL_TIMELINE,
   SAFETY_DATABASE 
 } from '../../data/mockData';
-import type { Medication, SafetyAlert } from '../../types';
+import type { Medication, SafetyAlert, TimelineEvent, Allergy } from '../../types';
 import { TrustBadge } from '../common/Badge';
 import { apiClient } from '../../services/api';
 
