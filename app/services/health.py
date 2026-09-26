@@ -32,7 +32,7 @@ class HealthService(BaseService[None]):
                 checks=ReadinessChecks(database="ok"),
             )
 
-        if not settings.DATABASE_URL:
+        if not settings.is_testing and not settings.DATABASE_URL:
             # Operational with in-memory stores in local development environment
             return True, ReadinessResponse(
                 status="ready",
