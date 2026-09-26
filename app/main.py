@@ -36,7 +36,15 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     enforce_security_config(settings)
 
     # Establish database engine boundary (resilient to unavailable DB)
-    get_engine()
+    if not settings.is_testing and settings.DATABASE_URL:
+        from app.core.database import check_database_health
+        is_ready = await check_database_health(timeout_seconds=15.0)
+        if is_ready:
+            logger.info("Database connection established and verified on startup.")
+        else:
+            logger.warning("Database connection could not be verified on startup (will retry on probe).")
+    else:
+        get_engine()
 
     yield
 
