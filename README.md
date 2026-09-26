@@ -10,7 +10,8 @@ HealthSetu is a unified healthcare interoperability, clinical coordination, and 
 - **Phase 6**: Prescription & Medication System (extraction linkage, terminology normalization, longitudinal medication record).
 - **Phase 7**: Medication Safety System (authoritative provider abstraction, DDI, allergy cross-reactivity, contraindications, duplicate therapy).
 - **Phase 8**: Clinical Triage & SBAR Communication System (deterministic protocol-driven urgency assessment, symptom intake, fact-validated SBAR summaries).
-- **Phase 9**: Post-Discharge Care Plan & Clinical Verification System (discharge summary extraction, clinician verification boundary, personalized daily recovery schedule, task check-off).
+- **Live Frontend (Vercel)**: [https://health-setu-giaa.vercel.app](https://health-setu-giaa.vercel.app)
+- **Railway Deployment Guide**: [RAILWAY_DEPLOY.md](./RAILWAY_DEPLOY.md)
 
 ---
 
