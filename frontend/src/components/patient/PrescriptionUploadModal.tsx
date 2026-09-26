@@ -19,6 +19,7 @@ export const PrescriptionUploadModal: React.FC<PrescriptionUploadModalProps> = (
 }) => {
   const [step, setStep] = useState<'upload' | 'extracting' | 'review'>('upload');
   const [extractStatusText, setExtractStatusText] = useState<string>('Initializing ClearScript OCR Engine...');
+  const [viewMode, setViewMode] = useState<'preview' | 'ocr_text'>('preview');
   const [uploadedDocMeta, setUploadedDocMeta] = useState<any>(null);
   const [clearScriptResult, setClearScriptResult] = useState<ClearScriptResult | null>(null);
   const [previewImageUrl, setPreviewImageUrl] = useState<string | null>(null);
@@ -67,7 +68,7 @@ export const PrescriptionUploadModal: React.FC<PrescriptionUploadModalProps> = (
     if (!file) return;
 
     setStep('extracting');
-    setExtractStatusText('ClearScript.js: Applying adaptive contrast & handwriting thresholding...');
+    setExtractStatusText('ClearScript.js: Initializing optical character recognition...');
 
     // Create local object URL for instant preview
     if (file.type.startsWith('image/')) {
@@ -78,32 +79,27 @@ export const PrescriptionUploadModal: React.FC<PrescriptionUploadModalProps> = (
     }
 
     try {
-      // 1. Run ClearScript OCR model
-      setTimeout(() => {
-        setExtractStatusText('ClearScript.js: Parsing pharmaceutical sig (OD/BD/TDS) & active ingredients...');
-      }, 500);
-
+      // 1. Run real in-browser ClearScript OCR model
       const result = await ClearScript.processPrescription(file, {
-        hintText: file.name
+        hintText: file.name,
+        onProgress: (msg: string) => {
+          setExtractStatusText(msg);
+        }
       });
+
       setClearScriptResult(result);
       setExtractedData(result.extractedMedication);
 
-      // 2. Also register ingestion on backend if available
+      // 2. Also register ingestion on backend asynchronously for audit log
       apiClient.uploadMedicalDocument(patientId, file, 'PRESCRIPTION')
         .then(res => {
           if (res.document) setUploadedDocMeta(res.document);
         })
-        .catch(() => {
-          // Local extraction continues seamlessly
-        });
+        .catch(() => {});
 
-      setTimeout(() => {
-        setStep('review');
-      }, 1000);
+      setStep('review');
     } catch (err: any) {
       console.error('ClearScript OCR error:', err);
-      // Fallback to sample
       setStep('review');
     }
   };
@@ -275,7 +271,45 @@ export const PrescriptionUploadModal: React.FC<PrescriptionUploadModalProps> = (
                   </span>
                 </div>
 
-                {previewImageUrl ? (
+                {/* View Mode Switcher */}
+                <div className="flex items-center gap-1 border-b border-[#DDD9D1] pb-1.5 text-[11px] font-semibold">
+                  <button
+                    type="button"
+                    onClick={() => setViewMode('preview')}
+                    className={`px-2 py-0.5 rounded-xs transition-colors ${
+                      viewMode === 'preview' 
+                        ? 'bg-[#1C2B3A] text-white' 
+                        : 'text-[#6B7A8D] hover:text-[#1C2B3A]'
+                    }`}
+                  >
+                    Document Preview
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setViewMode('ocr_text')}
+                    className={`px-2 py-0.5 rounded-xs transition-colors flex items-center gap-1.5 ${
+                      viewMode === 'ocr_text' 
+                        ? 'bg-[#1C2B3A] text-white' 
+                        : 'text-[#6B7A8D] hover:text-[#1C2B3A]'
+                    }`}
+                  >
+                    <span>Raw OCR Text</span>
+                    {clearScriptResult?.rawOcrText && (
+                      <span className="w-1.5 h-1.5 rounded-full bg-[#3D8B6E] inline-block" />
+                    )}
+                  </button>
+                </div>
+
+                {viewMode === 'ocr_text' ? (
+                  <div className="bg-white border border-[#DDD9D1] rounded-sm p-3 font-mono text-[11px] text-[#1C2B3A] max-h-52 overflow-y-auto whitespace-pre-wrap space-y-1 shadow-xs">
+                    <span className="text-[10px] font-semibold text-[#6B7A8D] uppercase tracking-wider block border-b border-[#DDD9D1] pb-1">
+                      Raw Text Read from File (Tesseract OCR):
+                    </span>
+                    <div className="pt-1 text-[#1C2B3A] leading-relaxed">
+                      {clearScriptResult?.rawOcrText || 'No direct text extracted.'}
+                    </div>
+                  </div>
+                ) : previewImageUrl ? (
                   <div className="bg-white border border-[#DDD9D1] rounded-sm p-2 text-center space-y-2">
                     <img 
                       src={previewImageUrl} 
@@ -312,11 +346,11 @@ export const PrescriptionUploadModal: React.FC<PrescriptionUploadModalProps> = (
 
                 <div className="p-2.5 bg-[#FAF8F3] border border-[#DDD9D1] rounded-sm text-[11px] text-[#6B7A8D] space-y-1">
                   <div className="flex items-center justify-between text-[10px] font-mono text-[#1C2B3A]">
-                    <span>Engine: ClearScript.js v2.4</span>
+                    <span>Engine: ClearScript.js v2.5 (Tesseract Wasm)</span>
                     <span className="text-[#3D8B6E] font-semibold">Ready for Review</span>
                   </div>
                   <p>
-                    Confirm or edit any extracted medication values on the right before saving to your profile.
+                    Verify the extracted fields on the right. You can adjust any medicine name or frequency before saving.
                   </p>
                 </div>
               </div>

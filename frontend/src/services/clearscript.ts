@@ -19,6 +19,8 @@ export interface ClearScriptResult {
   isHandwritten: boolean;
   previewUrl: string | null;
   fileName: string;
+  rawOcrText?: string;
+  detectedLines?: string[];
   extractedMedication: Medication & { ocrConfidence?: number; rxNormCode?: string };
   slipText: ClearScriptSlipText;
 }
@@ -36,7 +38,10 @@ export interface SamplePrescription {
 export const ClearScript = {
   version: (ClearScriptCore as any).version as string,
 
-  async processPrescription(input: File | Blob | string, options?: { hintText?: string }): Promise<ClearScriptResult> {
+  async processPrescription(
+    input: File | Blob | string,
+    options?: { hintText?: string; onProgress?: (msg: string) => void }
+  ): Promise<ClearScriptResult> {
     return (ClearScriptCore as any).processPrescription(input, options);
   },
 
