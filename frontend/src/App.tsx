@@ -15,6 +15,7 @@ import { DoctorWorkspace } from './components/doctor/DoctorWorkspace';
 import { HospitalPortal } from './components/hospital/HospitalPortal';
 import { ErrorBoundary } from './components/common/ErrorBoundary';
 import { AccessRestricted } from './components/common/AccessRestricted';
+import { PortalLoginView } from './components/auth/PortalLoginView';
 import { AuthModal } from './components/auth/AuthModal';
 import { authStore, type UserProfile } from './services/authStore';
 import type { Role } from './types';
@@ -177,15 +178,14 @@ export function App() {
           {/* Protected Portal Views with Role-Based Access Control (RBAC) */}
           {currentRole !== 'landing' && (
             (() => {
-              // 1. Unauthenticated Visitor Guard
+              // 1. Unauthenticated Visitor Guard: Render Portal Login Interface for every portal
               if (!currentUser) {
                 return (
-                  <AccessRestricted
-                    attemptedRole={currentRole}
-                    currentUser={null}
+                  <PortalLoginView
+                    portalRole={currentRole}
+                    onLoginSuccess={handleLoginSuccess}
                     onNavigateHome={() => setCurrentRole('landing')}
-                    onNavigateAllowedPortal={(role) => setCurrentRole(role)}
-                    onOpenAuth={(role) => handleOpenAuth(role)}
+                    onSwitchPortalRole={(role) => setCurrentRole(role)}
                   />
                 );
               }

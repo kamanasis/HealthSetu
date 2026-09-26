@@ -37,7 +37,7 @@ interface PatientPortalProps {
 export const PatientPortal: React.FC<PatientPortalProps> = ({ onEmergencyClick, currentUser }) => {
   const [activeTab, setActiveTab] = useState<'overview' | 'careplan' | 'timeline' | 'consent' | 'allergies'>('overview');
   
-  const isCustomUser = !!(currentUser && currentUser.role === 'patient' && currentUser.id !== 'HS-PAT-8921');
+  const isDemoRohan = currentUser?.id === 'HS-PAT-8921';
 
   const [patient, setPatient] = useState(() => {
     if (currentUser && currentUser.role === 'patient') {
@@ -52,37 +52,47 @@ export const PatientPortal: React.FC<PatientPortalProps> = ({ onEmergencyClick, 
         emergencyContact: currentUser.patientDetails?.emergencyContact ?? '',
       };
     }
-    return INITIAL_PATIENT;
+    return {
+      id: '',
+      name: '',
+      age: '',
+      gender: '',
+      bloodGroup: '',
+      city: '',
+      phone: '',
+      emergencyContact: '',
+    };
   });
 
   const [medications, setMedications] = useState<Medication[]>(() => {
-    return isCustomUser ? [] : (INITIAL_MEDICATIONS || []);
+    return isDemoRohan ? (INITIAL_MEDICATIONS || []) : [];
   });
 
   const [allergies, setAllergies] = useState<Allergy[]>(() => {
-    return isCustomUser ? [] : (INITIAL_ALLERGIES || []);
+    return isDemoRohan ? (INITIAL_ALLERGIES || []) : [];
   });
 
   const [timeline, setTimeline] = useState<TimelineEvent[]>(() => {
-    if (isCustomUser) {
+    if (isDemoRohan) return INITIAL_TIMELINE || [];
+    if (currentUser && currentUser.role === 'patient') {
       return [
         {
-          id: `tl-init-${currentUser!.id}`,
-          date: currentUser!.issuedAt || 'Today',
+          id: `tl-init-${currentUser.id}`,
+          date: currentUser.issuedAt || 'Today',
           title: 'HealthSetu Sovereign ID Minted',
           category: 'milestone',
           provider: 'HealthSetu Digital Health Grid',
-          facility: currentUser!.patientDetails?.city || 'Verified Clinical Node',
-          description: `Sovereign unique credential issued for ${currentUser!.name}. Unique ID: ${currentUser!.id}. Zero dummy data active.`,
+          facility: currentUser.patientDetails?.city || 'Verified Clinical Node',
+          description: `Sovereign unique credential issued for ${currentUser.name}. Unique ID: ${currentUser.id}. Zero dummy data active.`,
           trustState: 'verified',
         },
       ];
     }
-    return INITIAL_TIMELINE || [];
+    return [];
   });
 
   const [accessRequests, setAccessRequests] = useState<AccessRequest[]>(() => {
-    return isCustomUser ? [] : (INITIAL_ACCESS_REQUESTS || []);
+    return isDemoRohan ? (INITIAL_ACCESS_REQUESTS || []) : [];
   });
 
   const [isUploadOpen, setIsUploadOpen] = useState<boolean>(false);
@@ -140,8 +150,10 @@ export const PatientPortal: React.FC<PatientPortalProps> = ({ onEmergencyClick, 
 
   // Live Backend Data Fetching (Cross-Computer Sync by Unique ID)
   useEffect(() => {
+    if (!currentUser || currentUser.role !== 'patient') return;
+
     let mounted = true;
-    const targetPatientId = (currentUser && currentUser.role === 'patient') ? currentUser.id : 'HS-PAT-8921';
+    const targetPatientId = currentUser.id;
     const isCustom = targetPatientId !== 'HS-PAT-8921';
 
     const syncBackend = async () => {
