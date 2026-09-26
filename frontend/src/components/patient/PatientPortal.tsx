@@ -170,21 +170,28 @@ export const PatientPortal: React.FC<PatientPortalProps> = ({ onEmergencyClick }
     return () => { mounted = false; };
   }, []);
 
-  const handleVerifyAndAdd = async (newMed: Medication) => {
-    setMedications(prev => [newMed, ...prev]);
+  const handleVerifyAndAdd = async (medsInput: Medication | Medication[]) => {
+    const medsArray = Array.isArray(medsInput) ? medsInput : [medsInput];
+    setMedications(prev => [...medsArray, ...prev]);
 
-    const newEvent: TimelineEvent = {
-      id: `tl-${Date.now()}`,
-      date: 'Today, 25 Sep 2026',
-      title: `Patient-Verified: ${newMed.name} ${newMed.strength}`,
-      category: 'prescription',
-      provider: newMed.prescribingDoctor,
-      facility: newMed.hospital,
-      description: `${newMed.name} verified by patient ${patient.name}. Added to active daily medication schedule.`,
-      trustState: 'verified',
-    };
-    setTimeline(prev => [newEvent, ...prev]);
-    showToast(`Verified and added ${newMed.name} to your active health record.`);
+    medsArray.forEach(newMed => {
+      const newEvent: TimelineEvent = {
+        id: `tl-${Date.now()}-${Math.random().toString(36).substring(2, 5)}`,
+        date: 'Today, 26 Sep 2026',
+        title: `Patient-Verified: ${newMed.name} ${newMed.strength}`,
+        category: 'prescription',
+        provider: newMed.prescribingDoctor,
+        facility: newMed.hospital,
+        description: `${newMed.name} verified by patient ${patient.name}. Added to active daily medication schedule.`,
+        trustState: 'verified',
+      };
+      setTimeline(prev => [newEvent, ...prev]);
+    });
+
+    const msg = medsArray.length === 1
+      ? `Verified and added ${medsArray[0].name} to your active health record.`
+      : `Verified and added ${medsArray.length} medications to your active health record.`;
+    showToast(msg);
   };
 
   const handleCreateConsentGrant = async (e: React.FormEvent) => {

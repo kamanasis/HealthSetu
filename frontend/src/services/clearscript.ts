@@ -21,7 +21,12 @@ export interface ClearScriptResult {
   fileName: string;
   rawOcrText?: string;
   detectedLines?: string[];
+  patientName?: string;
+  diagnosis?: string;
+  doctorName?: string;
+  hospitalName?: string;
   extractedMedication: Medication & { ocrConfidence?: number; rxNormCode?: string };
+  extractedMedications?: Array<Medication & { ocrConfidence?: number; rxNormCode?: string }>;
   slipText: ClearScriptSlipText;
 }
 
