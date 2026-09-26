@@ -7,7 +7,7 @@
  * - Consent Management (/api/v1/consents, /api/v1/consents/{id}/revoke)
  */
 
-const API_BASE_URL = 'http://localhost:8000/api/v1';
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api/v1';
 
 export interface BackendHealthResponse {
   status: 'ok' | 'degraded' | 'error';
