@@ -245,6 +245,12 @@ class HealthSetuApiClient {
       this.lastPingMs = Math.round(performance.now() - t0);
       this.isConnected = res.ok;
 
+      const contentType = res.headers.get('content-type') || '';
+      if (contentType.includes('text/html')) {
+        this.isConnected = false;
+        return { error: 'API service not deployed on this domain', status: 404 };
+      }
+
       const json = await res.json().catch(() => null);
 
       if (!res.ok) {
