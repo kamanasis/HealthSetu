@@ -1,22 +1,27 @@
 """Application configuration module using Pydantic Settings."""
 
+import json
 from functools import lru_cache
-from typing import Annotated, Literal
-from pydantic import BeforeValidator, Field
+from typing import Annotated, Any, Literal
+from pydantic import Field, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
-def parse_cors_origins(v: str | list[str]) -> list[str]:
-    """Parse CORS allowed origins from comma-separated string or list."""
+def parse_cors_origins(v: Any) -> list[str]:
+    """Parse CORS allowed origins from comma-separated string, JSON list, or array."""
     if isinstance(v, str):
-        # Strip whitespace and trailing slashes for standard origin matching
+        v = v.strip()
+        if v.startswith("[") and v.endswith("]"):
+            try:
+                parsed = json.loads(v)
+                if isinstance(parsed, list):
+                    return [str(origin).strip().rstrip("/") for origin in parsed if str(origin).strip()]
+            except Exception:
+                pass
         return [origin.strip().rstrip("/") for origin in v.split(",") if origin.strip()]
     if isinstance(v, list):
-        return [origin.strip().rstrip("/") for origin in v if isinstance(origin, str) and origin.strip()]
+        return [str(origin).strip().rstrip("/") for origin in v if str(origin).strip()]
     return []
-
-
-CorsOrigins = Annotated[list[str], BeforeValidator(parse_cors_origins)]
 
 
 class Settings(BaseSettings):
@@ -50,8 +55,8 @@ class Settings(BaseSettings):
         description="Async PostgreSQL connection URL (e.g., postgresql+asyncpg://user:pass@host:5432/db)",
     )
 
-    # CORS Configuration
-    CORS_ALLOWED_ORIGINS: CorsOrigins = Field(
+    # CORS Configuration (accepts comma-separated string, JSON array, or list)
+    CORS_ALLOWED_ORIGINS: Any = Field(
         default=[
             "http://localhost:3000",
             "http://127.0.0.1:3000",
@@ -59,8 +64,13 @@ class Settings(BaseSettings):
             "http://127.0.0.1:5173",
             "https://health-setu-giaa.vercel.app",
         ],
-        description="Allowed CORS origins (comma-separated or list)",
+        description="Allowed CORS origins (comma-separated, single string, or list)",
     )
+
+    @field_validator("CORS_ALLOWED_ORIGINS", mode="before")
+    @classmethod
+    def validate_cors_origins(cls, v: Any) -> list[str]:
+        return parse_cors_origins(v)
 
     # Logging Configuration
     LOG_LEVEL: str = Field(default="INFO", description="Logging level (DEBUG, INFO, WARNING, ERROR, CRITICAL)")
