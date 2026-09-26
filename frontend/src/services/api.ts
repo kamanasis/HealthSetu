@@ -17,10 +17,12 @@
 
 import type { Medication, Allergy, TimelineEvent, AccessRequest, HospitalFacility, SafetyAlert } from '../types';
 
-// Support VITE_API_BASE_URL, VITE_API_URL, relative /api/v1 in browser, or localhost:8000
+// Support VITE_API_BASE_URL, VITE_API_URL, production Railway fallback, relative /api/v1, or localhost:8000
 const rawApiUrl = (import.meta.env.VITE_API_BASE_URL || import.meta.env.VITE_API_URL) as string | undefined;
 const API_BASE_URL = rawApiUrl
   ? (rawApiUrl.endsWith('/api/v1') ? rawApiUrl : `${rawApiUrl.replace(/\/+$/, '')}/api/v1`)
+  : typeof window !== 'undefined' && window.location.hostname.includes('vercel.app')
+  ? 'https://healthsetu-production.up.railway.app/api/v1'
   : typeof window !== 'undefined' && window.location.origin
   ? '/api/v1'
   : 'http://localhost:8000/api/v1';
