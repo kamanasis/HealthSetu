@@ -218,10 +218,12 @@ export const authStore = {
       hospital: 'ADMIN',
     };
     try {
-      await apiClient.login(
-        matched.email || `${matched.id.toLowerCase()}@healthsetu.org`,
-        password || 'StrongP@ssw0rd123!'
-      ).catch(() => null);
+      if (password) {
+        await apiClient.login(
+          matched.email || `${matched.id.toLowerCase()}@healthsetu.org`,
+          password
+        ).catch(() => null);
+      }
     } catch {}
 
     this.setActiveUser(matched);
@@ -268,7 +270,7 @@ export const authStore = {
         name: newUser.name,
         role: backendRoleMap[newUser.role],
         identifier: newUser.email,
-        password: data.password || 'StrongP@ssw0rd123!',
+        password: data.password || '',
         unique_id: newUser.id,
         details: {
           patient: data.patientDetails,

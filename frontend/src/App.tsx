@@ -14,6 +14,7 @@ import { PatientPortal } from './components/patient/PatientPortal';
 import { DoctorWorkspace } from './components/doctor/DoctorWorkspace';
 import { HospitalPortal } from './components/hospital/HospitalPortal';
 import { ErrorBoundary } from './components/common/ErrorBoundary';
+import { AccessRestricted } from './components/common/AccessRestricted';
 import { AuthModal } from './components/auth/AuthModal';
 import { authStore, type UserProfile } from './services/authStore';
 import type { Role } from './types';
@@ -162,6 +163,7 @@ export function App() {
                 onSelectRole={setCurrentRole} 
                 onEmergencyClick={scrollToEmergency} 
                 onOpenAuth={handleOpenAuth}
+                currentUser={currentUser}
               />
               <TrustStrip />
               <RoleSection onSelectRole={setCurrentRole} />
@@ -172,23 +174,63 @@ export function App() {
             </>
           )}
 
-          {currentRole === 'patient' && (
-            <PatientPortal 
-              onEmergencyClick={scrollToEmergency} 
-              currentUser={currentUser}
-            />
-          )}
+          {/* Protected Portal Views with Role-Based Access Control (RBAC) */}
+          {currentRole !== 'landing' && (
+            (() => {
+              // 1. Unauthenticated Visitor Guard
+              if (!currentUser) {
+                return (
+                  <AccessRestricted
+                    attemptedRole={currentRole}
+                    currentUser={null}
+                    onNavigateHome={() => setCurrentRole('landing')}
+                    onNavigateAllowedPortal={(role) => setCurrentRole(role)}
+                    onOpenAuth={(role) => handleOpenAuth(role)}
+                  />
+                );
+              }
 
-          {currentRole === 'doctor' && (
-            <DoctorWorkspace 
-              currentUser={currentUser}
-            />
-          )}
+              // 2. Cross-Role Clearance Guard (e.g. Patient trying to access Doctor or Hospital portal)
+              if (currentUser.role !== currentRole) {
+                return (
+                  <AccessRestricted
+                    attemptedRole={currentRole}
+                    currentUser={currentUser}
+                    onNavigateHome={() => setCurrentRole('landing')}
+                    onNavigateAllowedPortal={(role) => setCurrentRole(role)}
+                    onOpenAuth={(role) => handleOpenAuth(role)}
+                  />
+                );
+              }
 
-          {currentRole === 'hospital' && (
-            <HospitalPortal 
-              currentUser={currentUser}
-            />
+              // 3. Authorized Portals
+              if (currentRole === 'patient') {
+                return (
+                  <PatientPortal 
+                    onEmergencyClick={scrollToEmergency} 
+                    currentUser={currentUser}
+                  />
+                );
+              }
+
+              if (currentRole === 'doctor') {
+                return (
+                  <DoctorWorkspace 
+                    currentUser={currentUser}
+                  />
+                );
+              }
+
+              if (currentRole === 'hospital') {
+                return (
+                  <HospitalPortal 
+                    currentUser={currentUser}
+                  />
+                );
+              }
+
+              return null;
+            })()
           )}
         </ErrorBoundary>
       </main>

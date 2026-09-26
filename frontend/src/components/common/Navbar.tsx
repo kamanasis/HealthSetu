@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Activity, User, Stethoscope, Building2, PhoneCall, KeyRound, LogOut, ChevronDown, ShieldCheck } from 'lucide-react';
+import { Activity, User, Stethoscope, Building2, PhoneCall, KeyRound, LogOut, ChevronDown, ShieldCheck, Lock } from 'lucide-react';
 import type { Role } from '../../types';
 import type { UserProfile } from '../../services/authStore';
 
@@ -79,11 +79,17 @@ export const Navbar: React.FC<NavbarProps> = ({
             className={`flex items-center gap-1.5 px-3 py-1.5 rounded-sm text-xs font-semibold transition-colors focus-visible:ring-1 focus-visible:ring-[#4A90C4] ${
               currentRole === 'patient'
                 ? 'bg-[#FFFFFF] text-[#2B5F8A] border border-[#D5E8F8]'
-                : 'text-[#6B7A8D] hover:text-[#2B5F8A]'
+                : currentUser && currentUser.role !== 'patient'
+                  ? 'text-[#6B7A8D] opacity-80 hover:text-[#1C2B3A]'
+                  : 'text-[#6B7A8D] hover:text-[#2B5F8A]'
             }`}
+            title={currentUser && currentUser.role !== 'patient' ? 'Requires Patient Account' : undefined}
           >
             <User className="w-3.5 h-3.5" strokeWidth={1.8} />
-            Patient Portal
+            <span>Patient Portal</span>
+            {currentUser && currentUser.role !== 'patient' && (
+              <Lock className="w-2.5 h-2.5 text-[#A05520]" />
+            )}
           </button>
 
           <button
@@ -91,11 +97,17 @@ export const Navbar: React.FC<NavbarProps> = ({
             className={`flex items-center gap-1.5 px-3 py-1.5 rounded-sm text-xs font-semibold transition-colors focus-visible:ring-1 focus-visible:ring-[#4A90C4] ${
               currentRole === 'doctor'
                 ? 'bg-[#FFFFFF] text-[#2D5A40] border border-[#D3EAD7]'
-                : 'text-[#6B7A8D] hover:text-[#2D5A40]'
+                : currentUser && currentUser.role !== 'doctor'
+                  ? 'text-[#6B7A8D] opacity-80 hover:text-[#1C2B3A]'
+                  : 'text-[#6B7A8D] hover:text-[#2D5A40]'
             }`}
+            title={currentUser && currentUser.role !== 'doctor' ? 'Requires Clinician Clearance' : undefined}
           >
             <Stethoscope className="w-3.5 h-3.5" strokeWidth={1.8} />
-            Doctor Clinical
+            <span>Doctor Clinical</span>
+            {currentUser && currentUser.role !== 'doctor' && (
+              <Lock className="w-2.5 h-2.5 text-[#A05520]" />
+            )}
           </button>
 
           <button
@@ -103,11 +115,17 @@ export const Navbar: React.FC<NavbarProps> = ({
             className={`flex items-center gap-1.5 px-3 py-1.5 rounded-sm text-xs font-semibold transition-colors focus-visible:ring-1 focus-visible:ring-[#4A90C4] ${
               currentRole === 'hospital'
                 ? 'bg-[#FFFFFF] text-[#5B3D8A] border border-[#E9DCF8]'
-                : 'text-[#6B7A8D] hover:text-[#5B3D8A]'
+                : currentUser && currentUser.role !== 'hospital'
+                  ? 'text-[#6B7A8D] opacity-80 hover:text-[#1C2B3A]'
+                  : 'text-[#6B7A8D] hover:text-[#5B3D8A]'
             }`}
+            title={currentUser && currentUser.role !== 'hospital' ? 'Requires Hospital Organization Clearance' : undefined}
           >
             <Building2 className="w-3.5 h-3.5" strokeWidth={1.8} />
-            Hospital Capacity
+            <span>Hospital Capacity</span>
+            {currentUser && currentUser.role !== 'hospital' && (
+              <Lock className="w-2.5 h-2.5 text-[#A05520]" />
+            )}
           </button>
         </nav>
 

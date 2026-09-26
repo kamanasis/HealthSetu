@@ -8,9 +8,10 @@ interface HeroProps {
   onSelectRole: (role: Role) => void;
   onEmergencyClick?: () => void;
   onOpenAuth?: (role?: Role) => void;
+  currentUser?: import('../../services/authStore').UserProfile | null;
 }
 
-export const Hero: React.FC<HeroProps> = ({ onSelectRole, onEmergencyClick, onOpenAuth }) => {
+export const Hero: React.FC<HeroProps> = ({ onSelectRole, onEmergencyClick, onOpenAuth, currentUser }) => {
   const [accessGranted, setAccessGranted] = useState<boolean>(true);
 
   const handleEmergencyTrigger = () => {
@@ -173,22 +174,36 @@ export const Hero: React.FC<HeroProps> = ({ onSelectRole, onEmergencyClick, onOp
           </SectionReveal>
         </div>
 
-        {/* Right Column: Clean Specimen Architectural Card (Zero bloated shadows, crisp hairlines) */}
+        {/* Right Column: Dynamic User Profile or Sovereign Health Grid Card */}
         <SectionReveal className="lg:col-span-5" delay={0.3} yOffset={40}>
           <div className="bg-white rounded-sm border border-[#DDD9D1] p-6 space-y-5">
             
             {/* Specimen Header */}
             <div className="flex items-center justify-between border-b border-[#DDD9D1] pb-4">
               <div className="flex items-center gap-3">
-                <div className="w-9 h-9 rounded-sm bg-[#FAF8F3] border border-[#DDD9D1] flex items-center justify-center text-[#1C2B3A] font-bold text-xs font-mono">
-                  RS
+                <div className="w-10 h-10 rounded-sm bg-[#FAF8F3] border border-[#DDD9D1] flex items-center justify-center text-[#1C2B3A] font-bold text-xs font-mono">
+                  {currentUser 
+                    ? (currentUser.avatarInitials || currentUser.name.split(' ').filter(Boolean).map(n => n[0]).join('').slice(0, 2).toUpperCase() || 'HS')
+                    : 'HS'}
                 </div>
                 <div>
-                  <h3 className="font-serif text-lg text-[#1C2B3A]">Rohan Sharma</h3>
+                  <h3 className="font-serif text-lg text-[#1C2B3A]">
+                    {currentUser ? currentUser.name : 'Sovereign HealthGrid Passport'}
+                  </h3>
                   <div className="flex items-center gap-2 text-xs text-[#6B7A8D]">
-                    <span className="font-mono text-[#4A90C4]">HS-PAT-8921</span>
+                    <span className="font-mono text-[#4A90C4]">
+                      {currentUser ? currentUser.id : 'HS-GRID-2026'}
+                    </span>
                     <span>·</span>
-                    <span>42y Male</span>
+                    <span>
+                      {currentUser
+                        ? (currentUser.role === 'patient'
+                            ? (currentUser.patientDetails?.city || 'Sovereign Patient')
+                            : currentUser.role === 'doctor'
+                              ? (currentUser.doctorDetails?.specialization || 'Verified Clinician')
+                              : (currentUser.hospitalDetails?.facilityType || 'Healthcare Facility'))
+                        : 'ABDM 2.0 National Standard'}
+                    </span>
                   </div>
                 </div>
               </div>
@@ -199,25 +214,27 @@ export const Hero: React.FC<HeroProps> = ({ onSelectRole, onEmergencyClick, onOp
             <div className="bg-[#FAF8F3] border border-[#DDD9D1] rounded-sm p-4 space-y-3">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2 text-xs font-semibold text-[#1C2B3A]">
-                  <Stethoscope className="w-3.5 h-3.5 text-[#3D8B6E]" />
-                  <span>Dr. Priya Nair (AIIMS Delhi)</span>
+                  <ShieldCheck className="w-3.5 h-3.5 text-[#3D8B6E]" />
+                  <span>
+                    {currentUser ? `${currentUser.name} Access Governance` : 'Cryptographic Consent Ledger'}
+                  </span>
                 </div>
                 <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-sm border ${
                   accessGranted ? 'bg-[#EBF5EC] text-[#2D5A40] border-[#D3EAD7]' : 'bg-[#FDEEF4] text-[#D94F7A] border-[#F8D2DF]'
                 }`}>
-                  {accessGranted ? 'Active Access' : 'Revoked'}
+                  {accessGranted ? 'Active Governance' : 'Restricted'}
                 </span>
               </div>
 
               <p className="text-xs text-[#6B7A8D] leading-relaxed">
                 {accessGranted
-                  ? 'Authorized for Full Clinical Record & Prescription History. Expires in 11h 45m.'
-                  : 'Access revoked. Consulting doctor cannot view protected patient clinical history.'}
+                  ? 'Time-bound cryptographic tokens with patient-revocable clinical scopes. Zero third-party sharing.'
+                  : 'Sovereign lockdown active. Treating nodes cannot access records without real-time OTP consent.'}
               </p>
 
               <div className="flex items-center justify-between pt-1 border-t border-[#DDD9D1]">
                 <span className="text-[11px] text-[#6B7A8D] flex items-center gap-1">
-                  <Clock className="w-3 h-3" /> Auto-expires tonight
+                  <Clock className="w-3 h-3" /> Auto-expires with session
                 </span>
                 <button
                   onClick={() => setAccessGranted(!accessGranted)}
@@ -232,25 +249,33 @@ export const Hero: React.FC<HeroProps> = ({ onSelectRole, onEmergencyClick, onOp
               </div>
             </div>
 
-            {/* Structured Longitudinal Record Ledger */}
+            {/* Structured Verification Ledger */}
             <div className="space-y-2">
               <div className="flex items-center justify-between text-xs font-semibold text-[#6B7A8D] px-0.5">
-                <span>Active Longitudinal Record</span>
+                <span>Verified Clinical Grid Architecture</span>
                 <button
-                  onClick={() => onSelectRole('patient')}
+                  onClick={() => {
+                    if (currentUser) {
+                      onSelectRole(currentUser.role);
+                    } else if (onOpenAuth) {
+                      onOpenAuth('patient');
+                    } else {
+                      onSelectRole('patient');
+                    }
+                  }}
                   className="text-[#4A90C4] hover:underline"
                 >
-                  View all 3 items →
+                  {currentUser ? 'Open Your Portal →' : 'Sign In with Unique ID →'}
                 </button>
               </div>
 
               <div className="p-3 rounded-sm border border-[#DDD9D1] bg-white flex items-center justify-between hover:border-[#1C2B3A] transition-colors">
                 <div>
-                  <div className="text-xs font-semibold text-[#1C2B3A]">Telmisartan 40mg (OD)</div>
-                  <div className="text-[11px] text-[#6B7A8D]">Morning with water · Dr. Priya Nair (AIIMS)</div>
+                  <div className="text-xs font-semibold text-[#1C2B3A]">ClearScript Multimodal OCR</div>
+                  <div className="text-[11px] text-[#6B7A8D]">Handwriting extraction · Pharmacopoeial entity grounding</div>
                 </div>
                 <span className="text-[10px] font-semibold text-[#2D5A40] bg-[#EBF5EC] border border-[#D3EAD7] px-2 py-0.5 rounded-sm">
-                  Verified
+                  Active
                 </span>
               </div>
 
@@ -258,21 +283,21 @@ export const Hero: React.FC<HeroProps> = ({ onSelectRole, onEmergencyClick, onOp
                 <div>
                   <div className="text-xs font-semibold text-[#1C2B3A] flex items-center gap-1.5">
                     <Sparkles className="w-3.5 h-3.5 text-[#4A90C4]" />
-                    AI Clinical History SBAR
+                    Deterministic Safety Interception
                   </div>
-                  <div className="text-[11px] text-[#6B7A8D]">Stable BP control across 3 facilities · No allergy conflict</div>
+                  <div className="text-[11px] text-[#6B7A8D]">Allergy conflict detection · Real-time drug-drug interaction alerts</div>
                 </div>
                 <span className="text-[10px] font-mono font-semibold text-[#2B5F8A] bg-white px-2 py-0.5 rounded-sm border border-[#DDD9D1]">
-                  SBAR
+                  Engine
                 </span>
               </div>
             </div>
 
-            {/* Real-time Hospital Capacity Bar */}
+            {/* Real-time Hospital Capacity Network Bar */}
             <div className="border-t border-[#DDD9D1] pt-3 flex items-center justify-between text-xs text-[#6B7A8D]">
-              <FreshnessBadge state="current" lastUpdated="3m ago" />
+              <FreshnessBadge state="current" lastUpdated="Live" />
               <span className="text-xs text-[#1C2B3A]">
-                Apollo Delhi: <strong className="text-[#3D8B6E] font-semibold">7 ICU Beds Available</strong>
+                National Health Grid: <strong className="text-[#3D8B6E] font-semibold">Decentralized & Verified</strong>
               </span>
             </div>
 
