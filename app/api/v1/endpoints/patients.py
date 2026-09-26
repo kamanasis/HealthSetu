@@ -141,3 +141,73 @@ async def get_patient_clinical_summary(
         patient_id=patient_id,
     )
     return StandardSuccessResponse(data=summary, request_id=_req_id(request))
+
+
+@router.get(
+    "/{patient_id}/full-record",
+    summary="Get unified longitudinal patient record",
+    description="Returns verified medications, allergies, timeline, and demographics with cross-computer persistence and zero dummy data for new users.",
+)
+async def get_patient_full_record(
+    patient_id: str,
+    request: Request,
+) -> dict[str, Any]:
+    """Retrieve full patient record across devices with zero dummy data for new accounts."""
+    from app.core.exceptions import NotFoundException
+    from app.core.user_profile_store import get_patient_record
+
+    record = get_patient_record(patient_id)
+    if not record:
+        raise NotFoundException(f"Patient record for '{patient_id}' not found.")
+    return {"success": True, "data": record, "request_id": _req_id(request)}
+
+
+@router.post(
+    "/{patient_id}/full-record",
+    summary="Sync and update longitudinal patient record",
+    description="Updates medications, allergies, timeline events, or demographics, persisting across devices.",
+)
+async def sync_patient_full_record(
+    patient_id: str,
+    request: Request,
+    body: dict[str, Any],
+) -> dict[str, Any]:
+    """Update and persist patient medications, timeline, or profile cross-device."""
+    from app.core.user_profile_store import get_patient_record, save_patient_record
+
+    clean_id = patient_id.strip().upper()
+    existing = get_patient_record(clean_id) or {
+        "patient_id": clean_id,
+        "name": body.get("name", "Registered Patient"),
+        "age": body.get("age", 30),
+        "gender": body.get("gender", "Other"),
+        "bloodGroup": body.get("bloodGroup", "Not Specified"),
+        "city": body.get("city", "Not Specified"),
+        "phone": body.get("phone", ""),
+        "emergencyContact": body.get("emergencyContact", ""),
+        "medications": [],
+        "allergies": [],
+        "timeline": [],
+        "access_requests": [],
+    }
+
+    # Merge demographics if provided
+    for field in ["name", "age", "gender", "bloodGroup", "city", "phone", "emergencyContact"]:
+        if field in body and body[field] is not None:
+            existing[field] = body[field]
+
+    # Update medications if provided
+    if "medications" in body and isinstance(body["medications"], list):
+        existing["medications"] = body["medications"]
+
+    # Update allergies if provided
+    if "allergies" in body and isinstance(body["allergies"], list):
+        existing["allergies"] = body["allergies"]
+
+    # Update timeline if provided
+    if "timeline" in body and isinstance(body["timeline"], list):
+        existing["timeline"] = body["timeline"]
+
+    updated = save_patient_record(clean_id, existing)
+    return {"success": True, "data": updated, "request_id": _req_id(request)}
+

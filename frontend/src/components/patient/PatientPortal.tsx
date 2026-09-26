@@ -36,7 +36,59 @@ interface PatientPortalProps {
 
 export const PatientPortal: React.FC<PatientPortalProps> = ({ onEmergencyClick, currentUser }) => {
   const [activeTab, setActiveTab] = useState<'overview' | 'careplan' | 'timeline' | 'consent' | 'allergies'>('overview');
-  const [patient, setPatient] = useState(INITIAL_PATIENT);
+  
+  const isCustomUser = !!(currentUser && currentUser.role === 'patient' && currentUser.id !== 'HS-PAT-8921');
+
+  const [patient, setPatient] = useState(() => {
+    if (currentUser && currentUser.role === 'patient') {
+      return {
+        id: currentUser.id,
+        name: currentUser.name,
+        age: currentUser.patientDetails?.age ?? 30,
+        gender: currentUser.patientDetails?.gender ?? 'Other',
+        bloodGroup: currentUser.patientDetails?.bloodGroup ?? 'Not Specified',
+        city: currentUser.patientDetails?.city ?? 'Not Specified',
+        phone: currentUser.phone ?? '',
+        emergencyContact: currentUser.patientDetails?.emergencyContact ?? 'Not Specified',
+      };
+    }
+    return INITIAL_PATIENT;
+  });
+
+  const [medications, setMedications] = useState<Medication[]>(() => {
+    return isCustomUser ? [] : (INITIAL_MEDICATIONS || []);
+  });
+
+  const [allergies, setAllergies] = useState<Allergy[]>(() => {
+    return isCustomUser ? [] : (INITIAL_ALLERGIES || []);
+  });
+
+  const [timeline, setTimeline] = useState<TimelineEvent[]>(() => {
+    if (isCustomUser) {
+      return [
+        {
+          id: `tl-init-${currentUser!.id}`,
+          date: currentUser!.issuedAt || 'Today',
+          title: 'HealthSetu Sovereign ID Minted',
+          category: 'milestone',
+          provider: 'HealthSetu Digital Health Grid',
+          facility: currentUser!.patientDetails?.city || 'Verified Clinical Node',
+          description: `Sovereign unique credential issued for ${currentUser!.name}. Unique ID: ${currentUser!.id}. Zero dummy data active.`,
+          trustState: 'verified',
+        },
+      ];
+    }
+    return INITIAL_TIMELINE || [];
+  });
+
+  const [accessRequests, setAccessRequests] = useState<AccessRequest[]>(() => {
+    return isCustomUser ? [] : (INITIAL_ACCESS_REQUESTS || []);
+  });
+
+  const [isUploadOpen, setIsUploadOpen] = useState<boolean>(false);
+  const [isNewConsentOpen, setIsNewConsentOpen] = useState<boolean>(false);
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const [isSynced, setIsSynced] = useState<boolean>(false);
 
   // Sync patient profile when currentUser changes
   useEffect(() => {
@@ -52,17 +104,27 @@ export const PatientPortal: React.FC<PatientPortalProps> = ({ onEmergencyClick, 
         phone: currentUser.phone ?? prev.phone,
         emergencyContact: currentUser.patientDetails?.emergencyContact ?? prev.emergencyContact,
       }));
+
+      if (currentUser.id !== 'HS-PAT-8921') {
+        // Clear demo data for new user immediately
+        setMedications([]);
+        setAllergies([]);
+        setAccessRequests([]);
+        setTimeline([
+          {
+            id: `tl-init-${currentUser.id}`,
+            date: currentUser.issuedAt || 'Today',
+            title: 'HealthSetu Sovereign ID Minted',
+            category: 'milestone',
+            provider: 'HealthSetu Digital Health Grid',
+            facility: currentUser.patientDetails?.city || 'Verified Clinical Node',
+            description: `Sovereign unique credential issued for ${currentUser.name}. Unique ID: ${currentUser.id}. Zero dummy data active.`,
+            trustState: 'verified',
+          },
+        ]);
+      }
     }
   }, [currentUser]);
-
-  const [medications, setMedications] = useState<Medication[]>(INITIAL_MEDICATIONS || []);
-  const [allergies, setAllergies] = useState<Allergy[]>(INITIAL_ALLERGIES || []);
-  const [timeline, setTimeline] = useState<TimelineEvent[]>(INITIAL_TIMELINE || []);
-  const [accessRequests, setAccessRequests] = useState<AccessRequest[]>(INITIAL_ACCESS_REQUESTS || []);
-  const [isUploadOpen, setIsUploadOpen] = useState<boolean>(false);
-  const [isNewConsentOpen, setIsNewConsentOpen] = useState<boolean>(false);
-  const [toastMessage, setToastMessage] = useState<string | null>(null);
-  const [isSynced, setIsSynced] = useState<boolean>(false);
 
   // New Consent Form State (Backend Phase 3 contract)
   const [newGrantee, setNewGrantee] = useState<string>('DOC-MAX-582');
@@ -76,16 +138,63 @@ export const PatientPortal: React.FC<PatientPortalProps> = ({ onEmergencyClick, 
     setTimeout(() => setToastMessage(null), 3500);
   };
 
-  // Live Backend Data Fetching
+  // Live Backend Data Fetching (Cross-Computer Sync by Unique ID)
   useEffect(() => {
     let mounted = true;
+    const targetPatientId = (currentUser && currentUser.role === 'patient') ? currentUser.id : 'HS-PAT-8921';
+    const isCustom = targetPatientId !== 'HS-PAT-8921';
 
     const syncBackend = async () => {
       try {
-        // 1. Authenticate demo patient session
         await apiClient.ensureDemoSession('PATIENT');
 
-        // 2. Fetch live patient record
+        // 1. Fetch full persistent record across computers from backend
+        const fullRes = await apiClient.getFullPatientRecord(targetPatientId);
+        if (mounted && fullRes.record) {
+          const rec = fullRes.record;
+          setPatient(prev => ({
+            ...prev,
+            id: rec.patient_id || targetPatientId,
+            name: rec.name || prev.name,
+            age: rec.age ?? prev.age,
+            gender: rec.gender ?? prev.gender,
+            bloodGroup: rec.bloodGroup ?? prev.bloodGroup,
+            city: rec.city ?? prev.city,
+            phone: rec.phone || prev.phone,
+            emergencyContact: rec.emergencyContact ?? prev.emergencyContact,
+          }));
+
+          if (Array.isArray(rec.medications)) {
+            setMedications(rec.medications);
+          } else if (isCustom) {
+            setMedications([]);
+          }
+
+          if (Array.isArray(rec.allergies)) {
+            setAllergies(rec.allergies);
+          } else if (isCustom) {
+            setAllergies([]);
+          }
+
+          if (Array.isArray(rec.timeline) && rec.timeline.length > 0) {
+            setTimeline(rec.timeline);
+          }
+
+          setIsSynced(true);
+          return;
+        }
+
+        // 2. If custom user with no record yet on backend, keep clean (zero dummy data)
+        if (isCustom) {
+          if (mounted) {
+            setMedications([]);
+            setAllergies([]);
+            setAccessRequests([]);
+          }
+          return;
+        }
+
+        // 3. Fallback for demo Rohan Sharma (HS-PAT-8921)
         const pRes = await apiClient.getPatient('HS-PAT-8921');
         if (mounted && pRes.patient) {
           setPatient(prev => ({
@@ -99,7 +208,6 @@ export const PatientPortal: React.FC<PatientPortalProps> = ({ onEmergencyClick, 
           setIsSynced(true);
         }
 
-        // 3. Fetch live medications
         const medRes = await apiClient.getPatientMedications('HS-PAT-8921');
         if (mounted && medRes.medications && Array.isArray(medRes.medications) && medRes.medications.length > 0) {
           const liveMeds: Medication[] = medRes.medications.map((m, idx) => ({
@@ -122,92 +230,49 @@ export const PatientPortal: React.FC<PatientPortalProps> = ({ onEmergencyClick, 
           }));
           setMedications(liveMeds);
         }
-
-        // 4. Fetch live allergies
-        const algRes = await apiClient.getPatientAllergies('HS-PAT-8921');
-        if (mounted && algRes.allergies && Array.isArray(algRes.allergies) && algRes.allergies.length > 0) {
-          setAllergies(algRes.allergies.map((a, idx) => {
-            const rawSev = typeof a.severity === 'string' ? a.severity.toLowerCase() : 'moderate';
-            const validSev = rawSev === 'severe' || rawSev === 'mild' ? rawSev : 'moderate';
-            return {
-              id: a.id || `alg-${idx}`,
-              allergen: a.allergen || 'Documented Sensitivity',
-              reaction: a.reaction || 'Documented allergic sensitivity',
-              severity: validSev,
-              recordedDate: 'Recorded',
-              recordedBy: a.recorded_by || 'Verified Hospital Record',
-              trustState: 'verified' as const,
-            };
-          }));
-        }
-
-        // 5. Fetch live consents
-        const consRes = await apiClient.listConsents();
-        if (mounted && consRes.consents && Array.isArray(consRes.consents) && consRes.consents.length > 0) {
-          const mappedConsents: AccessRequest[] = consRes.consents.map((c, idx) => {
-            let reqAt = 'Recently';
-            try {
-              if (c.granted_at) {
-                reqAt = new Date(c.granted_at).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
-              }
-            } catch {
-              reqAt = 'Recently';
-            }
-
-            let expAt = 'Active Ongoing';
-            try {
-              if (c.expires_at) {
-                expAt = `Expires in ${new Date(c.expires_at).toLocaleDateString('en-GB')}`;
-              }
-            } catch {
-              expAt = 'Active Ongoing';
-            }
-
-            const rawPurp = typeof c.purpose === 'string' ? c.purpose.replace(/_/g, ' ').toUpperCase() : 'CARE DELIVERY';
-            const rawStat = typeof c.status === 'string' ? c.status.toLowerCase() : 'active';
-            const validStatus = rawStat === 'pending' || rawStat === 'revoked' || rawStat === 'expired' ? rawStat : 'active';
-
-            return {
-              id: c.id || `req-${idx}`,
-              doctorId: c.grantee_id || 'DOC-AIIMS-104',
-              doctorName: c.grantee_id === 'usr-doctor-001' ? 'Dr. Priya Nair' : c.grantee_id === 'DOC-MAX-582' ? 'Dr. Ananya Iyer' : c.grantee_id || 'Specialist Consultant',
-              doctorRole: c.grantee_id === 'usr-doctor-001' ? 'Cardiologist' : 'Specialist Consultant',
-              hospital: c.grantee_id === 'usr-doctor-001' ? 'AIIMS, New Delhi' : 'Max Super Speciality Hospital',
-              requestedScope: c.scope === 'all_records' ? 'Full Clinical Record' : 'Prescription History Only',
-              purpose: rawPurp,
-              status: validStatus,
-              requestedAt: reqAt,
-              expiresAt: expAt,
-            };
-          });
-          setAccessRequests(mappedConsents);
-        }
       } catch (err) {
-        console.warn('Backend sync failed, falling back to local records:', err);
+        console.warn('Backend sync completed with local cache fallback:', err);
       }
     };
 
     syncBackend();
     return () => { mounted = false; };
-  }, []);
+  }, [currentUser]);
 
   const handleVerifyAndAdd = async (medsInput: Medication | Medication[]) => {
     const medsArray = Array.isArray(medsInput) ? medsInput : [medsInput];
-    setMedications(prev => [...medsArray, ...prev]);
+    const updatedMeds = [...medsArray, ...medications];
+    setMedications(updatedMeds);
 
-    medsArray.forEach(newMed => {
-      const newEvent: TimelineEvent = {
-        id: `tl-${Date.now()}-${Math.random().toString(36).substring(2, 5)}`,
-        date: 'Today, 26 Sep 2026',
-        title: `Patient-Verified: ${newMed.name} ${newMed.strength}`,
-        category: 'prescription',
-        provider: newMed.prescribingDoctor,
-        facility: newMed.hospital,
-        description: `${newMed.name} verified by patient ${patient.name}. Added to active daily medication schedule.`,
-        trustState: 'verified',
-      };
-      setTimeline(prev => [newEvent, ...prev]);
-    });
+    const newTimelineEvents: TimelineEvent[] = medsArray.map(newMed => ({
+      id: `tl-${Date.now()}-${Math.random().toString(36).substring(2, 5)}`,
+      date: 'Today, 26 Sep 2026',
+      title: `Patient-Verified: ${newMed.name} ${newMed.strength}`,
+      category: 'prescription',
+      provider: newMed.prescribingDoctor || 'Verified Self-Upload',
+      facility: newMed.hospital || patient.city || 'Verified Health Node',
+      description: `${newMed.name} verified by patient ${patient.name}. Added to active daily medication schedule.`,
+      trustState: 'verified',
+    }));
+    const updatedTimeline = [...newTimelineEvents, ...timeline];
+    setTimeline(updatedTimeline);
+
+    // Sync to backend persistent store (saved across computers!)
+    try {
+      await apiClient.syncPatientRecord(patient.id, {
+        medications: updatedMeds,
+        timeline: updatedTimeline,
+        name: patient.name,
+        age: patient.age,
+        gender: patient.gender,
+        bloodGroup: patient.bloodGroup,
+        city: patient.city,
+        phone: patient.phone,
+        emergencyContact: patient.emergencyContact,
+      });
+    } catch (err) {
+      console.warn('Could not sync updated medications to backend store:', err);
+    }
 
     const msg = medsArray.length === 1
       ? `Verified and added ${medsArray[0].name} to your active health record.`
@@ -373,8 +438,9 @@ export const PatientPortal: React.FC<PatientPortalProps> = ({ onEmergencyClick, 
             <div className="p-4 space-y-1">
               <span className="text-[10px] font-mono uppercase text-[#6B7A8D]">Known Allergies</span>
               <div className="text-xl font-semibold text-[#D94F7A]">{allergies?.length ?? 0}</div>
-              <span className="text-[11px] text-[#D94F7A] flex items-center gap-1">
-                <AlertTriangle className="w-3 h-3" /> Penicillin & NSAIDs
+              <span className="text-[11px] text-[#D94F7A] flex items-center gap-1 truncate">
+                <AlertTriangle className="w-3 h-3 shrink-0" />
+                <span>{allergies.length > 0 ? allergies.map(a => a.allergen).join(', ') : 'None documented'}</span>
               </span>
             </div>
 
@@ -389,10 +455,13 @@ export const PatientPortal: React.FC<PatientPortalProps> = ({ onEmergencyClick, 
             </div>
 
             <div className="p-4 space-y-1">
-              <span className="text-[10px] font-mono uppercase text-[#6B7A8D]">Pending Confirmation</span>
-              <div className="text-xl font-semibold text-[#E07B39]">1</div>
+              <span className="text-[10px] font-mono uppercase text-[#6B7A8D]">Pending Extraction</span>
+              <div className="text-xl font-semibold text-[#E07B39]">
+                {medications.filter(m => m.trustState === 'extracted').length}
+              </div>
               <span className="text-[11px] text-[#A05520] flex items-center gap-1">
-                <Clock className="w-3 h-3" /> Fortis slip review
+                <Clock className="w-3 h-3" />
+                {medications.filter(m => m.trustState === 'extracted').length > 0 ? 'Requires verification' : 'Up to date'}
               </span>
             </div>
           </div>
@@ -740,31 +809,41 @@ export const PatientPortal: React.FC<PatientPortalProps> = ({ onEmergencyClick, 
             </p>
           </div>
 
-          <div className="grid md:grid-cols-2 gap-4">
-            {allergies.map(alg => (
-              <div
-                key={alg.id}
-                className="bg-[#FAF8F3] rounded-sm border border-[#DDD9D1] p-4 space-y-3"
-              >
-                <div className="flex items-center justify-between">
-                  <h4 className="text-xs font-semibold text-[#1C2B3A]">{alg.allergen}</h4>
-                  <span className="text-[10px] font-mono uppercase px-2 py-0.5 rounded-sm bg-[#FDEEF4] text-[#D94F7A] border border-[#F8D2DF]">
-                    {alg.severity} Severity
-                  </span>
-                </div>
+          {allergies.length === 0 ? (
+            <div className="py-12 text-center border border-dashed border-[#DDD9D1] rounded-sm bg-[#FAF8F3] space-y-2">
+              <ShieldCheck className="w-8 h-8 text-[#3D8B6E] mx-auto" strokeWidth={1.5} />
+              <h4 className="text-sm font-semibold text-[#1C2B3A]">No Documented Allergies</h4>
+              <p className="text-xs text-[#6B7A8D] max-w-sm mx-auto">
+                No drug or substance allergies have been documented for this profile. Any allergies recorded during clinical reviews will be shown here.
+              </p>
+            </div>
+          ) : (
+            <div className="grid md:grid-cols-2 gap-4">
+              {allergies.map(alg => (
+                <div
+                  key={alg.id}
+                  className="bg-[#FAF8F3] rounded-sm border border-[#DDD9D1] p-4 space-y-3"
+                >
+                  <div className="flex items-center justify-between">
+                    <h4 className="text-xs font-semibold text-[#1C2B3A]">{alg.allergen}</h4>
+                    <span className="text-[10px] font-mono uppercase px-2 py-0.5 rounded-sm bg-[#FDEEF4] text-[#D94F7A] border border-[#F8D2DF]">
+                      {alg.severity} Severity
+                    </span>
+                  </div>
 
-                <div className="bg-white rounded-sm p-3 border border-[#DDD9D1] text-xs">
-                  <div className="text-[#6B7A8D]">Reaction Documented:</div>
-                  <div className="font-semibold text-[#1C2B3A] mt-0.5">{alg.reaction}</div>
-                </div>
+                  <div className="bg-white rounded-sm p-3 border border-[#DDD9D1] text-xs">
+                    <div className="text-[#6B7A8D]">Reaction Documented:</div>
+                    <div className="font-semibold text-[#1C2B3A] mt-0.5">{alg.reaction}</div>
+                  </div>
 
-                <div className="text-[11px] text-[#6B7A8D] flex justify-between pt-1 border-t border-[#DDD9D1]">
-                  <span>Recorded: {alg.recordedDate}</span>
-                  <span>By: {alg.recordedBy}</span>
+                  <div className="text-[11px] text-[#6B7A8D] flex justify-between pt-1 border-t border-[#DDD9D1]">
+                    <span>Recorded: {alg.recordedDate}</span>
+                    <span>By: {alg.recordedBy}</span>
+                  </div>
                 </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          )}
         </div>
       )}
 

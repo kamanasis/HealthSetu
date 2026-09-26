@@ -28,6 +28,9 @@ interface DoctorWorkspaceProps {
 export const DoctorWorkspace: React.FC<DoctorWorkspaceProps> = ({ onPrescriptionFinalized, currentUser }) => {
   const [patientIdInput, setPatientIdInput] = useState<string>('HS-PAT-8921');
   const [activePatient, setActivePatient] = useState<typeof INITIAL_PATIENT | null>(INITIAL_PATIENT);
+  const [patientMedications, setPatientMedications] = useState<Medication[]>(INITIAL_MEDICATIONS || []);
+  const [patientAllergies, setPatientAllergies] = useState<Allergy[]>(INITIAL_ALLERGIES || []);
+  const [patientTimeline, setPatientTimeline] = useState<TimelineEvent[]>(INITIAL_TIMELINE || []);
   const [activeTab, setActiveTab] = useState<'review' | 'prescribe'>('review');
   const [isSearching, setIsSearching] = useState<boolean>(false);
   const [isSafetyChecking, setIsSafetyChecking] = useState<boolean>(false);
@@ -102,6 +105,9 @@ export const DoctorWorkspace: React.FC<DoctorWorkspaceProps> = ({ onPrescription
     e.preventDefault();
     if (!prescribedDrug) return;
 
+    const doctorName = currentUser && currentUser.role === 'doctor' ? currentUser.name : 'Dr. Priya Nair, MD (Cardiology)';
+    const doctorHospital = currentUser && currentUser.role === 'doctor' ? currentUser.doctorDetails?.hospital || 'AIIMS, New Delhi' : 'AIIMS, New Delhi';
+
     const newMed: Medication = {
       id: `med-doc-${Date.now()}`,
       name: prescribedDrug,
@@ -112,29 +118,44 @@ export const DoctorWorkspace: React.FC<DoctorWorkspaceProps> = ({ onPrescription
       route: 'Oral',
       duration: duration,
       instructions: instructions,
-      prescribingDoctor: 'Dr. Priya Nair, MD (Cardiology)',
-      hospital: 'AIIMS, New Delhi',
-      datePrescribed: '25 Sep 2026',
+      prescribingDoctor: doctorName,
+      hospital: doctorHospital,
+      datePrescribed: new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }),
       trustState: 'verified',
       timeOfDay: ['morning'],
       mealTiming: 'after_food',
       category: 'Doctor-Prescribed Treatment',
     };
 
+    const updatedMeds = [...patientMedications, newMed];
+    setPatientMedications(updatedMeds);
+
+    const newTl: TimelineEvent = {
+      id: `tl-doc-${Date.now()}`,
+      date: 'Today',
+      title: `Doctor Prescribed: ${newMed.name} ${newMed.strength}`,
+      category: 'prescription',
+      provider: doctorName,
+      facility: doctorHospital,
+      description: `${newMed.name} (${newMed.strength}, ${newMed.frequency}) prescribed by ${doctorName}. ${clinicalNotes ? `Notes: ${clinicalNotes}` : ''}`,
+      trustState: 'verified',
+    };
+    const updatedTl = [newTl, ...patientTimeline];
+    setPatientTimeline(updatedTl);
+
     if (onPrescriptionFinalized) {
       onPrescriptionFinalized(newMed);
     }
 
-    // Try posting to backend
+    // Persist to backend cross-computer store
     if (activePatient) {
       try {
-        await apiClient.createPrescription({
-          patient_id: activePatient.id,
-          medications: [{ name: prescribedDrug, strength, frequency, route: 'Oral' }],
-          notes: clinicalNotes,
+        await apiClient.syncPatientRecord(activePatient.id, {
+          medications: updatedMeds,
+          timeline: updatedTl,
         });
-      } catch {
-        // Handled gracefully
+      } catch (err) {
+        console.warn('Could not sync prescribed medication to backend store:', err);
       }
     }
 
@@ -147,8 +168,8 @@ export const DoctorWorkspace: React.FC<DoctorWorkspaceProps> = ({ onPrescription
     }, 2500);
   };
 
-  const handlePatientSearch = async () => {
-    const q = patientIdInput.trim();
+  const handlePatientSearch = async (overrideId?: string) => {
+    const q = (overrideId || patientIdInput).trim();
     if (!q) {
       setActivePatient(null);
       return;
@@ -157,32 +178,42 @@ export const DoctorWorkspace: React.FC<DoctorWorkspaceProps> = ({ onPrescription
     setIsSearching(true);
     try {
       await apiClient.ensureDemoSession('DOCTOR');
-      const res = await apiClient.getPatient(q);
-      if (res.patient) {
+      
+      // Fetch full record from backend across devices
+      const fullRes = await apiClient.getFullPatientRecord(q);
+      if (fullRes.record) {
+        const rec = fullRes.record;
         setActivePatient({
-          id: res.patient.id,
-          name: `${res.patient.first_name} ${res.patient.last_name}`,
-          age: 42,
-          gender: res.patient.sex === 'MALE' ? 'Male' : 'Female',
-          bloodGroup: 'O Positive',
-          phone: res.patient.phone || '+91 98104 22910',
-          city: 'New Delhi',
-          emergencyContact: 'Sunita Sharma (Spouse) · +91 98104 22911',
+          id: rec.patient_id || q,
+          name: rec.name || 'Verified Patient',
+          age: rec.age ?? 30,
+          gender: rec.gender ?? 'Other',
+          bloodGroup: rec.bloodGroup ?? 'Not Specified',
+          phone: rec.phone || '',
+          city: rec.city || 'Verified Clinic',
+          emergencyContact: rec.emergencyContact || 'Not Specified',
         });
+        setPatientMedications(Array.isArray(rec.medications) ? rec.medications : []);
+        setPatientAllergies(Array.isArray(rec.allergies) ? rec.allergies : []);
+        setPatientTimeline(Array.isArray(rec.timeline) ? rec.timeline : []);
         setIsSearching(false);
         return;
       }
-    } catch {
-      // Fallback
-    } finally {
-      setIsSearching(false);
-    }
+    } catch {}
 
+    // Fallback for demo ID
     if (q.toUpperCase() === 'HS-PAT-8921' || q.toLowerCase() === 'pat-001') {
       setActivePatient(INITIAL_PATIENT);
+      setPatientMedications(INITIAL_MEDICATIONS || []);
+      setPatientAllergies(INITIAL_ALLERGIES || []);
+      setPatientTimeline(INITIAL_TIMELINE || []);
     } else {
       setActivePatient(null);
+      setPatientMedications([]);
+      setPatientAllergies([]);
+      setPatientTimeline([]);
     }
+    setIsSearching(false);
   };
 
   return (
@@ -318,7 +349,9 @@ export const DoctorWorkspace: React.FC<DoctorWorkspaceProps> = ({ onPrescription
                       S — Situation
                     </div>
                     <p className="text-[#1C2B3A]">
-                      42-year-old male with essential hypertension and managed dyslipidemia presenting for routine quarterly clinical follow-up and blood pressure monitoring.
+                      {activePatient.id === 'HS-PAT-8921'
+                        ? '42-year-old male with essential hypertension and managed dyslipidemia presenting for routine quarterly clinical follow-up and blood pressure monitoring.'
+                        : `${activePatient.name}, ${activePatient.age}-year-old ${activePatient.gender?.toLowerCase() || 'patient'} (${activePatient.bloodGroup}, ${activePatient.city}) presenting for clinical consultation and verified prescription review.`}
                     </p>
                   </div>
 
@@ -328,12 +361,14 @@ export const DoctorWorkspace: React.FC<DoctorWorkspaceProps> = ({ onPrescription
                       B — Background & Source Records
                     </div>
                     <p className="text-[#6B7A8D]">
-                      Longitudinal record spans 3 institutions: AIIMS (Consultation 12 Sep), Apollo Hospital (Lipid Rx 28 Aug), and Fortis Clinic (Recent scanned slip). Active medications: Telmisartan 40mg OD and Metformin 500mg BD.
+                      {activePatient.id === 'HS-PAT-8921'
+                        ? 'Longitudinal record spans 3 institutions: AIIMS (Consultation 12 Sep), Apollo Hospital (Lipid Rx 28 Aug), and Fortis Clinic (Recent scanned slip). Active medications: Telmisartan 40mg OD and Metformin 500mg BD.'
+                        : `Longitudinal HealthSetu record (${activePatient.id}). Active verified medications on record: ${patientMedications.length > 0 ? patientMedications.map(m => `${m.name} ${m.strength || ''}`).join(', ') : 'None documented yet'}. Zero dummy data active.`}
                     </p>
                     <div className="flex items-center gap-2 pt-1 text-[11px] font-medium text-[#4A90C4]">
-                      <span className="underline cursor-pointer">Source: AIIMS Record #4910</span>
+                      <span className="underline cursor-pointer">Unique ID: {activePatient.id}</span>
                       <span>·</span>
-                      <span className="underline cursor-pointer">Apollo Lab #9021</span>
+                      <span className="underline cursor-pointer">{activePatient.city}</span>
                     </div>
                   </div>
 
@@ -343,14 +378,18 @@ export const DoctorWorkspace: React.FC<DoctorWorkspaceProps> = ({ onPrescription
                       A — Clinical Pattern Assessment
                     </div>
                     <p className="text-[#1C2B3A]">
-                      Blood pressure normalized (126/82 mmHg). Glycemic control adequate (HbA1c 6.8%).
+                      {activePatient.id === 'HS-PAT-8921'
+                        ? 'Blood pressure normalized (126/82 mmHg). Glycemic control adequate (HbA1c 6.8%).'
+                        : `Patient records synchronized across network. ${patientAllergies.length > 0 ? `Documented allergies: ${patientAllergies.map(a => a.allergen).join(', ')}.` : 'No documented drug allergies on file.'}`}
                     </p>
-                    <div className="p-2.5 rounded-sm bg-[#FEF3E8] border border-[#FCDDC1] text-[#A05520] text-[11px] flex items-start gap-2">
-                      <AlertTriangle className="w-3.5 h-3.5 shrink-0 mt-0.5 text-[#E07B39]" />
-                      <span>
-                        <strong className="font-semibold">Pattern Flag:</strong> Unverified scanned slip from Fortis lists Rosuvastatin 10mg. Patient is already taking Atorvastatin 20mg. Potential duplicative statin therapy should be resolved.
-                      </span>
-                    </div>
+                    {activePatient.id === 'HS-PAT-8921' && (
+                      <div className="p-2.5 rounded-sm bg-[#FEF3E8] border border-[#FCDDC1] text-[#A05520] text-[11px] flex items-start gap-2">
+                        <AlertTriangle className="w-3.5 h-3.5 shrink-0 mt-0.5 text-[#E07B39]" />
+                        <span>
+                          <strong className="font-semibold">Pattern Flag:</strong> Unverified scanned slip from Fortis lists Rosuvastatin 10mg. Patient is already taking Atorvastatin 20mg. Potential duplicative statin therapy should be resolved.
+                        </span>
+                      </div>
+                    )}
                   </div>
 
                   {/* Recommendation */}
@@ -359,7 +398,9 @@ export const DoctorWorkspace: React.FC<DoctorWorkspaceProps> = ({ onPrescription
                       R — Recommendation For Treating Clinician
                     </div>
                     <p className="text-[#1C2B3A]">
-                      1. Maintain Telmisartan 40mg OD. 2. Clarify statin refill (discontinue duplicate statin). 3. Schedule serum creatinine & renal function tests in 3 months.
+                      {activePatient.id === 'HS-PAT-8921'
+                        ? '1. Maintain Telmisartan 40mg OD. 2. Clarify statin refill (discontinue duplicate statin). 3. Schedule serum creatinine & renal function tests in 3 months.'
+                        : '1. Review patient-uploaded prescription images. 2. Prescribe necessary medical therapies. 3. Signed clinical entries automatically sync to patient portal.'}
                     </p>
                   </div>
 
@@ -385,18 +426,30 @@ export const DoctorWorkspace: React.FC<DoctorWorkspaceProps> = ({ onPrescription
                 
                 {/* Active Verified Medications */}
                 <div className="bg-white rounded-sm border border-[#DDD9D1] p-4 space-y-3">
-                  <h4 className="font-serif text-base text-[#1C2B3A]">Active Verified Medications</h4>
-                  <div className="space-y-2">
-                    {INITIAL_MEDICATIONS.map(m => (
-                      <div key={m.id} className="p-2.5 rounded-sm border border-[#DDD9D1] bg-[#FAF8F3] flex items-center justify-between text-xs">
-                        <div>
-                          <div className="font-semibold text-[#1C2B3A]">{m.name} {m.strength}</div>
-                          <div className="text-[11px] text-[#6B7A8D]">{m.frequency} · {m.hospital}</div>
-                        </div>
-                        <TrustBadge state={m.trustState} />
-                      </div>
-                    ))}
+                  <div className="flex items-center justify-between">
+                    <h4 className="font-serif text-base text-[#1C2B3A]">Active Verified Medications</h4>
+                    <span className="text-[10px] font-mono px-2 py-0.5 rounded-sm bg-[#FAF8F3] text-[#6B7A8D] border border-[#DDD9D1]">
+                      {patientMedications.length} on record
+                    </span>
                   </div>
+                  {patientMedications.length === 0 ? (
+                    <div className="py-6 text-center border border-dashed border-[#DDD9D1] rounded-sm bg-[#FAF8F3] text-xs text-[#6B7A8D] space-y-1">
+                      <p className="font-semibold text-[#1C2B3A]">No active medications on record</p>
+                      <p className="text-[11px]">Patient has not uploaded any prescriptions yet. Use "Prescribe Treatment" tab to issue Rx.</p>
+                    </div>
+                  ) : (
+                    <div className="space-y-2">
+                      {patientMedications.map(m => (
+                        <div key={m.id} className="p-2.5 rounded-sm border border-[#DDD9D1] bg-[#FAF8F3] flex items-center justify-between text-xs">
+                          <div>
+                            <div className="font-semibold text-[#1C2B3A]">{m.name} {m.strength}</div>
+                            <div className="text-[11px] text-[#6B7A8D]">{m.frequency} · {m.hospital}</div>
+                          </div>
+                          <TrustBadge state={m.trustState} />
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
 
                 {/* Recorded Allergies (Clinical Guardrails) */}
@@ -407,14 +460,20 @@ export const DoctorWorkspace: React.FC<DoctorWorkspaceProps> = ({ onPrescription
                       Safety Guardrail
                     </span>
                   </div>
-                  <div className="space-y-2">
-                    {(INITIAL_ALLERGIES || []).map(a => (
-                      <div key={a.id} className="p-2.5 rounded-sm border border-[#FAD3E2] bg-[#FAF8F3] text-xs space-y-0.5">
-                        <div className="font-semibold text-[#D94F7A]">{a.allergen}</div>
-                        <div className="text-[#6B7A8D] text-[11px]">{a.reaction}</div>
-                      </div>
-                    ))}
-                  </div>
+                  {patientAllergies.length === 0 ? (
+                    <div className="py-5 text-center border border-dashed border-[#DDD9D1] rounded-sm bg-[#FAF8F3] text-xs text-[#6B7A8D]">
+                      No known allergies documented on record for this patient.
+                    </div>
+                  ) : (
+                    <div className="space-y-2">
+                      {patientAllergies.map(a => (
+                        <div key={a.id} className="p-2.5 rounded-sm border border-[#FAD3E2] bg-[#FAF8F3] text-xs space-y-0.5">
+                          <div className="font-semibold text-[#D94F7A]">{a.allergen}</div>
+                          <div className="text-[#6B7A8D] text-[11px]">{a.reaction}</div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
 
               </div>
@@ -626,7 +685,7 @@ export const DoctorWorkspace: React.FC<DoctorWorkspaceProps> = ({ onPrescription
           <button
             onClick={() => {
               setPatientIdInput('HS-PAT-8921');
-              setActivePatient(INITIAL_PATIENT);
+              handlePatientSearch('HS-PAT-8921');
             }}
             className="text-xs font-semibold text-[#3D8B6E] hover:underline"
           >

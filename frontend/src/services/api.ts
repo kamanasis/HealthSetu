@@ -624,6 +624,31 @@ class HealthSetuApiClient {
     const res = await this.request<any>(`/facilities/discover${q}`, { method: 'GET' });
     return { discovery: res.data, error: res.error };
   }
+
+  // =========================================================================
+  // Sovereign Profile & Longitudinal Record Persistence (Cross-Device)
+  // =========================================================================
+  async getProfile(identifier: string): Promise<{ profile?: any; error?: string }> {
+    const res = await this.request<any>(`/auth/profile/${encodeURIComponent(identifier.trim())}`, {
+      method: 'GET',
+    });
+    return { profile: res.data, error: res.error };
+  }
+
+  async getFullPatientRecord(patientId: string): Promise<{ record?: any; error?: string }> {
+    const res = await this.request<any>(`/patients/${encodeURIComponent(patientId.trim())}/full-record`, {
+      method: 'GET',
+    });
+    return { record: res.data, error: res.error };
+  }
+
+  async syncPatientRecord(patientId: string, payload: any): Promise<{ record?: any; error?: string }> {
+    const res = await this.request<any>(`/patients/${encodeURIComponent(patientId.trim())}/full-record`, {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
+    return { record: res.data, error: res.error };
+  }
 }
 
 export const apiClient = new HealthSetuApiClient();

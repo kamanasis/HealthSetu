@@ -156,7 +156,7 @@ export const authStore = {
   },
 
   /**
-   * Logs in with Unique ID or Email.
+   * Logs in with Unique ID or Email, pulling profile from backend across computers.
    */
   async login(identifier: string, password?: string, preferredRole?: 'patient' | 'doctor' | 'hospital'): Promise<{ user: UserProfile; error?: string }> {
     const cleanId = identifier.trim().toLowerCase();
@@ -170,8 +170,33 @@ export const authStore = {
       matched = DEMO_PROFILES.doctor;
     } else if (cleanId === 'hosp-apollo-01' || cleanId === 'hosp-1' || cleanId === 'admin@healthsetu.org' || cleanId.includes('apollo')) {
       matched = DEMO_PROFILES.hospital;
-    } else {
-      // 2. Search registered users
+    }
+
+    // 2. If not demo profile, query backend persistent store (cross-computer synchronization)
+    if (!matched) {
+      try {
+        const remote = await apiClient.getProfile(identifier.trim());
+        if (remote.profile && remote.profile.id) {
+          const p = remote.profile;
+          matched = {
+            id: p.id,
+            name: p.name,
+            role: p.role,
+            email: p.email || `${p.id.toLowerCase()}@healthsetu.org`,
+            phone: p.phone,
+            issuedAt: p.issuedAt || 'Today',
+            avatarInitials: p.avatarInitials || p.name.slice(0, 2).toUpperCase(),
+            patientDetails: p.patientDetails,
+            doctorDetails: p.doctorDetails,
+            hospitalDetails: p.hospitalDetails,
+          };
+          this.saveRegisteredUser(matched);
+        }
+      } catch {}
+    }
+
+    // 3. Fallback to locally stored registered users
+    if (!matched) {
       matched = allUsers.find(u => 
         u.id.toLowerCase() === cleanId || 
         u.email.toLowerCase() === cleanId ||
@@ -185,7 +210,7 @@ export const authStore = {
     }
 
     if (!matched) {
-      // Create quick ad-hoc identity with given ID
+      // Create ad-hoc identity with given ID
       const role = preferredRole || (cleanId.startsWith('hs-doc') || cleanId.startsWith('doc') ? 'doctor' : cleanId.startsWith('hs-hosp') || cleanId.startsWith('hosp') ? 'hospital' : 'patient');
       matched = {
         id: identifier.toUpperCase().startsWith('HS-') || identifier.toUpperCase().startsWith('DOC-') || identifier.toUpperCase().startsWith('HOSP-')
