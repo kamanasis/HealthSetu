@@ -46,6 +46,11 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     else:
         get_engine()
 
+    # Seed demo data for rapid local development & frontend integration
+    if not settings.is_production:
+        from app.core.demo_seed import seed_demo_data
+        seed_demo_data()
+
     yield
 
     # 2. Shutdown phase

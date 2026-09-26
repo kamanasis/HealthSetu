@@ -24,11 +24,19 @@ class HealthService(BaseService[None]):
         Returns:
             Tuple of (is_ready: bool, response_payload: ReadinessResponse)
         """
+        settings = get_settings()
         db_ok = await check_database_health()
         if db_ok:
             return True, ReadinessResponse(
                 status="ready",
                 checks=ReadinessChecks(database="ok"),
+            )
+
+        if not settings.DATABASE_URL:
+            # Operational with in-memory stores in local development environment
+            return True, ReadinessResponse(
+                status="ready",
+                checks=ReadinessChecks(database="dormant_in_memory"),
             )
 
         return False, ReadinessResponse(

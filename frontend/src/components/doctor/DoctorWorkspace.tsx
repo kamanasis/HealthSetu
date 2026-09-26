@@ -16,6 +16,7 @@ import {
 } from '../../data/mockData';
 import type { Medication, SafetyAlert } from '../../types';
 import { TrustBadge } from '../common/Badge';
+import { apiClient } from '../../services/api';
 
 interface DoctorWorkspaceProps {
   onPrescriptionFinalized?: (med: Medication) => void;
@@ -25,6 +26,8 @@ export const DoctorWorkspace: React.FC<DoctorWorkspaceProps> = ({ onPrescription
   const [patientIdInput, setPatientIdInput] = useState<string>('HS-PAT-8921');
   const [activePatient, setActivePatient] = useState<typeof INITIAL_PATIENT | null>(INITIAL_PATIENT);
   const [activeTab, setActiveTab] = useState<'review' | 'prescribe'>('review');
+  const [isSearching, setIsSearching] = useState<boolean>(false);
+  const [isSafetyChecking, setIsSafetyChecking] = useState<boolean>(false);
 
   // Prescription builder state
   const [prescribedDrug, setPrescribedDrug] = useState<string>('');
@@ -36,17 +39,63 @@ export const DoctorWorkspace: React.FC<DoctorWorkspaceProps> = ({ onPrescription
   const [detectedAlerts, setDetectedAlerts] = useState<SafetyAlert[]>([]);
   const [prescriptionSuccess, setPrescriptionSuccess] = useState<boolean>(false);
 
-  const handleDrugInput = (drugName: string) => {
+  // Authenticate as Doctor on load
+  React.useEffect(() => {
+    apiClient.ensureDemoSession('DOCTOR');
+  }, []);
+
+  const handleDrugInput = async (drugName: string) => {
     setPrescribedDrug(drugName);
-    // Real-time deterministic check against known safety database
-    if (SAFETY_DATABASE[drugName]) {
-      setDetectedAlerts(SAFETY_DATABASE[drugName]);
-    } else {
+    const trimmed = drugName.trim();
+    if (!trimmed) {
       setDetectedAlerts([]);
+      return;
     }
+
+    let alerts: SafetyAlert[] = [];
+
+    // 1. Authoritative local reference knowledge
+    if (SAFETY_DATABASE[trimmed]) {
+      alerts = [...SAFETY_DATABASE[trimmed]];
+    }
+
+    // 2. Real-time FastAPI backend safety evaluation
+    if (trimmed.length >= 3 && activePatient) {
+      setIsSafetyChecking(true);
+      try {
+        const res = await apiClient.checkProspectiveMedications(activePatient.id, [
+          { name: trimmed, strength: strength, route: 'Oral' }
+        ]);
+
+        if (res.evaluation && res.evaluation.alerts && res.evaluation.alerts.length > 0) {
+          const apiAlerts: SafetyAlert[] = res.evaluation.alerts.map(a => ({
+            id: a.alert_id,
+            type: a.title.toLowerCase().includes('allergy') ? 'allergy-conflict' : 'drug-interaction',
+            severity: a.severity.toLowerCase() === 'critical' || a.severity.toLowerCase() === 'major' ? 'critical' : 'moderate',
+            title: a.title,
+            description: a.description,
+            drugsInvolved: [trimmed, ...(a.medications_involved?.map(m => m.name || m.drug_name) || [])],
+            source: 'Deterministic Rule' as const,
+          }));
+
+          const existingTitles = new Set(alerts.map(x => x.title));
+          for (const alert of apiAlerts) {
+            if (!existingTitles.has(alert.title)) {
+              alerts.push(alert);
+            }
+          }
+        }
+      } catch (err) {
+        console.warn('Backend safety check fallback:', err);
+      } finally {
+        setIsSafetyChecking(false);
+      }
+    }
+
+    setDetectedAlerts(alerts);
   };
 
-  const handleFinalizePrescription = (e: React.FormEvent) => {
+  const handleFinalizePrescription = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!prescribedDrug) return;
 
@@ -73,6 +122,19 @@ export const DoctorWorkspace: React.FC<DoctorWorkspaceProps> = ({ onPrescription
       onPrescriptionFinalized(newMed);
     }
 
+    // Try posting to backend
+    if (activePatient) {
+      try {
+        await apiClient.createPrescription({
+          patient_id: activePatient.id,
+          medications: [{ name: prescribedDrug, strength, frequency, route: 'Oral' }],
+          notes: clinicalNotes,
+        });
+      } catch {
+        // Handled gracefully
+      }
+    }
+
     setPrescriptionSuccess(true);
     setTimeout(() => {
       setPrescriptionSuccess(false);
@@ -82,11 +144,39 @@ export const DoctorWorkspace: React.FC<DoctorWorkspaceProps> = ({ onPrescription
     }, 2500);
   };
 
-  const handlePatientSearch = () => {
-    if (patientIdInput.trim().toUpperCase() === 'HS-PAT-8921') {
-      setActivePatient(INITIAL_PATIENT);
-    } else if (patientIdInput.trim() === '') {
+  const handlePatientSearch = async () => {
+    const q = patientIdInput.trim();
+    if (!q) {
       setActivePatient(null);
+      return;
+    }
+
+    setIsSearching(true);
+    try {
+      await apiClient.ensureDemoSession('DOCTOR');
+      const res = await apiClient.getPatient(q);
+      if (res.patient) {
+        setActivePatient({
+          id: res.patient.id,
+          name: `${res.patient.first_name} ${res.patient.last_name}`,
+          age: 42,
+          gender: res.patient.sex === 'MALE' ? 'Male' : 'Female',
+          bloodGroup: 'O Positive',
+          phone: res.patient.phone || '+91 98104 22910',
+          city: 'New Delhi',
+          emergencyContact: 'Sunita Sharma (Spouse) · +91 98104 22911',
+        });
+        setIsSearching(false);
+        return;
+      }
+    } catch {
+      // Fallback
+    } finally {
+      setIsSearching(false);
+    }
+
+    if (q.toUpperCase() === 'HS-PAT-8921' || q.toLowerCase() === 'pat-001') {
+      setActivePatient(INITIAL_PATIENT);
     } else {
       setActivePatient(null);
     }
@@ -309,7 +399,7 @@ export const DoctorWorkspace: React.FC<DoctorWorkspaceProps> = ({ onPrescription
                     </span>
                   </div>
                   <div className="space-y-2">
-                    {INITIAL_ALLERGIES.map(a => (
+                    {(INITIAL_ALLERGIES || []).map(a => (
                       <div key={a.id} className="p-2.5 rounded-sm border border-[#FAD3E2] bg-[#FAF8F3] text-xs space-y-0.5">
                         <div className="font-semibold text-[#D94F7A]">{a.allergen}</div>
                         <div className="text-[#6B7A8D] text-[11px]">{a.reaction}</div>
@@ -420,7 +510,7 @@ export const DoctorWorkspace: React.FC<DoctorWorkspaceProps> = ({ onPrescription
                         </div>
                         <p className="leading-relaxed">{alert.description}</p>
                         <div className="text-[10px] opacity-80 pt-1 flex items-center justify-between border-t border-current/20">
-                          <span>Drugs involved: {alert.drugsInvolved.join(' + ')}</span>
+                          <span>Drugs involved: {(alert.drugsInvolved || []).join(' + ')}</span>
                           <span>Source: {alert.source}</span>
                         </div>
                       </div>

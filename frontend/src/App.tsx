@@ -13,6 +13,7 @@ import { Footer } from './components/landing/Footer';
 import { PatientPortal } from './components/patient/PatientPortal';
 import { DoctorWorkspace } from './components/doctor/DoctorWorkspace';
 import { HospitalPortal } from './components/hospital/HospitalPortal';
+import { ErrorBoundary } from './components/common/ErrorBoundary';
 import type { Role } from './types';
 
 export function App() {
@@ -21,30 +22,38 @@ export function App() {
 
   // Initialize Lenis smooth momentum scrolling (inspired by MINEGUARD architecture)
   useEffect(() => {
-    const lenis = new Lenis({
-      duration: 1.2,
-      easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
-      orientation: 'vertical',
-      gestureOrientation: 'vertical',
-      smoothWheel: true,
-      wheelMultiplier: 1.05,
-      touchMultiplier: 1.6,
-      infinite: false,
-    });
-
-    lenisRef.current = lenis;
-    (window as unknown as { __lenis: Lenis | null }).__lenis = lenis;
-
+    let lenis: Lenis | null = null;
     let rafId: number;
-    function raf(time: number) {
-      lenis.raf(time);
+
+    try {
+      lenis = new Lenis({
+        duration: 1.2,
+        easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
+        orientation: 'vertical',
+        gestureOrientation: 'vertical',
+        smoothWheel: true,
+        wheelMultiplier: 1.05,
+        touchMultiplier: 1.6,
+        infinite: false,
+      });
+
+      lenisRef.current = lenis;
+      (window as unknown as { __lenis: Lenis | null }).__lenis = lenis;
+
+      function raf(time: number) {
+        lenis?.raf(time);
+        rafId = requestAnimationFrame(raf);
+      }
       rafId = requestAnimationFrame(raf);
+    } catch (e) {
+      console.warn('Lenis smooth scrolling fallback to native:', e);
     }
-    rafId = requestAnimationFrame(raf);
 
     return () => {
       cancelAnimationFrame(rafId);
-      lenis.destroy();
+      try {
+        lenis?.destroy();
+      } catch {}
       lenisRef.current = null;
       (window as unknown as { __lenis: Lenis | null }).__lenis = null;
     };
@@ -52,36 +61,52 @@ export function App() {
 
   // Smooth scroll to top on role switch
   useEffect(() => {
-    if (lenisRef.current) {
-      lenisRef.current.scrollTo(0, { immediate: true });
-    } else {
+    try {
+      if (lenisRef.current && typeof lenisRef.current.scrollTo === 'function') {
+        lenisRef.current.scrollTo(0, { immediate: true });
+      } else {
+        window.scrollTo({ top: 0, behavior: 'instant' as any });
+      }
+    } catch {
       window.scrollTo(0, 0);
     }
   }, [currentRole]);
 
   // Smooth gliding anchor navigation with Lenis offset compensation
   const scrollToEmergency = () => {
-    if (currentRole !== 'landing') {
-      setCurrentRole('landing');
-      setTimeout(() => {
+    try {
+      if (currentRole !== 'landing') {
+        setCurrentRole('landing');
+        setTimeout(() => {
+          const el = document.getElementById('emergency');
+          if (el) {
+            try {
+              if (lenisRef.current) {
+                lenisRef.current.scrollTo(el, { offset: -70, duration: 1.2 });
+              } else {
+                el.scrollIntoView({ behavior: 'smooth' });
+              }
+            } catch {
+              el.scrollIntoView({ behavior: 'smooth' });
+            }
+          }
+        }, 120);
+      } else {
         const el = document.getElementById('emergency');
         if (el) {
-          if (lenisRef.current) {
-            lenisRef.current.scrollTo(el, { offset: -70, duration: 1.2 });
-          } else {
+          try {
+            if (lenisRef.current) {
+              lenisRef.current.scrollTo(el, { offset: -70, duration: 1.2 });
+            } else {
+              el.scrollIntoView({ behavior: 'smooth' });
+            }
+          } catch {
             el.scrollIntoView({ behavior: 'smooth' });
           }
         }
-      }, 120);
-    } else {
-      const el = document.getElementById('emergency');
-      if (el) {
-        if (lenisRef.current) {
-          lenisRef.current.scrollTo(el, { offset: -70, duration: 1.2 });
-        } else {
-          el.scrollIntoView({ behavior: 'smooth' });
-        }
       }
+    } catch {
+      window.scrollTo(0, 0);
     }
   };
 
@@ -97,29 +122,31 @@ export function App() {
 
       {/* Main Content Area */}
       <main className="flex-1">
-        {currentRole === 'landing' && (
-          <>
-            <Hero onSelectRole={setCurrentRole} onEmergencyClick={scrollToEmergency} />
-            <TrustStrip />
-            <RoleSection onSelectRole={setCurrentRole} />
-            <HowItWorks />
-            <FeaturesGrid />
-            <EmergencySection />
-            <CTA onSelectRole={setCurrentRole} />
-          </>
-        )}
+        <ErrorBoundary fallbackTitle="Portal Interface" onReset={() => setCurrentRole('landing')}>
+          {currentRole === 'landing' && (
+            <>
+              <Hero onSelectRole={setCurrentRole} onEmergencyClick={scrollToEmergency} />
+              <TrustStrip />
+              <RoleSection onSelectRole={setCurrentRole} />
+              <HowItWorks />
+              <FeaturesGrid />
+              <EmergencySection />
+              <CTA onSelectRole={setCurrentRole} />
+            </>
+          )}
 
-        {currentRole === 'patient' && (
-          <PatientPortal onEmergencyClick={scrollToEmergency} />
-        )}
+          {currentRole === 'patient' && (
+            <PatientPortal onEmergencyClick={scrollToEmergency} />
+          )}
 
-        {currentRole === 'doctor' && (
-          <DoctorWorkspace />
-        )}
+          {currentRole === 'doctor' && (
+            <DoctorWorkspace />
+          )}
 
-        {currentRole === 'hospital' && (
-          <HospitalPortal />
-        )}
+          {currentRole === 'hospital' && (
+            <HospitalPortal />
+          )}
+        </ErrorBoundary>
       </main>
 
       {/* Global Footer */}

@@ -15,25 +15,27 @@ export const Navbar: React.FC<NavbarProps> = ({
 }) => {
   return (
     <header className="fixed top-0 left-0 right-0 h-16 bg-[#FAF8F3] border-b border-[#DDD9D1] z-50">
-      <div className="max-w-6xl mx-auto h-full px-6 flex items-center justify-between">
+      <div className="max-w-6xl mx-auto h-full px-4 sm:px-6 flex items-center justify-between">
         
         {/* Brand Logo */}
-        <button
-          onClick={() => setCurrentRole('landing')}
-          className="flex items-center gap-3 text-left focus-visible:ring-1 focus-visible:ring-[#4A90C4] focus:outline-none py-1"
-        >
-          <div className="w-8 h-8 rounded-sm bg-[#FFFFFF] border border-[#DDD9D1] flex items-center justify-center text-[#4A90C4]">
-            <Activity className="w-4 h-4 text-[#4A90C4]" strokeWidth={2.2} />
-          </div>
-          <div>
-            <div className="flex items-center gap-2">
-              <span className="font-serif text-xl text-[#1C2B3A] tracking-tight">HealthSetu</span>
+        <div className="flex items-center gap-4">
+          <button
+            onClick={() => setCurrentRole('landing')}
+            className="flex items-center gap-3 text-left focus-visible:ring-1 focus-visible:ring-[#4A90C4] focus:outline-none py-1"
+          >
+            <div className="w-8 h-8 rounded-sm bg-[#FFFFFF] border border-[#DDD9D1] flex items-center justify-center text-[#4A90C4]">
+              <Activity className="w-4 h-4 text-[#4A90C4]" strokeWidth={2.2} />
             </div>
-            <p className="text-[10px] uppercase font-semibold tracking-wider text-[#6B7A8D] -mt-0.5">
-              Continuous Care Platform
-            </p>
-          </div>
-        </button>
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="font-serif text-xl text-[#1C2B3A] tracking-tight">HealthSetu</span>
+              </div>
+              <p className="text-[10px] uppercase font-semibold tracking-wider text-[#6B7A8D] -mt-0.5">
+                Continuous Care Platform
+              </p>
+            </div>
+          </button>
+        </div>
 
         {/* Center Links / Role Switcher */}
         <nav className="hidden md:flex items-center bg-[#F0EDE7] p-1 rounded-sm border border-[#DDD9D1]">
@@ -86,21 +88,22 @@ export const Navbar: React.FC<NavbarProps> = ({
         </nav>
 
         {/* Action Buttons */}
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 sm:gap-3">
           <button
             onClick={onEmergencyClick}
-            className="flex items-center gap-2 bg-[#E07B39] text-[#FFFFFF] font-semibold text-xs px-4 py-2 rounded-sm hover:bg-[#C96A28] transition-colors focus-visible:ring-1 focus-visible:ring-[#E07B39]"
+            className="flex items-center gap-2 bg-[#E07B39] text-[#FFFFFF] font-semibold text-xs px-3 sm:px-4 py-2 rounded-sm hover:bg-[#C96A28] transition-colors focus-visible:ring-1 focus-visible:ring-[#E07B39]"
           >
             <PhoneCall className="w-3.5 h-3.5" strokeWidth={2} />
-            <span>Emergency Hospital Search</span>
+            <span className="hidden sm:inline">Emergency Hospital Search</span>
+            <span className="sm:hidden">Emergency</span>
           </button>
           
           {currentRole !== 'landing' && (
             <button
               onClick={() => setCurrentRole('landing')}
-              className="hidden lg:flex items-center gap-1 text-xs font-semibold text-[#6B7A8D] hover:text-[#1C2B3A] border border-[#DDD9D1] px-3 py-2 rounded-sm bg-[#FFFFFF] hover:bg-[#F0EDE7] transition-colors"
+              className="flex items-center gap-1 text-xs font-semibold text-[#6B7A8D] hover:text-[#1C2B3A] border border-[#DDD9D1] px-2.5 sm:px-3 py-2 rounded-sm bg-[#FFFFFF] hover:bg-[#F0EDE7] transition-colors"
             >
-              Exit Portal
+              Exit
             </button>
           )}
         </div>

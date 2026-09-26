@@ -1,25 +1,100 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   Building2, 
   Clock, 
   ShieldCheck, 
   CheckCircle2, 
   Share2, 
-  Lock
+  Lock,
+  ChevronDown,
+  Activity
 } from 'lucide-react';
 import { FreshnessBadge } from '../common/Badge';
+import { apiClient } from '../../services/api';
+
+const DEFAULT_BEDS = {
+  icu: { available: 7, occupied: 31, cleaning: 2, total: 40 },
+  emergency: { available: 12, occupied: 11, cleaning: 2, total: 25 },
+  general: { available: 45, occupied: 92, cleaning: 8, total: 145 },
+};
+
+const DEFAULT_FACILITIES_BEDS: Record<string, { icu: any; emergency: any; general: any }> = {
+  'fac-apollo-001': { ...DEFAULT_BEDS },
+  'hosp-1': { ...DEFAULT_BEDS },
+  'fac-max-001': {
+    icu: { available: 2, occupied: 38, cleaning: 0, total: 40 },
+    emergency: { available: 4, occupied: 16, cleaning: 2, total: 22 },
+    general: { available: 19, occupied: 95, cleaning: 6, total: 120 },
+  },
+  'hosp-2': {
+    icu: { available: 2, occupied: 38, cleaning: 0, total: 40 },
+    emergency: { available: 4, occupied: 16, cleaning: 2, total: 22 },
+    general: { available: 19, occupied: 95, cleaning: 6, total: 120 },
+  },
+  'fac-fortis-001': {
+    icu: { available: 0, occupied: 35, cleaning: 1, total: 36 },
+    emergency: { available: 2, occupied: 18, cleaning: 0, total: 20 },
+    general: { available: 8, occupied: 82, cleaning: 4, total: 94 },
+  },
+  'hosp-3': {
+    icu: { available: 0, occupied: 35, cleaning: 1, total: 36 },
+    emergency: { available: 2, occupied: 18, cleaning: 0, total: 20 },
+    general: { available: 8, occupied: 82, cleaning: 4, total: 94 },
+  },
+  'fac-holyfamily-001': {
+    icu: { available: 4, occupied: 24, cleaning: 2, total: 30 },
+    emergency: { available: 9, occupied: 11, cleaning: 0, total: 20 },
+    general: { available: 32, occupied: 58, cleaning: 5, total: 95 },
+  },
+  'hosp-4': {
+    icu: { available: 4, occupied: 24, cleaning: 2, total: 30 },
+    emergency: { available: 9, occupied: 11, cleaning: 0, total: 20 },
+    general: { available: 32, occupied: 58, cleaning: 5, total: 95 },
+  },
+};
 
 export const HospitalPortal: React.FC = () => {
-  // Bed Lifecycle inventory state
-  const [beds, setBeds] = useState({
-    icu: { available: 7, occupied: 31, cleaning: 2, total: 40 },
-    emergency: { available: 12, occupied: 11, cleaning: 2, total: 25 },
-    general: { available: 45, occupied: 92, cleaning: 8, total: 145 },
-  });
-
+  const [facilities, setFacilities] = useState<any[]>([]);
+  const [activeFacilityId, setActiveFacilityId] = useState<string>('hosp-1');
+  const [bedStates, setBedStates] = useState(DEFAULT_FACILITIES_BEDS);
   const [lastUpdated, setLastUpdated] = useState<string>('Just now');
   const [networkShared, setNetworkShared] = useState<boolean>(true);
   const [successToast, setSuccessToast] = useState<string | null>(null);
+
+  useEffect(() => {
+    let isMounted = true;
+    async function loadFacilities() {
+      try {
+        await apiClient.ensureDemoSession('DOCTOR');
+        const res = await apiClient.searchFacilities();
+        if (isMounted && res.facilities && Array.isArray(res.facilities) && res.facilities.length > 0) {
+          setFacilities(res.facilities);
+          const firstId = res.facilities[0].id || res.facilities[0].facility_id;
+          if (firstId) setActiveFacilityId(firstId);
+        }
+      } catch {
+        // Fallback gracefully
+      }
+    }
+    loadFacilities();
+    return () => { isMounted = false; };
+  }, []);
+
+  const activeFacility = facilities.find(f => (f.id || f.facility_id) === activeFacilityId) || {
+    facility_id: activeFacilityId,
+    id: activeFacilityId,
+    name: activeFacilityId.includes('max') || activeFacilityId === 'hosp-2' ? 'Max Super Speciality Hospital' :
+          activeFacilityId.includes('fortis') || activeFacilityId === 'hosp-3' ? 'Fortis Escorts Heart Institute' :
+          activeFacilityId.includes('holy') || activeFacilityId === 'hosp-4' ? 'Holy Family Hospital' :
+          'Apollo Indraprastha Hospital',
+    facility_code: 'DEL-HOSP-012',
+    address_line1: 'Sarita Vihar, Delhi Mathura Road',
+    address_city: 'New Delhi',
+    phone: '+91 11 2692 5858',
+    status: 'ACTIVE',
+  };
+
+  const beds = bedStates[activeFacilityId] || DEFAULT_BEDS;
 
   const triggerToast = (msg: string) => {
     setSuccessToast(msg);
@@ -27,32 +102,36 @@ export const HospitalPortal: React.FC = () => {
   };
 
   const handleBedTransition = (category: 'icu' | 'emergency' | 'general', action: 'admit' | 'discharge') => {
-    setBeds(prev => {
-      const current = prev[category];
+    setBedStates(prev => {
+      const currentFacBeds = prev[activeFacilityId] || DEFAULT_BEDS;
+      const current = currentFacBeds[category] || DEFAULT_BEDS[category];
+      let updatedCat = { ...current };
+
       if (action === 'admit' && current.available > 0) {
-        return {
-          ...prev,
-          [category]: {
-            ...current,
-            available: current.available - 1,
-            occupied: current.occupied + 1,
-          }
+        updatedCat = {
+          ...current,
+          available: current.available - 1,
+          occupied: current.occupied + 1,
         };
       } else if (action === 'discharge' && current.occupied > 0) {
-        return {
-          ...prev,
-          [category]: {
-            ...current,
-            occupied: current.occupied - 1,
-            available: current.available + 1,
-          }
+        updatedCat = {
+          ...current,
+          occupied: current.occupied - 1,
+          available: current.available + 1,
         };
       }
-      return prev;
+
+      return {
+        ...prev,
+        [activeFacilityId]: {
+          ...currentFacBeds,
+          [category]: updatedCat,
+        }
+      };
     });
 
     setLastUpdated('Just now');
-    triggerToast(`Bed lifecycle state updated for ${category.toUpperCase()} ward.`);
+    triggerToast(`Bed state updated: ${category.toUpperCase()} ward at ${activeFacility.name}`);
   };
 
   return (
@@ -73,24 +152,38 @@ export const HospitalPortal: React.FC = () => {
             <Building2 className="w-6 h-6" strokeWidth={1.8} />
           </div>
           <div>
-            <div className="flex items-center gap-3">
-              <h1 className="font-serif text-2xl text-[#1C2B3A]">Apollo Indraprastha Hospital</h1>
+            <div className="flex flex-wrap items-center gap-3">
+              <h1 className="font-serif text-2xl text-[#1C2B3A]">{activeFacility.name}</h1>
               <span className="text-xs font-mono font-medium px-2 py-0.5 rounded-sm bg-[#FAF8F3] text-[#5B3D8A] border border-[#DDD9D1]">
-                DEL-HOSP-012 · NABH Accredited
+                {activeFacility.facility_code || 'DEL-HOSP-012'} · NABH Accredited
               </span>
             </div>
             <div className="flex flex-wrap items-center gap-3 text-xs text-[#6B7A8D] mt-1">
-              <span>Sarita Vihar, Delhi Mathura Road, New Delhi</span>
+              <span>{activeFacility.address_line1}{activeFacility.address_city ? `, ${activeFacility.address_city}` : ''}</span>
               <span>·</span>
-              <span>Emergency Desk: <strong className="text-[#1C2B3A]">+91 11 2692 5858</strong></span>
+              <span>Emergency Desk: <strong className="text-[#1C2B3A]">{activeFacility.phone || '+91 11 2692 5858'}</strong></span>
               <span>·</span>
               <FreshnessBadge state="current" lastUpdated={lastUpdated} />
             </div>
           </div>
         </div>
 
-        {/* Network Sharing Toggle */}
-        <div className="flex items-center gap-3">
+        {/* Facility Selector & Network Sharing Toggle */}
+        <div className="flex flex-wrap items-center gap-3">
+          {facilities.length > 1 && (
+            <select
+              value={activeFacilityId}
+              onChange={(e) => setActiveFacilityId(e.target.value)}
+              className="text-xs font-semibold px-3 py-2 rounded-sm border border-[#DDD9D1] bg-[#FAF8F3] text-[#1C2B3A] outline-none cursor-pointer"
+            >
+              {facilities.map(f => (
+                <option key={f.facility_id} value={f.facility_id}>
+                  {f.name}
+                </option>
+              ))}
+            </select>
+          )}
+
           <button
             onClick={() => {
               setNetworkShared(!networkShared);

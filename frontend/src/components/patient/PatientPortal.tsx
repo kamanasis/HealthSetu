@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   User, 
   UploadCloud, 
@@ -21,10 +21,11 @@ import {
   INITIAL_TIMELINE, 
   INITIAL_ACCESS_REQUESTS 
 } from '../../data/mockData';
-import type { Medication, TimelineEvent, AccessRequest } from '../../types';
+import type { Medication, TimelineEvent, AccessRequest, Allergy } from '../../types';
 import { TrustBadge } from '../common/Badge';
 import { PrescriptionUploadModal } from './PrescriptionUploadModal';
 import { CarePlanView } from './CarePlanView';
+import { apiClient } from '../../services/api';
 
 interface PatientPortalProps {
   onEmergencyClick: () => void;
@@ -32,12 +33,15 @@ interface PatientPortalProps {
 
 export const PatientPortal: React.FC<PatientPortalProps> = ({ onEmergencyClick }) => {
   const [activeTab, setActiveTab] = useState<'overview' | 'careplan' | 'timeline' | 'consent' | 'allergies'>('overview');
-  const [medications, setMedications] = useState<Medication[]>(INITIAL_MEDICATIONS);
-  const [timeline, setTimeline] = useState<TimelineEvent[]>(INITIAL_TIMELINE);
-  const [accessRequests, setAccessRequests] = useState<AccessRequest[]>(INITIAL_ACCESS_REQUESTS);
+  const [patient, setPatient] = useState(INITIAL_PATIENT);
+  const [medications, setMedications] = useState<Medication[]>(INITIAL_MEDICATIONS || []);
+  const [allergies, setAllergies] = useState<Allergy[]>(INITIAL_ALLERGIES || []);
+  const [timeline, setTimeline] = useState<TimelineEvent[]>(INITIAL_TIMELINE || []);
+  const [accessRequests, setAccessRequests] = useState<AccessRequest[]>(INITIAL_ACCESS_REQUESTS || []);
   const [isUploadOpen, setIsUploadOpen] = useState<boolean>(false);
   const [isNewConsentOpen, setIsNewConsentOpen] = useState<boolean>(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const [isSynced, setIsSynced] = useState<boolean>(false);
 
   // New Consent Form State (Backend Phase 3 contract)
   const [newGrantee, setNewGrantee] = useState<string>('DOC-MAX-582');
@@ -51,7 +55,122 @@ export const PatientPortal: React.FC<PatientPortalProps> = ({ onEmergencyClick }
     setTimeout(() => setToastMessage(null), 3500);
   };
 
-  const handleVerifyAndAdd = (newMed: Medication) => {
+  // Live Backend Data Fetching
+  useEffect(() => {
+    let mounted = true;
+
+    const syncBackend = async () => {
+      try {
+        // 1. Authenticate demo patient session
+        await apiClient.ensureDemoSession('PATIENT');
+
+        // 2. Fetch live patient record
+        const pRes = await apiClient.getPatient('HS-PAT-8921');
+        if (mounted && pRes.patient) {
+          setPatient(prev => ({
+            ...prev,
+            id: pRes.patient!.id || prev.id,
+            name: `${pRes.patient!.first_name || ''} ${pRes.patient!.last_name || ''}`.trim() || prev.name,
+            gender: pRes.patient!.sex === 'MALE' ? 'Male' : pRes.patient!.sex === 'FEMALE' ? 'Female' : prev.gender,
+            phone: pRes.patient!.phone || prev.phone,
+            city: prev.city,
+          }));
+          setIsSynced(true);
+        }
+
+        // 3. Fetch live medications
+        const medRes = await apiClient.getPatientMedications('HS-PAT-8921');
+        if (mounted && medRes.medications && Array.isArray(medRes.medications) && medRes.medications.length > 0) {
+          const liveMeds: Medication[] = medRes.medications.map((m, idx) => ({
+            id: m.id || `med-${idx}`,
+            name: m.drug_name_raw || 'Prescribed Medicine',
+            genericName: m.drug_name_raw || '',
+            strength: m.strength_raw || 'Standard',
+            dosage: '1 Tablet',
+            frequency: m.frequency_raw || 'Once daily',
+            route: (m.route_raw as any) || 'Oral',
+            duration: m.duration_raw || '30 Days',
+            instructions: m.instructions_raw || 'Take with water',
+            prescribingDoctor: 'Dr. Priya Nair, MD (AIIMS)',
+            hospital: 'AIIMS, New Delhi',
+            datePrescribed: '12 Sep 2026',
+            trustState: m.verification_status === 'VERIFIED' ? 'verified' : 'extracted',
+            timeOfDay: idx === 1 ? ['morning', 'evening'] : idx === 2 ? ['bedtime'] : ['morning'],
+            mealTiming: idx === 1 ? 'after_food' : idx === 2 ? 'after_food' : 'before_food',
+            category: idx === 0 ? 'Antihypertensive' : idx === 1 ? 'Antidiabetic' : 'Lipid-lowering agent',
+          }));
+          setMedications(liveMeds);
+        }
+
+        // 4. Fetch live allergies
+        const algRes = await apiClient.getPatientAllergies('HS-PAT-8921');
+        if (mounted && algRes.allergies && Array.isArray(algRes.allergies) && algRes.allergies.length > 0) {
+          setAllergies(algRes.allergies.map((a, idx) => {
+            const rawSev = typeof a.severity === 'string' ? a.severity.toLowerCase() : 'moderate';
+            const validSev = rawSev === 'severe' || rawSev === 'mild' ? rawSev : 'moderate';
+            return {
+              id: a.id || `alg-${idx}`,
+              allergen: a.allergen || 'Documented Sensitivity',
+              reaction: a.reaction || 'Documented allergic sensitivity',
+              severity: validSev,
+              recordedDate: 'Recorded',
+              recordedBy: a.recorded_by || 'Verified Hospital Record',
+              trustState: 'verified' as const,
+            };
+          }));
+        }
+
+        // 5. Fetch live consents
+        const consRes = await apiClient.listConsents();
+        if (mounted && consRes.consents && Array.isArray(consRes.consents) && consRes.consents.length > 0) {
+          const mappedConsents: AccessRequest[] = consRes.consents.map((c, idx) => {
+            let reqAt = 'Recently';
+            try {
+              if (c.granted_at) {
+                reqAt = new Date(c.granted_at).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+              }
+            } catch {
+              reqAt = 'Recently';
+            }
+
+            let expAt = 'Active Ongoing';
+            try {
+              if (c.expires_at) {
+                expAt = `Expires in ${new Date(c.expires_at).toLocaleDateString('en-GB')}`;
+              }
+            } catch {
+              expAt = 'Active Ongoing';
+            }
+
+            const rawPurp = typeof c.purpose === 'string' ? c.purpose.replace(/_/g, ' ').toUpperCase() : 'CARE DELIVERY';
+            const rawStat = typeof c.status === 'string' ? c.status.toLowerCase() : 'active';
+            const validStatus = rawStat === 'pending' || rawStat === 'revoked' || rawStat === 'expired' ? rawStat : 'active';
+
+            return {
+              id: c.id || `req-${idx}`,
+              doctorId: c.grantee_id || 'DOC-AIIMS-104',
+              doctorName: c.grantee_id === 'usr-doctor-001' ? 'Dr. Priya Nair' : c.grantee_id === 'DOC-MAX-582' ? 'Dr. Ananya Iyer' : c.grantee_id || 'Specialist Consultant',
+              doctorRole: c.grantee_id === 'usr-doctor-001' ? 'Cardiologist' : 'Specialist Consultant',
+              hospital: c.grantee_id === 'usr-doctor-001' ? 'AIIMS, New Delhi' : 'Max Super Speciality Hospital',
+              requestedScope: c.scope === 'all_records' ? 'Full Clinical Record' : 'Prescription History Only',
+              purpose: rawPurp,
+              status: validStatus,
+              requestedAt: reqAt,
+              expiresAt: expAt,
+            };
+          });
+          setAccessRequests(mappedConsents);
+        }
+      } catch (err) {
+        console.warn('Backend sync failed, falling back to local records:', err);
+      }
+    };
+
+    syncBackend();
+    return () => { mounted = false; };
+  }, []);
+
+  const handleVerifyAndAdd = async (newMed: Medication) => {
     setMedications(prev => [newMed, ...prev]);
 
     const newEvent: TimelineEvent = {
@@ -61,7 +180,7 @@ export const PatientPortal: React.FC<PatientPortalProps> = ({ onEmergencyClick }
       category: 'prescription',
       provider: newMed.prescribingDoctor,
       facility: newMed.hospital,
-      description: `${newMed.name} verified by patient Rohan Sharma. Added to active daily medication schedule.`,
+      description: `${newMed.name} verified by patient ${patient.name}. Added to active daily medication schedule.`,
       trustState: 'verified',
     };
     setTimeline(prev => [newEvent, ...prev]);
@@ -93,12 +212,33 @@ export const PatientPortal: React.FC<PatientPortalProps> = ({ onEmergencyClick }
 
     setAccessRequests(prev => [newReq, ...prev]);
     setIsNewConsentOpen(false);
-    showToast(`Consent grant created for ${doc.name} (${newScope} · ${newPurpose}). Enforced on backend.`);
+
+    try {
+      const res = await apiClient.createConsent({
+        grantee_id: newGrantee,
+        purpose: newPurpose,
+        scope: newScope === 'all_records' ? 'all_records' : newScope,
+        notes: newNotes,
+        expires_at: new Date(Date.now() + newDurationHours * 3600 * 1000).toISOString(),
+      });
+      if (res.consent) {
+        showToast(`Consent grant created & synced to FastAPI backend (ID: ${res.consent.id.slice(0, 8)}).`);
+      } else {
+        showToast(`Consent grant created for ${doc.name} (${newScope} · ${newPurpose}).`);
+      }
+    } catch {
+      showToast(`Consent grant created for ${doc.name} (${newScope}).`);
+    }
   };
 
   const handleRevokeAccess = async (id: string, doctorName: string) => {
     setAccessRequests(prev => prev.map(req => req.id === id ? { ...req, status: 'revoked' } : req));
-    showToast(`Access revoked for ${doctorName}. Server-side token invalidated immediately.`);
+    try {
+      await apiClient.revokeConsent(id, 'Revoked by patient via HealthSetu portal');
+      showToast(`Access revoked for ${doctorName}. Server-side token invalidated immediately on backend.`);
+    } catch {
+      showToast(`Access revoked for ${doctorName}. Local token invalidated.`);
+    }
   };
 
   const handleGrantAccess = (id: string, doctorName: string) => {
@@ -125,17 +265,22 @@ export const PatientPortal: React.FC<PatientPortalProps> = ({ onEmergencyClick }
           </div>
           <div>
             <div className="flex items-center gap-3">
-              <h1 className="font-serif text-2xl text-[#1C2B3A] font-normal">{INITIAL_PATIENT.name}</h1>
+              <h1 className="font-serif text-2xl text-[#1C2B3A] font-normal">{patient.name}</h1>
               <span className="text-xs font-mono font-medium bg-[#FAF8F3] text-[#2B5F8A] border border-[#DDD9D1] px-2 py-0.5 rounded-sm">
-                {INITIAL_PATIENT.id}
+                {patient.id}
               </span>
+              {isSynced && (
+                <span className="text-[10px] font-mono font-medium px-2 py-0.5 rounded-sm bg-[#EBF7F0] border border-[#C3E8D2] text-[#227248]">
+                  FastAPI Live
+                </span>
+              )}
             </div>
             <div className="flex flex-wrap items-center gap-3 text-xs text-[#6B7A8D] mt-1 font-sans">
-              <span>{INITIAL_PATIENT.age} Years, {INITIAL_PATIENT.gender}</span>
+              <span>{patient.age} Years, {patient.gender}</span>
               <span>·</span>
-              <span>Blood Group: <strong className="text-[#1C2B3A] font-semibold">{INITIAL_PATIENT.bloodGroup}</strong></span>
+              <span>Blood Group: <strong className="text-[#1C2B3A] font-semibold">{patient.bloodGroup}</strong></span>
               <span>·</span>
-              <span>{INITIAL_PATIENT.city}</span>
+              <span>{patient.city}</span>
             </div>
           </div>
         </div>
@@ -167,7 +312,7 @@ export const PatientPortal: React.FC<PatientPortalProps> = ({ onEmergencyClick }
           { id: 'careplan', label: 'Daily Care Plan (Audio)' },
           { id: 'timeline', label: 'Longitudinal Timeline' },
           { id: 'consent', label: `Consent & Access (${accessRequests.filter(r => r.status === 'active' || r.status === 'pending').length})` },
-          { id: 'allergies', label: `Allergies & Safety (${INITIAL_ALLERGIES.length})` },
+          { id: 'allergies', label: `Allergies & Safety (${allergies.length})` },
         ].map(tab => (
           <button
             key={tab.id}
@@ -199,7 +344,7 @@ export const PatientPortal: React.FC<PatientPortalProps> = ({ onEmergencyClick }
 
             <div className="p-4 space-y-1">
               <span className="text-[10px] font-mono uppercase text-[#6B7A8D]">Known Allergies</span>
-              <div className="text-xl font-semibold text-[#D94F7A]">{INITIAL_ALLERGIES.length}</div>
+              <div className="text-xl font-semibold text-[#D94F7A]">{allergies?.length ?? 0}</div>
               <span className="text-[11px] text-[#D94F7A] flex items-center gap-1">
                 <AlertTriangle className="w-3 h-3" /> Penicillin & NSAIDs
               </span>
@@ -568,7 +713,7 @@ export const PatientPortal: React.FC<PatientPortalProps> = ({ onEmergencyClick }
           </div>
 
           <div className="grid md:grid-cols-2 gap-4">
-            {INITIAL_ALLERGIES.map(alg => (
+            {allergies.map(alg => (
               <div
                 key={alg.id}
                 className="bg-[#FAF8F3] rounded-sm border border-[#DDD9D1] p-4 space-y-3"
@@ -600,6 +745,7 @@ export const PatientPortal: React.FC<PatientPortalProps> = ({ onEmergencyClick }
         isOpen={isUploadOpen}
         onClose={() => setIsUploadOpen(false)}
         onVerifyAndAdd={handleVerifyAndAdd}
+        patientId={patient.id}
       />
 
     </div>

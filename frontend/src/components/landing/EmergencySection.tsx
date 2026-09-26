@@ -1,12 +1,51 @@
-import React, { useState } from 'react';
-import { PhoneCall, AlertTriangle, Search, MapPin, ShieldAlert, RotateCcw, Activity } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { PhoneCall, AlertTriangle, Search, MapPin, ShieldAlert, RotateCcw, Activity, Radio } from 'lucide-react';
 import { INITIAL_HOSPITALS } from '../../data/mockData';
 import { FreshnessBadge } from '../common/Badge';
 import { TextReveal, SectionReveal } from '../common/TextReveal';
+import { apiClient } from '../../services/api';
+import type { HospitalFacility } from '../../types';
 
 export const EmergencySection: React.FC = () => {
   const [selectedCondition, setSelectedCondition] = useState<string>('Cardiac');
   const [searchQuery, setSearchQuery] = useState<string>('');
+  const [hospitals, setHospitals] = useState<HospitalFacility[]>(INITIAL_HOSPITALS);
+  const [isLiveFeed, setIsLiveFeed] = useState<boolean>(false);
+
+  useEffect(() => {
+    let isMounted = true;
+    async function loadLiveFacilities() {
+      try {
+        await apiClient.ensureDemoSession('PATIENT');
+        const res = await apiClient.searchFacilities();
+        if (isMounted && res.facilities && res.facilities.length > 0) {
+          setIsLiveFeed(true);
+          // Merge live facility verification into hospitals list
+          setHospitals(prev => prev.map(h => {
+            const match = res.facilities!.find(f => 
+              f.name.toLowerCase().includes(h.name.split(' ')[0].toLowerCase()) ||
+              h.name.toLowerCase().includes(f.name.split(' ')[0].toLowerCase())
+            );
+            if (match) {
+              const matchedId = (match as any).id || (match as any).facility_id || h.id;
+              return {
+                ...h,
+                id: matchedId,
+                city: match.address_city ? `${match.address_line1}, ${match.address_city}` : h.city,
+                freshness: 'current' as const,
+                lastUpdated: 'Live Feed Synchronized',
+              };
+            }
+            return h;
+          }));
+        }
+      } catch {
+        // Retain fallback seamlessly
+      }
+    }
+    loadLiveFacilities();
+    return () => { isMounted = false; };
+  }, []);
 
   const conditions = [
     { id: 'Cardiac', label: 'Acute Chest Pain / Cardiac', specialty: '24x7 Cath Lab' },
@@ -15,7 +54,7 @@ export const EmergencySection: React.FC = () => {
     { id: 'Pediatric', label: 'Pediatric Emergency', specialty: 'Pediatric ICU' },
   ];
 
-  const filteredHospitals = INITIAL_HOSPITALS.filter(h => {
+  const filteredHospitals = hospitals.filter(h => {
     const matchesSearch = h.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
                           h.city.toLowerCase().includes(searchQuery.toLowerCase());
     return matchesSearch;
@@ -31,9 +70,17 @@ export const EmergencySection: React.FC = () => {
           {/* Header Title & Description (7 Cols) */}
           <div className="lg:col-span-7 space-y-3">
             <SectionReveal>
-              <div className="inline-flex items-center gap-2 px-2.5 py-1 rounded-sm bg-[#FEF3E8] border border-[#FCDDC1] text-[#A05520] text-xs font-semibold">
-                <AlertTriangle className="w-3.5 h-3.5 text-[#E07B39]" strokeWidth={2} />
-                <span>Emergency Facility Discovery</span>
+              <div className="flex flex-wrap items-center gap-2">
+                <div className="inline-flex items-center gap-2 px-2.5 py-1 rounded-sm bg-[#FEF3E8] border border-[#FCDDC1] text-[#A05520] text-xs font-semibold">
+                  <AlertTriangle className="w-3.5 h-3.5 text-[#E07B39]" strokeWidth={2} />
+                  <span>Emergency Facility Discovery</span>
+                </div>
+                {isLiveFeed && (
+                  <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-sm bg-[#EBF5EC] border border-[#D3EAD7] text-[#2D5A40] text-xs font-semibold">
+                    <span className="w-2 h-2 rounded-full bg-[#3D8B6E] animate-pulse" />
+                    <span>Live Network Feed: Connected</span>
+                  </div>
+                )}
               </div>
             </SectionReveal>
 
