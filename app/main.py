@@ -15,6 +15,8 @@ from app.core.middleware import (
     RequestSizeLimitMiddleware,
     SecurityHeadersMiddleware,
 )
+from app.core.rate_limiter import RateLimitMiddleware
+from app.core.security_config import enforce_security_config
 
 logger = get_logger("app.main")
 
@@ -30,10 +32,8 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
         f"Starting {settings.APP_NAME} [env={settings.APP_ENV}, version={settings.APP_VERSION}]"
     )
 
-    # Validate production security constraints
-    if settings.is_production:
-        if "*" in settings.CORS_ALLOWED_ORIGINS:
-            raise RuntimeError("CRITICAL: Wildcard CORS origin '*' is strictly prohibited in production!")
+    # Validate production security constraints & configuration (fail-closed in production)
+    enforce_security_config(settings)
 
     # Establish database engine boundary (resilient to unavailable DB)
     get_engine()
@@ -81,7 +81,11 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         expose_headers=[settings.REQUEST_ID_HEADER],
     )
 
-    # 4. Request ID / Correlation middleware (outermost to track end-to-end timing & ID)
+    # 4. Rate limiting middleware
+    if settings.RATE_LIMIT_ENABLED:
+        application.add_middleware(RateLimitMiddleware)
+
+    # 5. Request ID / Correlation middleware (outermost to track end-to-end timing & ID)
     application.add_middleware(RequestIdMiddleware)
 
     # Centralized exception handlers

@@ -39,23 +39,11 @@ SENSITIVE_FIELD_NAMES: frozenset[str] = frozenset({
 })
 
 
+from app.core.log_sanitizer import sanitize_for_log, _EXACT_SENSITIVE_KEYS
+
 def sanitize_log_dict(d: dict[str, Any]) -> dict[str, Any]:
     """Recursively sanitize dictionary to redact sensitive or clinical data."""
-    sanitized: dict[str, Any] = {}
-    for k, v in d.items():
-        lower_k = str(k).lower()
-        if any(sensitive in lower_k for sensitive in SENSITIVE_FIELD_NAMES):
-            sanitized[k] = "[REDACTED]"
-        elif isinstance(v, dict):
-            sanitized[k] = sanitize_log_dict(v)
-        elif isinstance(v, list):
-            sanitized[k] = [
-                sanitize_log_dict(item) if isinstance(item, dict) else item
-                for item in v
-            ]
-        else:
-            sanitized[k] = v
-    return sanitized
+    return sanitize_for_log(d)
 
 
 class StructuredJsonFormatter(logging.Formatter):

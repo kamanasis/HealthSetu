@@ -1,19 +1,11 @@
-"""Clinical AI text generation package (Phase 8)."""
+"""HealthSetu AI Provider & Integration Layer (Phase 14).
 
-from app.integrations.ai.base import (
-    ClinicalTextGenerator,
-    SBARInputFacts,
-    SBARGeneratedOutput,
-)
-from app.integrations.ai.providers.template_generator import TemplateClinicalTextGenerator
-from app.integrations.ai.providers.mock_llm import MockLLMClinicalTextGenerator
-from app.integrations.ai.validator import SBARFactValidator
+Decouples clinical application domains from underlying LLM vendors.
+All LLM access is routed through strict provider adapters, input sanitization,
+structured output validation, and safety filters.
+"""
 
-__all__ = [
-    "ClinicalTextGenerator",
-    "SBARInputFacts",
-    "SBARGeneratedOutput",
-    "TemplateClinicalTextGenerator",
-    "MockLLMClinicalTextGenerator",
-    "SBARFactValidator",
-]
+from app.integrations.ai.base import AIProvider
+from app.integrations.ai.client import get_ai_provider
+
+__all__ = ["AIProvider", "get_ai_provider"]

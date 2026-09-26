@@ -80,6 +80,10 @@ class AuthorizationService(BaseService[PermissionRepository]):
         """Establish an active provider-patient relationship (in-memory until DB team delivers table)."""
         self._relationships.add((provider_id, patient_id))
 
+    def establish_relationship(self, provider_id: str, patient_id: str) -> None:
+        """Establish an active provider-patient relationship (alias for add_relationship)."""
+        self.add_relationship(provider_id, patient_id)
+
     def remove_relationship(self, provider_id: str, patient_id: str) -> None:
         """Remove an active relationship."""
         self._relationships.discard((provider_id, patient_id))

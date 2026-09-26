@@ -11,7 +11,8 @@ from starlette.middleware.base import BaseHTTPMiddleware
 from app.core.config import get_settings
 from app.core.exceptions import ErrorCode, build_error_response
 from app.core.logging import get_logger, request_id_ctx_var
-from app.core.security import SECURITY_HEADERS
+from app.core.rate_limiter import RateLimitMiddleware
+from app.core.security import SECURITY_HEADERS, get_security_headers
 
 logger = get_logger("app.middleware")
 
@@ -77,8 +78,14 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
 
     async def dispatch(self, request: Request, call_next: Callable) -> Response:
         response = await call_next(request)
-        for header_key, header_val in SECURITY_HEADERS.items():
-            response.headers.setdefault(header_key, header_val)
+        settings = get_settings()
+        if settings.SECURITY_HEADERS_ENABLED:
+            headers = get_security_headers(
+                is_production=settings.is_production,
+                enable_hsts=settings.STRICT_TRANSPORT_SECURITY_ENABLED,
+            )
+            for header_key, header_val in headers.items():
+                response.headers.setdefault(header_key, header_val)
         return response
 
 

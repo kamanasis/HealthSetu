@@ -1,0 +1,52 @@
+{
+  "schema_version": "1.0",
+  "document_type": "prescription",
+  "issuer": {
+    "name": "Joint Care Clinic",
+    "address": "22 Rajdanga Main Road, Kasba, Kolkata 700107",
+    "phone": "+91 98300 12345",
+    "in_network": false
+  },
+  "doctor": {
+    "name": "Sanjay Ghoshal",
+    "qualification": "MBBS, MS (Ortho)",
+    "department": "Orthopaedics",
+    "registration_no": "WBMC-58213"
+  },
+  "patient": {
+    "name": "Subrata Mondal",
+    "age": 58,
+    "sex": "M"
+  },
+  "date": "25-09-2026",
+  "document_date": "2026-09-25",
+  "complaints": "Right knee pain x 3 weeks",
+  "diagnosis": [
+    "Osteoarthritis of right knee"
+  ],
+  "medications": [
+    {
+      "name": "Diclofenac 50 mg Tablet",
+      "frequency": "1-0-1",
+      "duration_days": 14,
+      "instructions": "after food",
+      "matched_medication_id": 29
+    },
+    {
+      "name": "Pantoprazole 40 mg Tablet",
+      "frequency": "1-0-0 (before breakfast)",
+      "duration_days": 14,
+      "instructions": "before breakfast",
+      "matched_medication_id": 3
+    },
+    {
+      "name": "Calcium + Vitamin D3 Tablet",
+      "frequency": "0-1-0",
+      "duration_days": 30,
+      "instructions": null,
+      "matched_medication_id": 30
+    }
+  ],
+  "advice": "Hot fomentation, quadriceps exercises",
+  "follow_up": "After 2 weeks"
+}

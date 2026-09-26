@@ -114,6 +114,15 @@ from app.integrations.interoperability.fhir.mapper import FHIRMapper
 from app.integrations.interoperability.fhir.validator import FHIRValidator
 from app.services.interoperability_service import InteroperabilityService
 
+# Phase 14: AI Intelligence Layer imports
+from app.repositories.ai_repository import AIRepository
+from app.integrations.ai.client import get_ai_provider
+from app.services.ai_service import AIService
+from app.services.ai_task_service import AITaskService
+from app.services.ai_validation_service import AIValidationService
+from app.services.ai_provenance_service import AIProvenanceService
+from app.services.ai_usage_service import AIUsageService
+
 # ---------------------------------------------------------------------------
 # HTTP Bearer scheme
 # ---------------------------------------------------------------------------
@@ -210,6 +219,11 @@ _global_authz_service = AuthorizationService(
     consent_service=ConsentService(consent_repository=_global_consent_repo),
     audit_service=AuditService(audit_repository=_global_audit_repo),
 )
+
+# ---------------------------------------------------------------------------
+# Phase 14: AI Intelligence Layer global repositories
+# ---------------------------------------------------------------------------
+_global_ai_repo = AIRepository()
 
 
 
@@ -1228,3 +1242,30 @@ async def verify_patient_access(
         )
         return await patient_service.get_patient(patient_id)
 
+
+# ---------------------------------------------------------------------------
+# Phase 14: AI Intelligence Layer service provider
+# ---------------------------------------------------------------------------
+
+def get_ai_repository() -> AIRepository:
+    """Dependency provider for AIRepository."""
+    return _global_ai_repo
+
+
+def get_ai_service(
+    ai_repo: Annotated[AIRepository, Depends(get_ai_repository)],
+    audit_service: Annotated[AuditService, Depends(get_audit_service)],
+) -> AIService:
+    """Dependency provider for AIService (Phase 14 AI Orchestration)."""
+    task_service = AITaskService(repository=ai_repo)
+    validation_service = AIValidationService()
+    provenance_service = AIProvenanceService()
+    usage_service = AIUsageService(repository=ai_repo)
+    return AIService(
+        repository=ai_repo,
+        audit_service=audit_service,
+        task_service=task_service,
+        validation_service=validation_service,
+        provenance_service=provenance_service,
+        usage_service=usage_service,
+    )

@@ -2,6 +2,7 @@
 
 from fastapi import APIRouter
 from app.api.v1.endpoints import (
+    ai,
     allergies,
     auth,
     care_plans,
@@ -82,4 +83,5 @@ v1_router.include_router(transfers.router)
 # Register Phase 13 interoperability & data exchange endpoints
 v1_router.include_router(interoperability.router)
 
-
+# Register Phase 14 AI Intelligence Layer endpoints
+v1_router.include_router(ai.router)

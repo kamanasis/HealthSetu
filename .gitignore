@@ -53,3 +53,9 @@ htmlcov/
 # OS specific
 .DS_Store
 Thumbs.db
+
+# Storage, dumps & large assets
+storage/
+database_handoff/
+*.zip
+*.sql.gz

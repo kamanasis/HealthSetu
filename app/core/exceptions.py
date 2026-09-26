@@ -100,6 +100,46 @@ class ErrorCode(str, Enum):
     RESOURCE_MAPPING_FAILED = "RESOURCE_MAPPING_FAILED"
     RESOURCE_VALIDATION_FAILED = "RESOURCE_VALIDATION_FAILED"
 
+    # Phase 14: AI & Intelligence Layer Error Codes
+    AI_DISABLED = "AI_DISABLED"
+    AI_TASK_NOT_SUPPORTED = "AI_TASK_NOT_SUPPORTED"
+    AI_TASK_NOT_FOUND = "AI_TASK_NOT_FOUND"
+    AI_TASK_UNAUTHORIZED = "AI_TASK_UNAUTHORIZED"
+    AI_PROVIDER_NOT_CONFIGURED = "AI_PROVIDER_NOT_CONFIGURED"
+    AI_PROVIDER_UNAVAILABLE = "AI_PROVIDER_UNAVAILABLE"
+    AI_PROVIDER_TIMEOUT = "AI_PROVIDER_TIMEOUT"
+    AI_PROVIDER_AUTHENTICATION_FAILED = "AI_PROVIDER_AUTHENTICATION_FAILED"
+    AI_PROVIDER_RATE_LIMITED = "AI_PROVIDER_RATE_LIMITED"
+    AI_REQUEST_INVALID = "AI_REQUEST_INVALID"
+    AI_OUTPUT_INVALID = "AI_OUTPUT_INVALID"
+    AI_OUTPUT_SCHEMA_INVALID = "AI_OUTPUT_SCHEMA_INVALID"
+    AI_GROUNDING_FAILED = "AI_GROUNDING_FAILED"
+    AI_SOURCE_NOT_FOUND = "AI_SOURCE_NOT_FOUND"
+    AI_CONTEXT_INSUFFICIENT = "AI_CONTEXT_INSUFFICIENT"
+    AI_VERIFICATION_REQUIRED = "AI_VERIFICATION_REQUIRED"
+    AI_TASK_FAILED = "AI_TASK_FAILED"
+    AI_CONFIGURATION_INVALID = "AI_CONFIGURATION_INVALID"
+    PROMPT_INJECTION_DETECTED = "PROMPT_INJECTION_DETECTED"
+
+    # Phase 15: Security, Audit & Compliance Error Codes
+    AUTHENTICATION_REQUIRED = "AUTHENTICATION_REQUIRED"
+    INVALID_TOKEN = "INVALID_TOKEN"
+    TOKEN_EXPIRED = "TOKEN_EXPIRED"
+    AUTHENTICATION_FAILED = "AUTHENTICATION_FAILED"
+    ACCESS_DENIED = "ACCESS_DENIED"
+    CONSENT_REQUIRED = "CONSENT_REQUIRED"
+    CONSENT_INVALID = "CONSENT_INVALID"
+    RESOURCE_NOT_FOUND = "RESOURCE_NOT_FOUND"
+    RATE_LIMIT_EXCEEDED = "RATE_LIMIT_EXCEEDED"
+    REQUEST_TOO_LARGE = "REQUEST_TOO_LARGE"
+    INVALID_INPUT = "INVALID_INPUT"
+    FILE_TYPE_NOT_ALLOWED = "FILE_TYPE_NOT_ALLOWED"
+    FILE_TOO_LARGE = "FILE_TOO_LARGE"
+    SSRF_BLOCKED = "SSRF_BLOCKED"
+    SECURITY_CONFIGURATION_INVALID = "SECURITY_CONFIGURATION_INVALID"
+    INTERNAL_SECURITY_ERROR = "INTERNAL_SECURITY_ERROR"
+    PATH_TRAVERSAL_DETECTED = "PATH_TRAVERSAL_DETECTED"
+
 
 class AppException(Exception):
     """Base application exception for all domain and operational errors."""
@@ -792,6 +832,270 @@ class ResourceValidationFailedException(AppException):
             code=ErrorCode.RESOURCE_VALIDATION_FAILED,
             message=message,
             status_code=getattr(status, "HTTP_422_UNPROCESSABLE_CONTENT", 422),
+            details=details,
+        )
+
+
+# Phase 14: AI & Intelligence Layer Exceptions
+class AIDisabledException(AppException):
+    """AI orchestration layer is disabled (HTTP 503)."""
+
+    def __init__(self, message: str = "AI capabilities are currently disabled by configuration.", details: Any = None) -> None:
+        super().__init__(
+            code=ErrorCode.AI_DISABLED,
+            message=message,
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            details=details,
+        )
+
+
+class AITaskNotSupportedException(AppException):
+    """Requested AI task type is not approved or supported (HTTP 400)."""
+
+    def __init__(self, message: str = "The specified AI task type is not supported.", details: Any = None) -> None:
+        super().__init__(
+            code=ErrorCode.AI_TASK_NOT_SUPPORTED,
+            message=message,
+            status_code=status.HTTP_400_BAD_REQUEST,
+            details=details,
+        )
+
+
+class AITaskNotFoundException(AppException):
+    """AI task could not be found (HTTP 404)."""
+
+    def __init__(self, message: str = "The requested AI task was not found.", details: Any = None) -> None:
+        super().__init__(
+            code=ErrorCode.AI_TASK_NOT_FOUND,
+            message=message,
+            status_code=status.HTTP_404_NOT_FOUND,
+            details=details,
+        )
+
+
+class AITaskUnauthorizedException(AppException):
+    """User is not authorized for this AI task or clinical resource (HTTP 403)."""
+
+    def __init__(self, message: str = "You are not authorized to execute this AI task.", details: Any = None) -> None:
+        super().__init__(
+            code=ErrorCode.AI_TASK_UNAUTHORIZED,
+            message=message,
+            status_code=status.HTTP_403_FORBIDDEN,
+            details=details,
+        )
+
+
+class AIProviderNotConfiguredException(AppException):
+    """Configured AI provider is missing required keys or parameters (HTTP 500)."""
+
+    def __init__(self, message: str = "AI provider is not configured properly.", details: Any = None) -> None:
+        super().__init__(
+            code=ErrorCode.AI_PROVIDER_NOT_CONFIGURED,
+            message=message,
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            details=details,
+        )
+
+
+class AIProviderUnavailableException(AppException):
+    """Underlying AI provider returned 5xx or is unreachable (HTTP 503)."""
+
+    def __init__(self, message: str = "AI provider service is currently unavailable.", details: Any = None) -> None:
+        super().__init__(
+            code=ErrorCode.AI_PROVIDER_UNAVAILABLE,
+            message=message,
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            details=details,
+        )
+
+
+class AIProviderTimeoutException(AppException):
+    """Underlying AI provider request timed out (HTTP 504)."""
+
+    def __init__(self, message: str = "AI provider request timed out.", details: Any = None) -> None:
+        super().__init__(
+            code=ErrorCode.AI_PROVIDER_TIMEOUT,
+            message=message,
+            status_code=status.HTTP_504_GATEWAY_TIMEOUT,
+            details=details,
+        )
+
+
+class AIProviderAuthenticationException(AppException):
+    """AI provider rejected authentication credentials (HTTP 502)."""
+
+    def __init__(self, message: str = "AI provider authentication failed.", details: Any = None) -> None:
+        super().__init__(
+            code=ErrorCode.AI_PROVIDER_AUTHENTICATION_FAILED,
+            message=message,
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            details=details,
+        )
+
+
+AIProviderAuthenticationFailedException = AIProviderAuthenticationException
+
+
+
+class AIProviderRateLimitedException(AppException):
+    """Provider rate limit or quota exceeded (HTTP 429)."""
+
+    def __init__(self, message: str = "AI provider rate limit reached. Please retry later.", details: Any = None) -> None:
+        super().__init__(
+            code=ErrorCode.AI_PROVIDER_RATE_LIMITED,
+            message=message,
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            details=details,
+        )
+
+
+class AIRequestInvalidException(AppException):
+    """Invalid AI task parameters or malformed input payload (HTTP 400)."""
+
+    def __init__(self, message: str = "Invalid AI request parameters.", details: Any = None) -> None:
+        super().__init__(
+            code=ErrorCode.AI_REQUEST_INVALID,
+            message=message,
+            status_code=status.HTTP_400_BAD_REQUEST,
+            details=details,
+        )
+
+
+class AIOutputInvalidException(AppException):
+    """AI generated empty or structurally malformed response (HTTP 502)."""
+
+    def __init__(self, message: str = "AI provider returned malformed output.", details: Any = None) -> None:
+        super().__init__(
+            code=ErrorCode.AI_OUTPUT_INVALID,
+            message=message,
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            details=details,
+        )
+
+
+class AIOutputSchemaInvalidException(AppException):
+    """AI output failed strict Pydantic task schema validation (HTTP 502)."""
+
+    def __init__(self, message: str = "AI output failed schema validation requirements.", details: Any = None) -> None:
+        super().__init__(
+            code=ErrorCode.AI_OUTPUT_SCHEMA_INVALID,
+            message=message,
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            details=details,
+        )
+
+
+class AIGroundingFailedException(AppException):
+    """AI output contained ungrounded or fabricated clinical claims (HTTP 422)."""
+
+    def __init__(self, message: str = "AI output failed source grounding validation.", details: Any = None) -> None:
+        super().__init__(
+            code=ErrorCode.AI_GROUNDING_FAILED,
+            message=message,
+            status_code=getattr(status, "HTTP_422_UNPROCESSABLE_CONTENT", 422),
+            details=details,
+        )
+
+
+class AISourceNotFoundException(AppException):
+    """The source document, encounter, or clinical record for AI processing was not found (HTTP 404)."""
+
+    def __init__(self, message: str = "The source entity for AI processing was not found.", details: Any = None) -> None:
+        super().__init__(
+            code=ErrorCode.AI_SOURCE_NOT_FOUND,
+            message=message,
+            status_code=status.HTTP_404_NOT_FOUND,
+            details=details,
+        )
+
+
+class AIContextInsufficientException(AppException):
+    """Supplied context does not contain sufficient clinical information for task (HTTP 400)."""
+
+    def __init__(self, message: str = "Provided source information is insufficient for AI task.", details: Any = None) -> None:
+        super().__init__(
+            code=ErrorCode.AI_CONTEXT_INSUFFICIENT,
+            message=message,
+            status_code=status.HTTP_400_BAD_REQUEST,
+            details=details,
+        )
+
+
+class AIVerificationRequiredException(AppException):
+    """Attempted to use unverified AI output in active clinical operations without clinician review (HTTP 409)."""
+
+    def __init__(self, message: str = "AI output requires clinical review before verification.", details: Any = None) -> None:
+        super().__init__(
+            code=ErrorCode.AI_VERIFICATION_REQUIRED,
+            message=message,
+            status_code=status.HTTP_409_CONFLICT,
+            details=details,
+        )
+
+
+class AITaskFailedException(AppException):
+    """General AI task execution failure (HTTP 500)."""
+
+    def __init__(self, message: str = "AI task execution failed.", details: Any = None) -> None:
+        super().__init__(
+            code=ErrorCode.AI_TASK_FAILED,
+            message=message,
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            details=details,
+        )
+
+
+class AIConfigurationInvalidException(AppException):
+    """Invalid AI configuration or unsafe parameter combination (HTTP 500)."""
+
+    def __init__(self, message: str = "Invalid AI layer configuration.", details: Any = None) -> None:
+        super().__init__(
+            code=ErrorCode.AI_CONFIGURATION_INVALID,
+            message=message,
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            details=details,
+        )
+
+
+class PromptInjectionDetectedException(AppException):
+    """Prompt injection or adversarial instruction pattern detected in untrusted content (HTTP 400)."""
+
+    def __init__(self, message: str = "Potential prompt injection pattern detected in input text.", details: Any = None) -> None:
+        super().__init__(
+            code=ErrorCode.PROMPT_INJECTION_DETECTED,
+            message=message,
+            status_code=status.HTTP_400_BAD_REQUEST,
+            details=details,
+        )
+
+class SSRFBlockedException(AppException):
+    """Raised when an outbound request is blocked by SSRF defenses (HTTP 403)."""
+
+    def __init__(
+        self,
+        message: str = "Request to this external address is blocked for security reasons.",
+        details: Any = None,
+    ) -> None:
+        super().__init__(
+            code=ErrorCode.SSRF_BLOCKED,
+            message=message,
+            status_code=403,
+            details=details,
+        )
+
+
+class PathTraversalDetectedException(AppException):
+    """Raised when a directory or path traversal sequence is detected (HTTP 400)."""
+
+    def __init__(
+        self,
+        message: str = "Path traversal sequence detected in request.",
+        details: Any = None,
+    ) -> None:
+        super().__init__(
+            code=ErrorCode.PATH_TRAVERSAL_DETECTED,
+            message=message,
+            status_code=400,
             details=details,
         )
 

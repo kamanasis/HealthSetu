@@ -131,6 +131,11 @@ class Permission(str, Enum):
     INTEROPERABILITY_EXPORT = "interoperability:export"
     INTEROPERABILITY_READ = "interoperability:read"
 
+    # ---- AI & Intelligence Layer (Phase 14) ----
+    AI_EXECUTE = "ai:execute"
+    AI_READ = "ai:read"
+    AI_VERIFY = "ai:verify"
+
     # ---- Consent lifecycle ----
     CONSENT_CREATE = "consent:create"
     CONSENT_READ = "consent:read"
@@ -203,6 +208,9 @@ ROLE_PERMISSIONS: dict[str, FrozenSet[Permission]] = {
         # Phase 13: Interoperability
         Permission.INTEROPERABILITY_EXPORT,
         Permission.INTEROPERABILITY_READ,
+        # Phase 14: AI & Intelligence Layer
+        Permission.AI_EXECUTE,
+        Permission.AI_READ,
     }),
     "DOCTOR": frozenset({
         Permission.PATIENT_READ_SELF,         # can read patient profile in context
@@ -272,6 +280,10 @@ ROLE_PERMISSIONS: dict[str, FrozenSet[Permission]] = {
         Permission.INTEROPERABILITY_IMPORT,
         Permission.INTEROPERABILITY_EXPORT,
         Permission.INTEROPERABILITY_READ,
+        # Phase 14: AI & Intelligence Layer
+        Permission.AI_EXECUTE,
+        Permission.AI_READ,
+        Permission.AI_VERIFY,
     }),
     "ADMIN": frozenset({
         # Administrative capabilities ONLY — no automatic clinical data access
@@ -290,6 +302,8 @@ ROLE_PERMISSIONS: dict[str, FrozenSet[Permission]] = {
         Permission.INTEROPERABILITY_IMPORT,
         Permission.INTEROPERABILITY_EXPORT,
         Permission.INTEROPERABILITY_READ,
+        # Phase 14: AI & Intelligence Layer
+        Permission.AI_READ,
     }),
 }
 
@@ -392,6 +406,13 @@ ACTION_PERMISSION_MAP: dict[tuple[str, str], Permission] = {
     ("interoperability", "import"):       Permission.INTEROPERABILITY_IMPORT,
     ("interoperability", "export"):       Permission.INTEROPERABILITY_EXPORT,
     ("interoperability", "read"):         Permission.INTEROPERABILITY_READ,
+    # Phase 14: AI & Intelligence Layer
+    ("ai", "execute"):                    Permission.AI_EXECUTE,
+    ("ai", "read"):                       Permission.AI_READ,
+    ("ai", "verify"):                     Permission.AI_VERIFY,
+    ("ai_task", "create"):                Permission.AI_EXECUTE,
+    ("ai_task", "read"):                  Permission.AI_READ,
+    ("ai_task", "verify"):                Permission.AI_VERIFY,
 }
 
 

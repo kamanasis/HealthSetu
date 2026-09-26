@@ -27,7 +27,16 @@ SECURITY_HEADERS: dict[str, str] = {
     "X-XSS-Protection": "1; mode=block",
     "Referrer-Policy": "strict-origin-when-cross-origin",
     "Permissions-Policy": "geolocation=(), microphone=(), camera=(), payment=()",
+    "Content-Security-Policy": "default-src 'self'; frame-ancestors 'none'; object-src 'none'",
 }
+
+
+def get_security_headers(is_production: bool = False, enable_hsts: bool = True) -> dict[str, str]:
+    """Return complete security headers dictionary, including HSTS when appropriate."""
+    headers = dict(SECURITY_HEADERS)
+    if is_production and enable_hsts:
+        headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains; preload"
+    return headers
 
 
 def hash_password(password: str) -> str:
@@ -101,6 +110,8 @@ def decode_access_token(token: str) -> dict[str, Any]:
             raise UnauthorizedException("Invalid token type.")
 
         return payload
+    except UnauthorizedException:
+        raise
     except jwt.ExpiredSignatureError:
         raise UnauthorizedException("Token has expired.")
     except (jwt.PyJWTError, Exception):

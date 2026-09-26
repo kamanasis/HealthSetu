@@ -42,6 +42,7 @@ from app.api.deps import (
     _global_facility_discovery_repo,
     _global_transfer_repo,
     _global_interoperability_repo,
+    _global_ai_repo,
     _global_authz_service,
 )
 from app.core.config import get_settings
@@ -103,6 +104,8 @@ def clean_state():
     _global_transfer_repo.clear()
     # Phase 13
     _global_interoperability_repo.clear()
+    # Phase 14
+    _global_ai_repo.clear()
     yield
     get_settings.cache_clear()
     _global_user_repo._local_users.clear()
@@ -142,6 +145,8 @@ def clean_state():
     _global_transfer_repo.clear()
     # Phase 13
     _global_interoperability_repo.clear()
+    # Phase 14
+    _global_ai_repo.clear()
 
 
 

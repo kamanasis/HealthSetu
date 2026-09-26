@@ -369,6 +369,110 @@ class Settings(BaseSettings):
         description="Maximum retry attempts for transient external provider errors",
     )
 
+    # AI & Intelligence Layer Configuration (Phase 14)
+    AI_ENABLED: bool = Field(
+        default=True,
+        description="Master toggle enabling/disabling the AI orchestration layer",
+    )
+    AI_PROVIDER: str = Field(
+        default="mock",
+        description="Active AI provider adapter ('mock', 'openai', 'azure_openai')",
+    )
+    AI_MODEL: str = Field(
+        default="gpt-4o-mini",
+        description="Model name/deployment identifier for production AI tasks",
+    )
+    AI_BASE_URL: str = Field(
+        default="",
+        description="Custom base URL for AI provider endpoint (SSRF-validated)",
+    )
+    AI_API_KEY: str = Field(
+        default="",
+        description="Secret API key for external AI provider",
+    )
+    AI_TIMEOUT_SECONDS: int = Field(
+        default=30,
+        description="Timeout in seconds for external AI model calls",
+    )
+    AI_MAX_RETRIES: int = Field(
+        default=2,
+        description="Maximum retry attempts for transient provider failures",
+    )
+    AI_MAX_OUTPUT_TOKENS: int = Field(
+        default=2000,
+        description="Maximum allowed completion tokens for AI output",
+    )
+    AI_TEMPERATURE: float = Field(
+        default=0.0,
+        description="Sampling temperature for deterministic clinical assistance",
+    )
+    AI_REQUEST_RATE_LIMIT: int = Field(
+        default=60,
+        description="Maximum AI requests per minute per user/organization",
+    )
+    AI_MAX_CONCURRENT_REQUESTS: int = Field(
+        default=5,
+        description="Maximum concurrent AI model requests",
+    )
+    AI_DATA_RETENTION_MODE: str = Field(
+        default="disabled",
+        description="Provider-side data retention mode ('disabled', 'stateless')",
+    )
+    AI_TRAINING_OPT_IN: bool = Field(
+        default=False,
+        description="Opt-in flag for provider model training (strictly False by default)",
+    )
+    AI_STRUCTURED_OUTPUT_ENABLED: bool = Field(
+        default=True,
+        description="Enforce structured output schemas on AI generation",
+    )
+    AI_GROUNDING_VALIDATION_ENABLED: bool = Field(
+        default=True,
+        description="Enforce source grounding check on generated clinical facts",
+    )
+    AI_PROMPT_VERSION: str = Field(
+        default="1.0.0",
+        description="Active prompt template bundle version",
+    )
+
+    # Security & Compliance Hardening (Phase 15)
+    RATE_LIMIT_ENABLED: bool = Field(
+        default=True,
+        description="Flag enabling request rate limiting middleware and guards",
+    )
+    RATE_LIMIT_DEFAULT_PER_MINUTE: int = Field(
+        default=60,
+        description="Default sliding-window rate limit per minute for standard API endpoints",
+    )
+    RATE_LIMIT_AUTH_PER_MINUTE: int = Field(
+        default=10,
+        description="Strict sliding-window rate limit per minute for authentication endpoints",
+    )
+    AUDIT_ENABLED: bool = Field(
+        default=True,
+        description="Flag enabling centralized audit logging for compliance and tracking",
+    )
+    PHI_SAFE_LOGGING_ENABLED: bool = Field(
+        default=True,
+        description="Flag enforcing strict PHI redaction and sanitization in all application logs",
+    )
+    AI_SECURITY_ENABLED: bool = Field(
+        default=True,
+        description="Flag enabling prompt injection checks and AI request/response security guards",
+    )
+    DOCUMENT_PRIVATE_STORAGE: bool = Field(
+        default=False,
+        description="Flag enforcing private non-public document storage backend in production",
+    )
+    SECURITY_HEADERS_ENABLED: bool = Field(
+        default=True,
+        description="Flag enabling defensive HTTP response security headers",
+    )
+    STRICT_TRANSPORT_SECURITY_ENABLED: bool = Field(
+        default=True,
+        description="Flag enabling HSTS (Strict-Transport-Security) header in production",
+    )
+
     @property
     def max_document_size_bytes(self) -> int:
         """Maximum allowed document upload size in bytes."""
@@ -409,3 +513,7 @@ class Settings(BaseSettings):
 def get_settings() -> Settings:
     """Retrieve cached application settings instance."""
     return Settings()
+
+
+settings = get_settings()
+
