@@ -81,7 +81,7 @@ async def close_database_engine() -> None:
         logger.info("Database connection pool disposed.")
 
 
-async def check_database_health(timeout_seconds: float = 2.0) -> bool:
+async def check_database_health(timeout_seconds: float = 6.0) -> bool:
     """Probe database connectivity for the readiness endpoint.
 
     Returns True if a simple query (SELECT 1) succeeds within the timeout.

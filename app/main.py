@@ -2,7 +2,7 @@
 
 from contextlib import asynccontextmanager
 from typing import AsyncGenerator
-from fastapi import FastAPI
+from fastapi import FastAPI, Response
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.api.router import api_router
@@ -94,6 +94,24 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     # Register API Versioning Routers
     # Mounts /api/v1/... (and future /api/v2/...)
     application.include_router(api_router, prefix="/api")
+
+    # Root-level liveness & readiness aliases
+    @application.get("/health", include_in_schema=False)
+    async def root_health():
+        return {
+            "status": "ok",
+            "service": "healthsetu-backend",
+            "version": settings.APP_VERSION,
+        }
+
+    @application.get("/ready", include_in_schema=False)
+    async def root_ready(response: Response):
+        from app.core.database import check_database_health
+        is_ok = await check_database_health()
+        if not is_ok:
+            response.status_code = 503
+            return {"status": "not_ready", "checks": {"database": "unavailable"}}
+        return {"status": "ready", "checks": {"database": "ok"}}
 
     return application
 
