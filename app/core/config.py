@@ -39,6 +39,10 @@ class Settings(BaseSettings):
     DEBUG: bool = Field(default=False, description="Debug mode flag")
     HOST: str = Field(default="0.0.0.0", description="Host to bind server")
     PORT: int = Field(default=8000, description="Port to bind server")
+    ENABLE_DOCS: bool | None = Field(
+        default=None,
+        description="Explicitly enable/disable Swagger & ReDoc interactive docs (defaults to non-production only)",
+    )
 
     # Database Configuration (PostgreSQL Async Engine Layer)
     DATABASE_URL: str | None = Field(
@@ -495,17 +499,23 @@ class Settings(BaseSettings):
 
     @property
     def docs_url(self) -> str | None:
-        """OpenAPI Swagger UI documentation URL (accessible in dev/testing)."""
+        """OpenAPI Swagger UI documentation URL."""
+        if self.ENABLE_DOCS is not None:
+            return "/docs" if self.ENABLE_DOCS else None
         return "/docs" if not self.is_production else None
 
     @property
     def redoc_url(self) -> str | None:
-        """ReDoc documentation URL (accessible in dev/testing)."""
+        """ReDoc documentation URL."""
+        if self.ENABLE_DOCS is not None:
+            return "/redoc" if self.ENABLE_DOCS else None
         return "/redoc" if not self.is_production else None
 
     @property
     def openapi_url(self) -> str | None:
-        """OpenAPI schema JSON URL (accessible in dev/testing)."""
+        """OpenAPI schema JSON URL."""
+        if self.ENABLE_DOCS is not None:
+            return "/openapi.json" if self.ENABLE_DOCS else None
         return "/openapi.json" if not self.is_production else None
 
 
