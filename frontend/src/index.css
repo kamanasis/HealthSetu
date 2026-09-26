@@ -74,3 +74,23 @@ html.lenis, html.lenis body {
 .lenis.lenis-scrolling iframe {
   pointer-events: none;
 }
+
+/* Explicit high-visibility scrollbar for modal dialogs */
+.custom-modal-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: #4A90C4 #F0EDE7;
+}
+.custom-modal-scrollbar::-webkit-scrollbar {
+  width: 8px;
+}
+.custom-modal-scrollbar::-webkit-scrollbar-track {
+  background: #F0EDE7;
+  border-radius: 4px;
+}
+.custom-modal-scrollbar::-webkit-scrollbar-thumb {
+  background: #4A90C4;
+  border-radius: 4px;
+}
+.custom-modal-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: #2B5F8A;
+}
